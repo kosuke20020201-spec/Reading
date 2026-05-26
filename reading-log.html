@@ -110,6 +110,12 @@
   .ai-key-note { font-size: 0.75rem; color: var(--stone-400); line-height: 1.6; }
   .ai-key-note a { color: var(--amber); }
 
+  .btn-sub { display:flex; align-items:center; gap:0.35rem; padding:0.5rem 0.9rem; border-radius:999px; background:white; border:1px solid var(--stone-200); color:var(--stone-600); font-weight:600; font-size:0.78rem; cursor:pointer; transition:all 0.15s; font-family:inherit; white-space:nowrap; }
+  .btn-sub:hover { border-color:var(--amber); color:var(--amber); background:#fffbeb; }
+
+  .toast { position:fixed; bottom:5rem; left:50%; transform:translateX(-50%); background:#292524; color:white; font-size:0.8rem; font-weight:500; padding:0.6rem 1.2rem; border-radius:999px; z-index:300; opacity:0; transition:opacity 0.2s; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; }
+
   .tc-0 { background: #fef3c7; color: #92400e; }
   .tc-1 { background: #e0f2fe; color: #0c4a6e; }
   .tc-2 { background: #d1fae5; color: #065f46; }
@@ -144,7 +150,14 @@
       <h1 class="header-title">読書ノート</h1>
       <p class="header-meta" id="headerMeta"></p>
     </div>
-    <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+      <button class="btn-sub" onclick="exportData()">📤 エクスポート</button>
+      <label class="btn-sub" style="cursor:pointer">
+        📥 インポート
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none">
+      </label>
+      <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
+    </div>
   </header>
 
   <div class="search-wrap">
@@ -381,6 +394,56 @@ document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.targ
 document.getElementById('aiKeyOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeAiModal(); });
 
 load(); render();
+
+// ── エクスポート ───────────────────────────────────
+function exportData() {
+  const json = JSON.stringify(entries, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `reading-log-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📤 エクスポートしました');
+}
+
+// ── インポート ────────────────────────────────────
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      // 既存IDと重複しないものだけ追加（マージ）
+      const existingIds = new Set(entries.map(e => e.id));
+      const newEntries = imported.filter(e => !existingIds.has(e.id));
+      entries = [...entries, ...newEntries];
+      // 既存レコードは上書き更新
+      const newMap = Object.fromEntries(imported.map(e => [e.id, e]));
+      entries = entries.map(e => newMap[e.id] ? { ...e, ...newMap[e.id] } : e);
+      persist(); render();
+      showToast(`📥 ${imported.length}件をインポートしました`);
+    } catch {
+      showToast('❌ ファイルの形式が正しくありません');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── トースト通知 ──────────────────────────────────
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
 
 // ── Service Worker 登録 ────────────────────────────
 if ('serviceWorker' in navigator) {
