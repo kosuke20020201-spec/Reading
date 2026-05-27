@@ -645,7 +645,32 @@ document.getElementById('btnInstall')?.addEventListener('click', async ()=>{ if(
 document.getElementById('btnDismiss')?.addEventListener('click', ()=>{ banner.style.display='none'; });
 window.addEventListener('appinstalled', ()=>{ banner.style.display='none'; deferredPrompt=null; });
 
-load(); render();
+// ── Init ───────────────────────────────────────────
+async function init() {
+  // まずローカルを読む
+  load();
+
+  // 画面を一旦表示
+  render();
+
+  // その後クラウドを読む
+  const cloudData = await loadFromCloud();
+
+  // クラウドにデータがあれば上書き
+  if (Array.isArray(cloudData) && cloudData.length > 0) {
+    entries = cloudData;
+
+    // ローカルにも保存
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+
+    // 再描画
+    render();
+
+    console.log("Cloud data loaded");
+  }
+}
+
+init();
 </script>
 </body>
 </html>
