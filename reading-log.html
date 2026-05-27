@@ -341,7 +341,23 @@ const SAMPLE = [
 ];
 
 // ── Persistence ────────────────────────────────────
-function load() { try { const r = localStorage.getItem(STORAGE_KEY); entries = r ? JSON.parse(r) : SAMPLE; } catch { entries = SAMPLE; } }
+async function load() {
+  try {
+    const cloud = await loadFromCloud();
+
+    if (cloud && cloud.length) {
+      entries = cloud;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cloud));
+    } else {
+      const r = localStorage.getItem(STORAGE_KEY);
+      entries = r ? JSON.parse(r) : SAMPLE;
+    }
+
+  } catch {
+    const r = localStorage.getItem(STORAGE_KEY);
+    entries = r ? JSON.parse(r) : SAMPLE;
+  }
+}
 function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); syncToCloud(entries);}
 function getApiKey() { return localStorage.getItem(API_KEY_KEY) || ''; }
 function setApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
@@ -647,20 +663,22 @@ window.addEventListener('appinstalled', ()=>{ banner.style.display='none'; defer
 
 // ── Init ───────────────────────────────────────────
 async function init() {
-  // まずローカルを読む
+
+  // ローカル読み込み
   load();
 
-  // 画面を一旦表示
+  // 一旦表示
   render();
 
-  // その後クラウドを読む
+  // クラウド読み込み
   const cloudData = await loadFromCloud();
 
   // クラウドにデータがあれば上書き
   if (Array.isArray(cloudData) && cloudData.length > 0) {
+
     entries = cloudData;
 
-    // ローカルにも保存
+    // ローカル保存
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 
     // 再描画
