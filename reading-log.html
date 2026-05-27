@@ -280,6 +280,44 @@
 </div>
 
 <script>
+ const API_URL = "https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec";
+
+async function syncToCloud(entries) {
+try {
+await fetch(API_URL, {
+method: "POST",
+body: JSON.stringify(entries),
+headers: {
+"Content-Type": "application/json"
+}
+});
+
+```
+console.log("Cloud sync success");
+```
+
+} catch (error) {
+console.error("Cloud sync failed", error);
+}
+}
+
+async function loadFromCloud() {
+try {
+const response = await fetch(API_URL);
+const data = await response.json();
+
+```
+console.log("Loaded from cloud:", data);
+
+return data;
+```
+
+} catch (error) {
+console.error("Load failed", error);
+return [];
+}
+}
+
 const STORAGE_KEY = 'reading_log_v1';
 const API_KEY_KEY = 'reading_log_api_key';
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
@@ -304,7 +342,7 @@ const SAMPLE = [
 
 // ── Persistence ────────────────────────────────────
 function load() { try { const r = localStorage.getItem(STORAGE_KEY); entries = r ? JSON.parse(r) : SAMPLE; } catch { entries = SAMPLE; } }
-function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); syncToCloud(entries);}
 function getApiKey() { return localStorage.getItem(API_KEY_KEY) || ''; }
 function setApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
 
