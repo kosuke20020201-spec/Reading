@@ -664,30 +664,38 @@ window.addEventListener('appinstalled', ()=>{ banner.style.display='none'; defer
 // ── Init ───────────────────────────────────────────
 async function init() {
 
-  // ローカル読み込み
+  // まずローカル読み込み
   load();
 
-  // 一旦表示
+  // 最初に表示
   render();
 
-  // クラウド読み込み
-  const cloudData = await loadFromCloud();
+  try {
 
-  // クラウドにデータがあれば上書き
-  if (Array.isArray(cloudData) && cloudData.length > 0) {
+    // クラウド取得
+    const cloudData = await loadFromCloud();
 
-    entries = cloudData;
+    // クラウドにデータがある時だけ上書き
+    if (Array.isArray(cloudData) && cloudData.length > 0) {
 
-    // ローカル保存
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      entries = cloudData;
 
-    // 再描画
-    render();
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(entries)
+      );
 
-    console.log("Cloud data loaded");
+      render();
+
+      console.log("Cloud data loaded");
+    }
+
+  } catch (error) {
+
+    console.error("Cloud load failed", error);
+
   }
 }
-
 init();
 </script>
 </body>
