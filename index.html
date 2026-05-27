@@ -283,22 +283,24 @@
  const API_URL = "https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec";
 
 async function syncToCloud(entries) {
-try {
-await fetch(API_URL, {
-method: "POST",
-body: JSON.stringify(entries),
-headers: {
-"Content-Type": "application/json"
-}
-});
+  try {
 
-```
-console.log("Cloud sync success");
-```
+    await fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain"
+      },
+      body: JSON.stringify(entries)
+    });
 
-} catch (error) {
-console.error("Cloud sync failed", error);
-}
+    console.log("Cloud sync success");
+
+  } catch (error) {
+
+    console.error("Cloud sync failed", error);
+
+  }
 }
 
 async function loadFromCloud() {
