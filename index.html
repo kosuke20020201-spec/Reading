@@ -170,7 +170,6 @@
 <body>
 <div class="bg-orbs"></div>
 
-<!-- インストールバナー -->
 <div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;box-shadow:0 8px 32px #00000022;border:1px solid #fde68a;padding:0.875rem 1rem;align-items:center;gap:0.75rem;">
   <span style="font-size:1.5rem;flex-shrink:0">📚</span>
   <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使えます</div></div>
@@ -217,7 +216,6 @@
   </div>
 </div>
 
-<!-- 記録モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -246,7 +244,6 @@
   </div>
 </div>
 
-<!-- 本棚モーダル -->
 <div class="modal-overlay" id="bookshelfOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -260,7 +257,6 @@
   </div>
 </div>
 
-<!-- APIキーモーダル -->
 <div class="modal-overlay" id="aiKeyOverlay">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -278,6 +274,8 @@
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const STORAGE_KEY = 'reading_log_v1';
@@ -321,6 +319,7 @@ function persist() {
 }
 
 async function syncToCloud() {
+  if(!CLOUD_URL || CLOUD_URL.includes('YOUR_GAS_URL')) return;
   try {
     await fetch(CLOUD_URL, {
       method: 'POST',
@@ -332,16 +331,14 @@ async function syncToCloud() {
 }
 
 async function loadFromCloud() {
+  if(!CLOUD_URL || CLOUD_URL.includes('YOUR_GAS_URL')) return;
   try {
     showSyncStatus('☁️ クラウドから同期中…');
     const r = await fetch(CLOUD_URL + '?t=' + Date.now());
     const cloud = await r.json();
     if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
-    // ローカルで削除済みのIDを取得
     const deletedIds = getDeletedIds();
-    // deletedフラグ＆削除済みIDを除外
     const filteredCloud = cloud.filter(e => !deletedIds.has(String(e.id)) && !e.deleted && e.deleted !== 'TRUE');
-    // クラウドと手元をマージ（クラウド優先、ただし削除済みは除外）
     const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
     const cloudMap = Object.fromEntries(filteredCloud.map(e => [e.id, e]));
     const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
@@ -376,7 +373,6 @@ function tagClass(tag) { let h=0; for(let i=0;i<tag.length;i++) h=(h*31+tag.char
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function allTags() { const s=new Set(); entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); return [...s]; }
 
-// 本ごとにグループ化（代表情報は最初の記録から取得）
 function bookGroups() {
   const map = new Map();
   entries.forEach(e => {
@@ -404,7 +400,6 @@ function render() {
   const tags = allTags();
   document.getElementById('headerMeta').textContent = `${entries.length}件の記録 · ${bookGroups().size}冊 · ${tags.length}個のタグ`;
 
-  // タグフィルター
   const wrap = document.getElementById('tagFilters');
   wrap.innerHTML = `<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag(this,'')">すべて</button>`;
   tags.forEach(t => {
@@ -425,7 +420,6 @@ function render() {
   if (!list.length) { container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
 
-  // 本ごとにグループ化して表示
   const grouped = new Map();
   list.forEach(e => {
     const key = (e.book||'').trim() || '（タイトル未入力）';
@@ -545,140 +539,191 @@ function selectBookFromShelf(book, author) {
   document.getElementById('fAuthor').value = author;
 }
 
-// ── Modal ──────────────────────────────────────────
-function openModal(entry) {
-  editingId = entry?.id ?? null;
+// ── Modal / Data Actions ───────────────────────────
+function openModal(entry = null) {
+  editingId = entry ? entry.id : null;
   document.getElementById('modalTitle').textContent = entry ? '記録を編集' : '新しい読書記録';
-  document.getElementById('btnSave').textContent = entry ? '更新する' : '保存する';
-  document.getElementById('fBook').value = entry?.book||'';
-  document.getElementById('fAuthor').value = entry?.author||'';
-  document.getElementById('fPage').value = entry?.page||'';
-  document.getElementById('fContent').value = entry?.content||'';
-  document.getElementById('fLesson').value = entry?.lesson||'';
-  document.getElementById('fSupplement').value = entry?.supplement||'';
-  document.getElementById('fTags').value = (entry?.tags||[]).join(', ');
+  
+  document.getElementById('fBook').value = entry ? entry.book : '';
+  document.getElementById('fAuthor').value = entry ? entry.author : '';
+  document.getElementById('fPage').value = entry ? entry.page : '';
+  document.getElementById('fContent').value = entry ? entry.content : '';
+  document.getElementById('fLesson').value = entry ? entry.lesson : '';
+  document.getElementById('fSupplement').value = entry ? entry.supplement : '';
+  document.getElementById('fTags').value = entry ? (entry.tags || []).join(', ') : '';
+  
   document.getElementById('suggestList').style.display = 'none';
   document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('fBook').focus(),50);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
-function editEntry(id) { openModal(entries.find(e=>e.id===id)); }
-function deleteEntry(id) {
-  if(!confirm('この記録を削除しますか？')) return;
-  addDeletedId(id);
-  entries = entries.map(e => e.id===id ? {...e, deleted: true} : e);
-  persist();
-  entries = entries.filter(e => !e.deleted);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  render();
-}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
 
 function saveEntry() {
-  const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const data = {
-    book: document.getElementById('fBook').value,
-    author: document.getElementById('fAuthor').value,
-    page: document.getElementById('fPage').value,
-    content: document.getElementById('fContent').value,
-    lesson: document.getElementById('fLesson').value,
-    supplement: document.getElementById('fSupplement').value,
-    tags
-  };
-  if (editingId) { entries = entries.map(e=>e.id===editingId?{...e,...data}:e); }
-  else { entries.unshift({...data, id:Date.now(), createdAt:new Date().toISOString().slice(0,10)}); }
-  persist(); closeModal(); render();
+  const book = document.getElementById('fBook').value.trim();
+  if (!book) { showToast('タイトルを入力してください'); return; }
+
+  const tagsText = document.getElementById('fTags').value;
+  const tags = tagsText ? tagsText.split(',').map(t => t.trim()).filter(t => t) : [];
+
+  if (editingId) {
+    const entry = entries.find(e => e.id === editingId);
+    if (entry) {
+      entry.book = book;
+      entry.author = document.getElementById('fAuthor').value.trim();
+      entry.page = document.getElementById('fPage').value.trim();
+      entry.content = document.getElementById('fContent').value.trim();
+      entry.lesson = document.getElementById('fLesson').value.trim();
+      entry.supplement = document.getElementById('fSupplement').value.trim();
+      entry.tags = tags;
+    }
+  } else {
+    const newEntry = {
+      id: Date.now(),
+      book: book,
+      author: document.getElementById('fAuthor').value.trim(),
+      page: document.getElementById('fPage').value.trim(),
+      content: document.getElementById('fContent').value.trim(),
+      lesson: document.getElementById('fLesson').value.trim(),
+      supplement: document.getElementById('fSupplement').value.trim(),
+      tags: tags,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    entries.unshift(newEntry);
+  }
+
+  persist();
+  render();
+  closeModal();
+  showToast(editingId ? '記録を更新しました' : '記録を追加しました');
 }
 
-// ── AI ─────────────────────────────────────────────
-async function handleAI(id, btn) {
-  const key = getApiKey();
-  if (!key) { pendingAiId=id; document.getElementById('apiKeyInput').value=''; document.getElementById('aiKeyOverlay').classList.add('open'); return; }
-  await runAI(id, btn, key);
+function editEntry(id) {
+  const entry = entries.find(e => e.id === id);
+  if (entry) openModal(entry);
 }
-function closeAiModal() { document.getElementById('aiKeyOverlay').classList.remove('open'); }
+
+function deleteEntry(id) {
+  if (!confirm('本当に削除しますか？')) return;
+  addDeletedId(id);
+  entries = entries.filter(e => e.id !== id);
+  persist();
+  render();
+  showToast('削除しました');
+}
+
+// ── AI Methods ──────────────────────────────────────
+function handleAI(id, btn) {
+  const key = getApiKey();
+  if (!key) { pendingAiId = id; document.getElementById('aiKeyOverlay').classList.add('open'); return; }
+  runAiSummary(id, btn, key);
+}
+function closeAiModal() { document.getElementById('aiKeyOverlay').classList.remove('open'); pendingAiId = null; }
 function confirmApiKey() {
   const k = document.getElementById('apiKeyInput').value.trim();
-  if (!k) return;
-  setApiKey(k); closeAiModal();
-  if (pendingAiId !== null) { const btn = document.querySelector(`#card-${pendingAiId} .btn-ai`); runAI(pendingAiId, btn, k); pendingAiId=null; }
-}
-async function runAI(id, btn, key) {
-  const e = entries.find(e=>e.id===id); if(!e) return;
-  const res = document.getElementById(`ai-${id}`);
-  btn.disabled=true; btn.textContent='要約中…';
-  res.textContent='生成中…'; res.classList.add('visible');
-  try {
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」(${e.author}) ${e.page}\n内容:${e.content}\n教訓:${e.lesson}\n補足:${e.supplement}\n\n要点を箇条書きにせず、流れるような文章でまとめてください。`}]})
-    });
-    const d = await r.json();
-    res.textContent = d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
-  } catch { res.textContent='エラーが発生しました。'; }
-  finally { btn.disabled=false; btn.textContent='✨ AI要約'; }
+  if(!k) return;
+  setApiKey(k);
+  const id = pendingAiId;
+  closeAiModal();
+  if(id) {
+    const btn = document.querySelector(`#card-${id} .btn-ai`);
+    runAiSummary(id, btn, k);
+  }
 }
 
-// ── Export / Import ────────────────────────────────
+async function runAiSummary(id, btn, apiKey) {
+  const entry = entries.find(e => e.id === id);
+  if(!entry) return;
+  const resEl = document.getElementById(`ai-${id}`);
+  resEl.style.display = 'block';
+  resEl.textContent = '思考中...';
+  if(btn) btn.disabled = true;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `以下の読書メモを100文字〜150文字程度で簡潔にエッセンス要約してください。\n内容: ${entry.content}\n教訓: ${entry.lesson}`
+        }]
+      })
+    });
+    const data = await response.json();
+    if(data.content && data.content[0]) {
+      resEl.textContent = data.content[0].text;
+    } else {
+      resEl.textContent = '要約の取得に失敗しました。';
+    }
+  } catch(e) {
+    resEl.textContent = 'エラーが発生しました。APIキーまたはネットワークを確認してください。';
+    console.error(e);
+  } finally {
+    if(btn) btn.disabled = false;
+  }
+}
+
+// ── Import / Export ────────────────────────────────
 function exportData() {
-  const json = JSON.stringify(entries, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `reading-log-${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(url);
-  showToast('📤 エクスポートしました');
+  a.href = url; a.download = `reading_log_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
 }
-function importData(ev) {
-  const file = ev.target.files[0]; if(!file) return;
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = function(evt) {
     try {
-      const imported = JSON.parse(e.target.result);
-      if (!Array.isArray(imported)) throw new Error();
-      const existingIds = new Set(entries.map(e=>e.id));
-      const newEntries = imported.filter(e=>!existingIds.has(e.id));
-      const newMap = Object.fromEntries(imported.map(e=>[e.id,e]));
-      entries = [...entries.map(e=>newMap[e.id]?{...e,...newMap[e.id]}:e), ...newEntries];
-      persist(); render();
-      showToast(`📥 ${imported.length}件をインポートしました`);
-    } catch { showToast('❌ ファイルの形式が正しくありません'); }
-    ev.target.value='';
+      const parsed = JSON.parse(evt.target.result);
+      if (Array.isArray(parsed)) { entries = parsed; persist(); render(); showToast('インポート完了'); }
+      else { alert('不正なファイル形式です'); }
+    } catch { alert('ファイルの読み込みに失敗しました'); }
   };
   reader.readAsText(file);
 }
 
-// ── Toast ──────────────────────────────────────────
 function showToast(msg) {
-  let t = document.getElementById('toast');
-  if (!t) { t=document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); }
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),2500);
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// ── Keyboard / Click outside ───────────────────────
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();} });
-document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeModal(); });
-document.getElementById('aiKeyOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeAiModal(); });
-document.getElementById('bookshelfOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeBookshelf(); });
-document.addEventListener('click', e=>{ if(!e.target.closest('.suggest-wrap')) document.getElementById('suggestList').style.display='none'; });
+// ── PWA Setup ───────────────────────────────────────
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+document.getElementById('btnInstall')?.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('installBanner').style.display = 'none';
+  deferredPrompt = null;
+});
+document.getElementById('btnDismiss')?.addEventListener('click', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
 
-// ── Service Worker ─────────────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
-}
-
-// ── Install Banner ─────────────────────────────────
-let deferredPrompt = null;
-const banner = document.getElementById('installBanner');
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; banner.style.display='flex'; });
-document.getElementById('btnInstall')?.addEventListener('click', async ()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; banner.style.display='none'; });
-document.getElementById('btnDismiss')?.addEventListener('click', ()=>{ banner.style.display='none'; });
-window.addEventListener('appinstalled', ()=>{ banner.style.display='none'; deferredPrompt=null; });
-
-load(); render(); loadFromCloud();
+// ── Init ───────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  load();
+  render();
+  loadFromCloud();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+  }
+});
 </script>
 </body>
 </html>
