@@ -605,8 +605,12 @@ function editEntry(id) {
 function deleteEntry(id) {
   if (!confirm('本当に削除しますか？')) return;
   addDeletedId(id);
-  entries = entries.filter(e => e.id !== id);
+  // deletedフラグを立てた状態でクラウドに送信
+  entries = entries.map(e => e.id===id ? {...e, deleted: true} : e);
   persist();
+  // クラウド送信後にローカルからも除去
+  entries = entries.filter(e => !e.deleted);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   render();
   showToast('削除しました');
 }
