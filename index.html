@@ -281,44 +281,6 @@
 
 <script>
 const STORAGE_KEY = 'reading_log_v1';
- // ── Helpers ────────────────────────────────────────
-function tagClass(tag) { 
-  let h=0; 
-  for(let i=0;i<tag.length;i++) h=(h*31+tag.charCodeAt(i))%6; 
-  return `tc-${h}`; 
-}
-
-function esc(s) { 
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); 
-}
-
-function allTags() { 
-  const s=new Set(); 
-  entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); 
-  return [...s]; 
-}
-
-function bookGroups() {
-  const map = new Map();
-  entries.forEach(e => {
-    const key = (e.book||'').trim();
-    if (!map.has(key)) map.set(key, { book: e.book||'', author: e.author||'', entries: [] });
-    map.get(key).entries.push(e);
-  });
-  return map;
-}
-
-function getFiltered() {
-  const q = searchQuery.toLowerCase();
-  const sort = document.getElementById('sortSelect').value;
-  return entries.filter(e => {
-    if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
-    if (!q) return true;
-    return [e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
-  }).sort((a,b) => sort==='date'
-    ? (b.createdAt||'').localeCompare(a.createdAt||'')
-    : (a.book||'').localeCompare(b.book||'','ja'));
-}
 const DELETED_KEY = 'reading_log_deleted';
 const API_KEY_KEY = 'reading_log_api_key';
 const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
@@ -352,15 +314,7 @@ const SAMPLE = [
 ];
 
 // ── Persistence ────────────────────────────────────
-function load() { 
-  try { 
-    const r = localStorage.getItem(STORAGE_KEY); 
-    entries = r ? JSON.parse(r) : SAMPLE; 
-  } catch { 
-    entries = SAMPLE; 
-  } 
-}
-
+function load() { try { const r = localStorage.getItem(STORAGE_KEY); entries = r ? JSON.parse(r) : SAMPLE; } catch { entries = SAMPLE; } }
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   syncToCloud();
@@ -368,7 +322,6 @@ function persist() {
 
 async function syncToCloud() {
   try {
-    // 削除フラグ付きのデータをそのまま送信する
     await fetch(CLOUD_URL, {
       method: 'POST',
       mode: 'no-cors',
@@ -384,31 +337,17 @@ async function loadFromCloud() {
     const r = await fetch(CLOUD_URL + '?t=' + Date.now());
     const cloud = await r.json();
     if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
-    
-    // クラウドデータをそのまま受け取る（削除フラグ含む）
-    const cloudMap = Object.fromEntries(cloud.map(e => [e.id, e]));
+    // ローカルで削除済みのIDを取得
+    const deletedIds = getDeletedIds();
+    // deletedフラグ＆削除済みIDを除外
+    const filteredCloud = cloud.filter(e => !deletedIds.has(String(e.id)) && !e.deleted && e.deleted !== 'TRUE');
+    // クラウドと手元をマージ（クラウド優先、ただし削除済みは除外）
     const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
+    const cloudMap = Object.fromEntries(filteredCloud.map(e => [e.id, e]));
     const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
-    
-    // マージ: クラウド優先、ローカル削除データは保持
     entries = [...allIds]
-      .map(id => {
-        const cloudEntry = cloudMap[id];
-        const localEntry = localMap[id];
-        
-        // クラウドに削除マークがあれば反映
-        if (cloudEntry && (cloudEntry.deleted === true || cloudEntry.deleted === 'TRUE')) {
-          return { ...cloudEntry, deleted: true };
-        }
-        // ローカルに削除マークがあれば保持
-        if (localEntry && localEntry.deleted) {
-          return localEntry;
-        }
-        // どちらかあれば返す（クラウド優先）
-        return cloudEntry || localEntry;
-      })
-      .filter(e => e); // nullを除外
-    
+      .filter(id => !deletedIds.has(String(id)))
+      .map(id => cloudMap[id] || localMap[id]);
     entries.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     render();
@@ -420,103 +359,23 @@ async function loadFromCloud() {
   }
 }
 
-// ── Delete Entry (修正版) ────────────────────────
-function deleteEntry(id) {
-  if(!confirm('この記録を削除しますか？')) return;
-  
-  // 削除フラグを付けるが、完全には削除しない
-  entries = entries.map(e => e.id===id ? {...e, deleted: true} : e);
-  persist();  // ← 削除フラグ付きで送信
-  
-  // UI更新時のみフィルタリング
-  render();
+function showSyncStatus(msg) {
+  let el = document.getElementById('syncStatus');
+  if (!el) { el = document.createElement('div'); el.id = 'syncStatus'; document.body.appendChild(el); }
+  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#92400e;z-index:400;box-shadow:0 2px 8px #00000015;';
 }
-
-// ── Render (修正版) ────────────────────────────
-function render() {
-  // 表示用に削除データを除外（内部的には保持）
-  const displayEntries = entries.filter(e => !e.deleted);
-  
-  const tags = allTags(displayEntries);
-  document.getElementById('headerMeta').textContent = `${displayEntries.length}件の記録 · ${bookGroups(displayEntries).size}冊 · ${tags.length}個のタグ`;
-
-  // タグフィルター
-  const wrap = document.getElementById('tagFilters');
-  wrap.innerHTML = `<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag(this,'')">すべて</button>`;
-  tags.forEach(t => {
-    const b = document.createElement('button');
-    b.className = `tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;
-    b.textContent = t; b.onclick = () => setTag(b, t);
-    wrap.appendChild(b);
-  });
-
-  const list = getFiltered(displayEntries);
-  const container = document.getElementById('cardsContainer');
-  const empty = document.getElementById('emptyState');
-  const countEl = document.getElementById('resultsCount');
-
-  if (searchQuery || activeTag) { countEl.style.display='block'; countEl.textContent=`${list.length}件 ヒット`; }
-  else { countEl.style.display='none'; }
-
-  if (!list.length) { container.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-
-  // 本ごとにグループ化
-  const grouped = new Map();
-  list.forEach(e => {
-    const key = (e.book||'').trim() || '（タイトル未入力）';
-    if (!grouped.has(key)) grouped.set(key, { book: e.book||'', author: e.author||'', entries: [] });
-    grouped.get(key).entries.push(e);
-  });
-
-  container.innerHTML = [...grouped.entries()].map(([key, g]) => `
-<div class="book-group" id="group-${CSS.escape(key)}">
-  <div class="book-group-header" onclick="toggleGroup('${esc(key)}')">
-    <span class="book-group-icon">📖</span>
-    <div class="book-group-info">
-      <div class="book-group-title">${esc(g.book||'（タイトル未入力）')}</div>
-      ${g.author ? `<div class="book-group-author">${esc(g.author)}</div>` : ''}
-    </div>
-    <span class="book-group-count">${g.entries.length}件</span>
-    <span class="book-group-toggle">▼</span>
-  </div>
-  <div class="book-group-cards">
-    ${g.entries.map(e => cardHTML(e)).join('')}
-  </div>
-</div>`).join('');
+function hideSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if (el) el.remove();
 }
+function getApiKey() { return localStorage.getItem(API_KEY_KEY) || ''; }
+function setApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
 
-// ── Helpers 更新 ────────────────────────────────
-function allTags(data = entries) { 
-  const displayData = data.filter(e => !e.deleted);
-  const s=new Set(); 
-  displayData.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); 
-  return [...s]; 
-}
+// ── Helpers ────────────────────────────────────────
+function tagClass(tag) { let h=0; for(let i=0;i<tag.length;i++) h=(h*31+tag.charCodeAt(i))%6; return `tc-${h}`; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function allTags() { const s=new Set(); entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); return [...s]; }
 
-function bookGroups(data = entries) {
-  const displayData = data.filter(e => !e.deleted);
-  const map = new Map();
-  displayData.forEach(e => {
-    const key = (e.book||'').trim();
-    if (!map.has(key)) map.set(key, { book: e.book||'', author: e.author||'', entries: [] });
-    map.get(key).entries.push(e);
-  });
-  return map;
-}
-
-function getFiltered(data = entries) {
-  const displayData = data.filter(e => !e.deleted);
-  const q = searchQuery.toLowerCase();
-  const sort = document.getElementById('sortSelect').value;
-  return displayData.filter(e => {
-    if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
-    if (!q) return true;
-    return [e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
-  }).sort((a,b) => sort==='date'
-    ? (b.createdAt||'').localeCompare(a.createdAt||'')
-    : (a.book||'').localeCompare(b.book||'','ja'));
-}
 // 本ごとにグループ化（代表情報は最初の記録から取得）
 function bookGroups() {
   const map = new Map();
