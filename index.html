@@ -281,9 +281,19 @@
 
 <script>
 const STORAGE_KEY = 'reading_log_v1';
+const DELETED_KEY = 'reading_log_deleted';
 const API_KEY_KEY = 'reading_log_api_key';
 const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null, isSyncing = false;
+
+function getDeletedIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY) || '[]')); } catch { return new Set(); }
+}
+function addDeletedId(id) {
+  const ids = getDeletedIds();
+  ids.add(String(id));
+  localStorage.setItem(DELETED_KEY, JSON.stringify([...ids]));
+}
 
 const SAMPLE = [
   { id: 1, book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
@@ -327,14 +337,17 @@ async function loadFromCloud() {
     const r = await fetch(CLOUD_URL + '?t=' + Date.now());
     const cloud = await r.json();
     if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
-    // deletedフラグが立っているものは除外
-    const filteredCloud = cloud.filter(e => !e.deleted && e.deleted !== 'TRUE');
-    // クラウドと手元をマージ（IDベース、新しい方を優先）
+    // ローカルで削除済みのIDを取得
+    const deletedIds = getDeletedIds();
+    // deletedフラグ＆削除済みIDを除外
+    const filteredCloud = cloud.filter(e => !deletedIds.has(String(e.id)) && !e.deleted && e.deleted !== 'TRUE');
+    // クラウドと手元をマージ（クラウド優先、ただし削除済みは除外）
     const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
     const cloudMap = Object.fromEntries(filteredCloud.map(e => [e.id, e]));
     const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
-    // ローカルで削除済みのIDはクラウドからも除外
-    entries = [...allIds].map(id => cloudMap[id] || localMap[id]);
+    entries = [...allIds]
+      .filter(id => !deletedIds.has(String(id)))
+      .map(id => cloudMap[id] || localMap[id]);
     entries.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     render();
@@ -552,7 +565,7 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 function editEntry(id) { openModal(entries.find(e=>e.id===id)); }
 function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？')) return;
-  // 論理削除：deletedフラグを立ててクラウドに同期してから除去
+  addDeletedId(id);
   entries = entries.map(e => e.id===id ? {...e, deleted: true} : e);
   persist();
   entries = entries.filter(e => !e.deleted);
