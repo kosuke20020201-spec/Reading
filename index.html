@@ -73,4 +73,696 @@
   .book-group.collapsed .book-group-cards { display: none; }
 
   /* CARD */
-  .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box
+  .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
+  .card:hover { box-shadow: 0 4px 16px #00000012; }
+  .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
+  .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
+  .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
+  .card-actions { display: flex; gap: 0.2rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+  .card:hover .card-actions, .card-actions:focus-within { opacity: 1; }
+  .card-action-btn { padding: 0.3rem; border-radius: 0.4rem; border: none; background: none; cursor: pointer; font-size: 0.85rem; color: var(--stone-400); transition: all 0.1s; }
+  .card-action-btn:hover { background: var(--stone-100); color: var(--stone-600); }
+  .card-action-btn.delete:hover { background: #fff1f2; color: #f43f5e; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+  .tag-pill { font-size: 0.68rem; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 999px; }
+  .card-sections { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .section-block { border-radius: 0.6rem; padding: 0.6rem 0.75rem; }
+  .section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.2rem; }
+  .section-text { font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap; }
+  .content-bg { background: var(--stone-50); } .content-bg .section-text { color: var(--stone-600); }
+  .lesson-bg { background: var(--amber-light); } .lesson-bg .section-text { color: #78350f; }
+  .supplement-bg { background: var(--stone-50); } .supplement-bg .section-text { color: var(--stone-600); }
+  .ai-area { margin-top: 0.75rem; }
+  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; box-shadow: 0 1px 4px #f59e0b33; transition: all 0.15s; font-family: inherit; }
+  .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
+  .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; display: none; }
+  .ai-result.visible { display: block; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 4rem 0; color: var(--stone-300); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .empty p { font-size: 0.85rem; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 1rem; background: rgba(28,22,15,0.5); backdrop-filter: blur(4px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 1.5rem; box-shadow: 0 20px 60px #00000022; width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-header { padding: 1.25rem 1.5rem 0.875rem; border-bottom: 1px solid var(--stone-100); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .modal-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 1.05rem; }
+  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); transition: background 0.1s; line-height: 1; }
+  .modal-close:hover { background: var(--stone-100); }
+  .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+  .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
+  .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; color: var(--stone-800); outline: none; transition: all 0.15s; resize: none; }
+  .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
+  .lesson-field { background: var(--amber-light) !important; border-color: var(--amber-border) !important; }
+  .lesson-field:focus { box-shadow: 0 0 0 3px #f59e0b22 !important; }
+  .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); transition: background 0.1s; font-family: inherit; }
+  .btn-cancel:hover { background: var(--stone-100); }
+  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 700; font-family: inherit; box-shadow: 0 1px 4px #f59e0b33; transition: all 0.15s; }
+  .btn-save:hover { filter: brightness(1.08); }
+  .ai-key-note { font-size: 0.75rem; color: var(--stone-400); line-height: 1.6; }
+  .ai-key-note a { color: var(--amber); }
+
+  /* SUGGEST */
+  .suggest-wrap { position: relative; }
+  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow: hidden; margin-top: 0.25rem; }
+  .suggest-item { padding: 0.65rem 0.875rem; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--stone-100); }
+  .suggest-item:last-child { border-bottom: none; }
+  .suggest-item:hover { background: var(--amber-light); }
+  .suggest-title { font-size: 0.82rem; font-weight: 600; color: var(--stone-800); }
+  .suggest-author { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
+
+  /* BOOKSHELF MODAL */
+  .bookshelf-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .bookshelf-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid var(--stone-200); cursor: pointer; transition: all 0.15s; background: white; }
+  .bookshelf-item:hover { border-color: var(--amber); background: var(--amber-light); }
+  .bookshelf-item-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .bookshelf-item-info { flex: 1; min-width: 0; }
+  .bookshelf-item-title { font-weight: 700; font-size: 0.85rem; }
+  .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
+  .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* TAG COLORS */
+  .tc-0 { background: #fef3c7; color: #92400e; }
+  .tc-1 { background: #e0f2fe; color: #0c4a6e; }
+  .tc-2 { background: #d1fae5; color: #065f46; }
+  .tc-3 { background: #ffe4e6; color: #9f1239; }
+  .tc-4 { background: #ede9fe; color: #4c1d95; }
+  .tc-5 { background: #ffedd5; color: #7c2d12; }
+
+  @media (max-width: 480px) {
+    .header-title { font-size: 1.6rem; }
+    .field-row { grid-template-columns: 1fr; }
+    .card-actions { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-orbs"></div>
+
+<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;box-shadow:0 8px 32px #00000022;border:1px solid #fde68a;padding:0.875rem 1rem;align-items:center;gap:0.75rem;">
+  <span style="font-size:1.5rem;flex-shrink:0">📚</span>
+  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使えます</div></div>
+  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit">追加する</button>
+  <button id="btnDismiss" style="background:none;border:none;cursor:pointer;color:#a8a29e;font-size:1.1rem;padding:0.2rem;line-height:1;flex-shrink:0">✕</button>
+</div>
+
+<div class="container">
+  <header>
+    <div class="header-left">
+      <p class="header-eyebrow">Reading Journal</p>
+      <h1 class="header-title">読書ノート</h1>
+      <p class="header-meta" id="headerMeta"></p>
+    </div>
+    <div class="header-btns">
+      <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
+      <div class="header-btns-row">
+        <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
+        <button class="btn-sub" onclick="exportData()">📤 エクスポート</button>
+        <label class="btn-sub" style="cursor:pointer">📥 インポート<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+      </div>
+    </div>
+  </header>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="本・著者・内容・教訓・タグで検索…" oninput="onSearch(this.value)">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="tag-filters" id="tagFilters"></div>
+    <select class="sort-select" id="sortSelect" onchange="render()">
+      <option value="date">新しい順</option>
+      <option value="book">書名順</option>
+    </select>
+  </div>
+
+  <p class="results-count" id="resultsCount" style="display:none"></p>
+  <div id="cardsContainer"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="empty-icon">📭</div>
+    <p>記録が見つかりません</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">新しい読書記録</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field suggest-wrap">
+        <label>📚 本のタイトル</label>
+        <input type="text" id="fBook" placeholder="例: 思考の整理学" oninput="onBookInput(this.value)" autocomplete="off">
+        <div class="suggest-list" id="suggestList" style="display:none"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
+        <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55"></div>
+      </div>
+      <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
+      <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
+      <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
+      <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bookshelfOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📚 本棚</h2>
+      <button class="modal-close" onclick="closeBookshelf()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.8rem;color:var(--stone-400)">本を選ぶと、著者が自動入力された状態で記録追加できます</p>
+      <div class="bookshelf-list" id="bookshelfList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="aiKeyOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2 class="modal-title">✨ AI要約の設定</h2>
+      <button class="modal-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.82rem;color:var(--stone-600);line-height:1.7">AI要約にはAnthropic APIキーが必要です。<br>キーはこのブラウザにのみ保存されます。</p>
+      <div class="field"><label>APIキー</label><input type="password" id="apiKeyInput" placeholder="sk-ant-..."></div>
+      <p class="ai-key-note">※ <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> で取得できます。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAiModal()">キャンセル</button>
+      <button class="btn-save" onclick="confirmApiKey()">保存して要約する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'reading_log_v1';
+const DELETED_KEY = 'reading_log_deleted';
+const API_KEY_KEY = 'reading_log_api_key';
+const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
+let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null, isSyncing = false;
+
+function getDeletedIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY) || '[]')); } catch { return new Set(); }
+}
+function addDeletedId(id) {
+  const ids = getDeletedIds();
+  ids.add(String(id));
+  localStorage.setItem(DELETED_KEY, JSON.stringify([...ids]));
+}
+
+const SAMPLE = [
+  { id: 1, book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
+    content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダーを量産しているという指摘。",
+    lesson: "受け身で知識を受け取るだけでなく、自ら問いを立てて考える習慣を持つ必要がある。インプットした後に必ず「自分ならどう使うか」を問う。",
+    supplement: "ソクラテスの産婆術も同様の思想。知識を与えるのではなく、相手の中にある答えを引き出す教育法。",
+    tags: ["思考法","教育","自律性"], createdAt: "2024-11-15" },
+  { id: 2, book: "思考の整理学", author: "外山滋比古", page: "pp.88–102",
+    content: "「寝させる」という概念。アイデアはすぐに使せず、時間を置くことで熟成される。忘却は創造の母である。",
+    lesson: "メモしたアイデアをすぐ形にしようとせず、意図的に寝かせる期間を作る。定期的に見返すことで新たな繋がりが生まれる。",
+    supplement: "エジソンやダーウィンも同様の手法を用いていたとされる。",
+    tags: ["思考法","創造性"], createdAt: "2024-11-22" },
+  { id: 3, book: "FACTFULNESS", author: "ハンス・ロスリング", page: "pp.18–30",
+    content: "人間には10の本能的な思い込みがある。その中でも「ネガティブ本本能」は世界が悪化していると信じさせる。実際には多くの指標で世界は改善している。",
+    lesson: "感情ではなくデータで世界を見ること。悪いニュースはよく報道されるが、ゆっくりした改善は目立たない。意識してポジティブなデータも探す。",
+    supplement: "メディアリテラシーとも関連。センセーショナルな情報に惑わされないためにも、一次データを参照する習慣が重要。",
+    tags: ["統計","認知バイアス","世界観"], createdAt: "2024-12-03" }
+];
+
+// ── Persistence ────────────────────────────────────
+function load() { 
+  try { 
+    const r = localStorage.getItem(STORAGE_KEY); 
+    entries = r ? JSON.parse(r) : SAMPLE; 
+  } catch { 
+    entries = SAMPLE; 
+  } 
+  render();
+  loadFromCloud(); // 起動時に自動でクラウドから読み込み
+}
+
+// ✅ 同期処理の修正（no-corsを排除し、削除データも統合して送信）
+async function syncToCloud() {
+  if(!CLOUD_URL || CLOUD_URL.includes('YOUR_GAS_URL')) return;
+  try {
+    showSyncStatus('☁️ クラウドへ同期中…');
+    
+    // スプレッドシート側のデータが消えない問題を対策：
+    // ローカルで削除されたIDも「deleted: true」として一緒にGASに送り、同期させる
+    const deletedIds = getDeletedIds();
+    const syncPayload = [...entries];
+    deletedIds.forEach(id => {
+      if (!syncPayload.some(e => String(e.id) === String(id))) {
+        syncPayload.push({ id: id, deleted: true });
+      }
+    });
+
+    // テキスト形式としてJSONを送ることで、CORSエラーを回避し確実に到達させる
+    const response = await fetch(CLOUD_URL, {
+      method: 'POST',
+      redirect: 'follow', // GASのリダイレクトに追従
+      body: JSON.stringify(syncPayload)
+    });
+    
+    if (response.ok) {
+      showSyncStatus('✅ クラウド同期完了');
+      setTimeout(hideSyncStatus, 2000);
+    } else {
+      throw new Error('Server responded with error');
+    }
+  } catch(e) { 
+    console.warn('Cloud sync failed:', e); 
+    showSyncStatus('❌ 同期失敗（オフライン保存済）');
+    setTimeout(hideSyncStatus, 3000);
+  }
+}
+
+async function loadFromCloud() {
+  if(!CLOUD_URL || CLOUD_URL.includes('YOUR_GAS_URL')) return;
+  try {
+    showSyncStatus('☁️ クラウドから読み込み中…');
+    const r = await fetch(CLOUD_URL + '?t=' + Date.now());
+    const cloud = await r.json();
+    if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
+    
+    const deletedIds = getDeletedIds();
+    const filteredCloud = cloud.filter(e => !deletedIds.has(String(e.id)) && !e.deleted && e.deleted !== 'TRUE');
+    
+    const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
+    const cloudMap = Object.fromEntries(filteredCloud.map(e => [e.id, e]));
+    const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
+    
+    entries = [...allIds]
+      .filter(id => !deletedIds.has(String(id)))
+      .map(id => cloudMap[id] || localMap[id]);
+      
+    entries.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    render();
+    showSyncStatus('✅ 読み込み完了');
+    setTimeout(hideSyncStatus, 2000);
+  } catch(e) {
+    console.warn('Cloud load failed:', e);
+    hideSyncStatus();
+  }
+}
+
+function showSyncStatus(msg) {
+  let el = document.getElementById('syncStatus');
+  if (!el) { el = document.createElement('div'); el.id = 'syncStatus'; document.body.appendChild(el); }
+  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#92400e;z-index:400;box-shadow:0 2px 8px #00000015;';
+}
+function hideSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if (el) el.remove();
+}
+function getApiKey() { return localStorage.getItem(API_KEY_KEY) || ''; }
+function setApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
+
+// ── Helpers ────────────────────────────────────────
+function tagClass(tag) { let h=0; for(let i=0;i<tag.length;i++) h=(h*31+tag.charCodeAt(i))%6; return `tc-${h}`; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function allTags() { const s=new Set(); entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); return [...s]; }
+
+function bookGroups() {
+  const map = new Map();
+  entries.forEach(e => {
+    const key = (e.book||'').trim();
+    if (!map.has(key)) map.set(key, { book: e.book||'', author: e.author||'', entries: [] });
+    map.get(key).entries.push(e);
+  });
+  return map;
+}
+
+function getFiltered() {
+  const q = searchQuery.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+  return entries.filter(e => {
+    if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
+    if (!q) return true;
+    return [e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
+  }).sort((a,b) => sort==='date'
+    ? (b.createdAt||'').localeCompare(a.createdAt||'')
+    : (a.book||'').localeCompare(b.book||'','ja'));
+}
+
+// ── Render ─────────────────────────────────────────
+function render() {
+  const tags = allTags();
+  document.getElementById('headerMeta').textContent = `${entries.length}件の記録 · ${bookGroups().size}冊 · ${tags.length}個のタグ`;
+
+  const wrap = document.getElementById('tagFilters');
+  wrap.innerHTML = `<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag(this,'')">すべて</button>`;
+  tags.forEach(t => {
+    const b = document.createElement('button');
+    b.className = `tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;
+    b.textContent = t; b.onclick = () => setTag(b, t);
+    wrap.appendChild(b);
+  });
+
+  const list = getFiltered();
+  const container = document.getElementById('cardsContainer');
+  const empty = document.getElementById('emptyState');
+  const countEl = document.getElementById('resultsCount');
+
+  if (searchQuery || activeTag) { countEl.style.display='block'; countEl.textContent=`${list.length}件 ヒット`; }
+  else { countEl.style.display='none'; }
+
+  if (!list.length) { container.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const grouped = new Map();
+  list.forEach(e => {
+    const key = (e.book||'').trim() || '（タイトル未入力）';
+    if (!grouped.has(key)) grouped.set(key, { book: e.book||'', author: e.author||'', entries: [] });
+    grouped.get(key).entries.push(e);
+  });
+
+  container.innerHTML = [...grouped.entries()].map(([key, g]) => `
+<div class="book-group" id="group-${CSS.escape(key)}">
+  <div class="book-group-header" onclick="toggleGroup('${esc(key)}')">
+    <span class="book-group-icon">📖</span>
+    <div class="book-group-info">
+      <div class="book-group-title">${esc(g.book||'（タイトル未入力）')}</div>
+      ${g.author ? `<div class="book-group-author">${esc(g.author)}</div>` : ''}
+    </div>
+    <span class="book-group-count">${g.entries.length}件</span>
+    <span class="book-group-toggle">▼</span>
+  </div>
+  <div class="book-group-cards">
+    ${g.entries.map(e => cardHTML(e)).join('')}
+  </div>
+</div>`).join('');
+}
+
+function toggleGroup(key) {
+  const el = document.getElementById(`group-${CSS.escape(key)}`);
+  if (el) el.classList.toggle('collapsed');
+}
+
+function cardHTML(e) {
+  const tagPills = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)}">${esc(t)}</span>`).join('');
+  const sec = (cls,icon,label,txt) => txt ? `<div class="section-block ${cls}"><div class="section-label">${icon} ${label}</div><div class="section-text">${esc(txt)}</div></div>` : '';
+  return `<div class="card" id="card-${e.id}">
+  <div class="card-accent"></div>
+  <div class="card-body">
+    <div class="card-header">
+      <div>
+        ${e.page ? `<div class="card-page">${esc(e.page)}</div>` : ''}
+        ${e.createdAt ? `<div class="card-date">${esc(e.createdAt)}</div>` : ''}
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" onclick="editEntry(${e.id})">✏️</button>
+        <button class="card-action-btn delete" onclick="deleteEntry(${e.id})">🗑</button>
+      </div>
+    </div>
+    ${tagPills ? `<div class="card-tags">${tagPills}</div>` : ''}
+    <div class="card-sections">
+      ${sec('content-bg','📖','内容',e.content)}
+      ${sec('lesson-bg','💡','教訓',e.lesson)}
+      ${sec('supplement-bg','🔍','補足',e.supplement)}
+    </div>
+    <div class="ai-area">
+      <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ AI要約</button>
+      <div class="ai-result" id="ai-${e.id}"></div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ── Search / Filter ────────────────────────────────
+function onSearch(v) { searchQuery=v; document.getElementById('searchClear').style.display=v?'block':'none'; render(); }
+function clearSearch() { document.getElementById('searchInput').value=''; onSearch(''); }
+function setTag(btn, tag) { activeTag=tag; document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); render(); }
+
+// ── Book Suggest ───────────────────────────────────
+function onBookInput(val) {
+  const list = document.getElementById('suggestList');
+  if (!val.trim()) { list.style.display='none'; return; }
+  const q = val.toLowerCase();
+  const groups = bookGroups();
+  const matches = [...groups.entries()]
+    .filter(([key]) => key.toLowerCase().includes(q) && key.toLowerCase() !== q)
+    .slice(0, 5);
+  if (!matches.length) { list.style.display='none'; return; }
+  list.innerHTML = matches.map(([key, g]) =>
+    `<div class="suggest-item" onclick="selectBook('${esc(g.book)}','${esc(g.author)}')">
+      <div class="suggest-title">${esc(g.book)}</div>
+      ${g.author ? `<div class="suggest-author">${esc(g.author)}</div>` : ''}
+    </div>`
+  ).join('');
+  list.style.display='block';
+}
+
+function selectBook(book, author) {
+  document.getElementById('fBook').value = book;
+  document.getElementById('fAuthor').value = author;
+  document.getElementById('suggestList').style.display = 'none';
+}
+
+// ── Bookshelf Modal ────────────────────────────────
+function openBookshelf() {
+  const groups = bookGroups();
+  const list = document.getElementById('bookshelfList');
+  if (!groups.size) {
+    list.innerHTML = '<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
+  } else {
+    list.innerHTML = [...groups.entries()].map(([key, g]) =>
+      `<div class="bookshelf-item" onclick="selectBookFromShelf('${esc(g.book)}','${esc(g.author)}')">
+        <span class="bookshelf-item-icon">📖</span>
+        <div class="bookshelf-item-info">
+          <div class="bookshelf-item-title">${esc(g.book||'（タイトル未入力）')}</div>
+          ${g.author ? `<div class="bookshelf-item-meta">${esc(g.author)}</div>` : ''}
+        </div>
+        <span class="bookshelf-item-count">${g.entries.length}件</span>
+      </div>`
+    ).join('');
+  }
+  document.getElementById('bookshelfOverlay').classList.add('open');
+}
+
+function closeBookshelf() { document.getElementById('bookshelfOverlay').classList.remove('open'); }
+
+function selectBookFromShelf(book, author) {
+  closeBookshelf();
+  openModal();
+  document.getElementById('fBook').value = book;
+  document.getElementById('fAuthor').value = author;
+}
+
+// ── Modal / Data Actions ───────────────────────────
+function openModal(entry = null) {
+  editingId = entry ? entry.id : null;
+  document.getElementById('modalTitle').textContent = entry ? '記録を編集' : '新しい読書記録';
+  
+  document.getElementById('fBook').value = entry ? entry.book : '';
+  document.getElementById('fAuthor').value = entry ? entry.author : '';
+  document.getElementById('fPage').value = entry ? entry.page : '';
+  document.getElementById('fContent').value = entry ? entry.content : '';
+  document.getElementById('fLesson').value = entry ? entry.lesson : '';
+  document.getElementById('fSupplement').value = entry ? entry.supplement : '';
+  document.getElementById('fTags').value = entry ? (entry.tags || []).join(', ') : '';
+  
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('suggestList').style.display = 'none';
+  editingId = null;
+}
+
+function saveEntry() {
+  const book = document.getElementById('fBook').value.trim();
+  if (!book) { showToast('タイトルを入力してください'); return; }
+
+  const tagsInput = document.getElementById('fTags').value;
+  const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+
+  if (editingId) {
+    // 編集保存
+    const idx = entries.findIndex(e => e.id === editingId);
+    if (idx !== -1) {
+      entries[idx] = {
+        ...entries[idx],
+        book,
+        author: document.getElementById('fAuthor').value.trim(),
+        page: document.getElementById('fPage').value.trim(),
+        content: document.getElementById('fContent').value.trim(),
+        lesson: document.getElementById('fLesson').value.trim(),
+        supplement: document.getElementById('fSupplement').value.trim(),
+        tags
+      };
+    }
+  } else {
+    // 新規追加
+    const newEntry = {
+      id: Date.now(), // 一意のIDを生成
+      book,
+      author: document.getElementById('fAuthor').value.trim(),
+      page: document.getElementById('fPage').value.trim(),
+      content: document.getElementById('fContent').value.trim(),
+      lesson: document.getElementById('fLesson').value.trim(),
+      supplement: document.getElementById('fSupplement').value.trim(),
+      tags,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    entries.unshift(newEntry);
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  render();
+  closeModal();
+  syncToCloud();
+  showToast('保存しました');
+}
+
+function editEntry(id) {
+  const entry = entries.find(e => e.id === id);
+  if (entry) openModal(entry);
+}
+
+function deleteEntry(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  addDeletedId(id); // クラウド同期用の削除リストに追加
+  entries = entries.filter(e => e.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  render();
+  syncToCloud();
+  showToast('削除しました');
+}
+
+// ── Export / Import ───────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `reading_log_${new Date().toISOString().split('T')[0]}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) {
+        entries = data;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        render();
+        syncToCloud();
+        showToast('インポート完了しました');
+      }
+    } catch { showToast('不適切なファイル形式です'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── AI Summary (Anthropic API) ────────────────────
+function handleAI(id, btn) {
+  pendingAiId = id;
+  const key = getApiKey();
+  if (!key) {
+    document.getElementById('aiKeyOverlay').classList.add('open');
+  } else {
+    runAiSummary(id, btn, key);
+  }
+}
+function closeAiModal() { document.getElementById('aiKeyOverlay').classList.remove('open'); pendingAiId = null; }
+function confirmApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  setApiKey(key);
+  closeAiModal();
+  if (pendingAiId) {
+    const btn = document.querySelector(`#card-${pendingAiId} .btn-ai`);
+    runAiSummary(pendingAiId, btn, key);
+  }
+}
+
+async function runAiSummary(id, btn, apiKey) {
+  const entry = entries.find(e => e.id === id);
+  if (!entry) return;
+  const resEl = document.getElementById(`ai-${id}`);
+  btn.disabled = true; btn.textContent = '⌛ 要約中...';
+  resEl.className = 'ai-result visible'; resEl.textContent = 'AIが文章を分析しています...';
+
+  try {
+    // Anthropic APIをフロントから直接叩く処理
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: `以下の読書メモ（内容と教訓）を要約し、150文字以内の実践的なアクションプランにまとめてください。\n\n内容: ${entry.content}\n教訓: ${entry.lesson}` }]
+      })
+    });
+    const d = await response.json();
+    resEl.textContent = d.content[0].text;
+  } catch(e) {
+    resEl.textContent = 'エラー: 要約の取得に失敗しました。APIキーを確認してください。';
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ AI要約';
+  }
+}
+
+// ── Toast & Init ──────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// PWA機能（インストールバナー制御）
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+document.getElementById('btnInstall')?.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('installBanner').style.display = 'none';
+    deferredPrompt = null;
+  }
+});
+document.getElementById('btnDismiss')?.addEventListener('click', () => {
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+// アプリの起動
+window.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
