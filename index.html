@@ -327,10 +327,13 @@ async function loadFromCloud() {
     const r = await fetch(CLOUD_URL + '?t=' + Date.now());
     const cloud = await r.json();
     if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
+    // deletedフラグが立っているものは除外
+    const filteredCloud = cloud.filter(e => !e.deleted && e.deleted !== 'TRUE');
     // クラウドと手元をマージ（IDベース、新しい方を優先）
     const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
-    const cloudMap = Object.fromEntries(cloud.map(e => [e.id, e]));
+    const cloudMap = Object.fromEntries(filteredCloud.map(e => [e.id, e]));
     const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
+    // ローカルで削除済みのIDはクラウドからも除外
     entries = [...allIds].map(id => cloudMap[id] || localMap[id]);
     entries.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -547,7 +550,15 @@ function openModal(entry) {
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
 function editEntry(id) { openModal(entries.find(e=>e.id===id)); }
-function deleteEntry(id) { if(!confirm('この記録を削除しますか？')) return; entries=entries.filter(e=>e.id!==id); persist(); render(); }
+function deleteEntry(id) {
+  if(!confirm('この記録を削除しますか？')) return;
+  // 論理削除：deletedフラグを立ててクラウドに同期してから除去
+  entries = entries.map(e => e.id===id ? {...e, deleted: true} : e);
+  persist();
+  entries = entries.filter(e => !e.deleted);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  render();
+}
 
 function saveEntry() {
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
