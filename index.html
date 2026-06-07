@@ -78,6 +78,7 @@
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
   .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
   .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
   .card-actions { display: flex; gap: 0.2rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
@@ -230,6 +231,7 @@
         <input type="text" id="fBook" placeholder="例: 思考の整理学" oninput="onBookInput(this.value)" autocomplete="off">
         <div class="suggest-list" id="suggestList" style="display:none"></div>
       </div>
+      <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
       <div class="field-row">
         <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
         <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55"></div>
@@ -296,7 +298,7 @@ function addDeletedId(id) {
 }
 
 const SAMPLE = [
-  { id: 1, book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
+  { id: 1, title: "グライダー型人間について", book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
     content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダーを量産しているという指摘。",
     lesson: "受け身で知識を受け取るだけでなく、自ら問いを立てて考える習慣を持つ必要がある。インプットした後に必ず「自分ならどう使うか」を問う。",
     supplement: "ソクラテスの産婆術も同様の思想。知識を与えるのではなく、相手の中にある答えを引き出す教育法。",
@@ -393,7 +395,7 @@ function getFiltered() {
   return entries.filter(e => {
     if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
     if (!q) return true;
-    return [e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
+    return [e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
   }).sort((a,b) => sort==='date'
     ? (b.createdAt||'').localeCompare(a.createdAt||'')
     : (a.book||'').localeCompare(b.book||'','ja'));
@@ -463,6 +465,7 @@ function cardHTML(e) {
   <div class="card-body">
     <div class="card-header">
       <div>
+        ${e.title ? `<div class="card-title-note">${esc(e.title)}</div>` : ''}
         ${e.page ? `<div class="card-page">${esc(e.page)}</div>` : ''}
         ${e.createdAt ? `<div class="card-date">${esc(e.createdAt)}</div>` : ''}
       </div>
@@ -564,16 +567,13 @@ function openModal(entry) {
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
 function editEntry(id) { openModal(entries.find(e=>e.id===id)); }
 function deleteEntry(id) {
-  if (!confirm('本当に削除しますか？')) return;
+  if(!confirm('この記録を削除しますか？')) return;
   addDeletedId(id);
-  // deletedフラグを立てた状態でクラウドに送信
   entries = entries.map(e => e.id===id ? {...e, deleted: true} : e);
   persist();
-  // クラウド送信後にローカルからも除去
   entries = entries.filter(e => !e.deleted);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   render();
-  showToast('削除しました');
 }
 
 function saveEntry() {
