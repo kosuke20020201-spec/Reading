@@ -553,6 +553,7 @@ function openModal(entry) {
   editingId = entry?.id ?? null;
   document.getElementById('modalTitle').textContent = entry ? '記録を編集' : '新しい読書記録';
   document.getElementById('btnSave').textContent = entry ? '更新する' : '保存する';
+  document.getElementById('fTitle').value = entry?.title||'';
   document.getElementById('fBook').value = entry?.book||'';
   document.getElementById('fAuthor').value = entry?.author||'';
   document.getElementById('fPage').value = entry?.page||'';
@@ -579,6 +580,7 @@ function deleteEntry(id) {
 function saveEntry() {
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const data = {
+    title: document.getElementById('fTitle').value,
     book: document.getElementById('fBook').value,
     author: document.getElementById('fAuthor').value,
     page: document.getElementById('fPage').value,
