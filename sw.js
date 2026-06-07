@@ -1,59 +1,47 @@
-const CACHE = 'reading-log-v3';
+const CACHE = 'reading-log-v4';
 const ASSETS = [
-  './reading-log.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap'
+  './icon-512.png'
 ];
 
-// インストール：アセットを事前キャッシュ
+// インストール時に基本ファイルをキャッシュ
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting()) // 即座に新SWを有効化
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
-// アクティベート：古いキャッシュを全削除
+// 古いキャッシュを削除
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim()) // 全タブを即座に新SWに切り替え
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// フェッチ：HTMLは常にネットワーク優先、他はキャッシュ優先
+// ネットワーク優先・オフライン時のみキャッシュ使用
 self.addEventListener('fetch', e => {
-  // Anthropic API はキャッシュしない
+  // Anthropic APIとGoogle Fontsはスルー
   if (e.request.url.includes('anthropic.com')) return;
+  if (e.request.url.includes('script.google.com')) return;
+  if (!e.request.url.startsWith('http')) return;
 
-  // HTMLファイルはネットワーク優先（更新をすぐ反映）
-  if (e.request.destination === 'document') {
-    e.respondWith(
-      fetch(e.request)
-        .then(res => {
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        // 成功したらキャッシュに保存して返す
+        if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE).then(cache => cache.put(e.request, clone));
-          return res;
-        })
-        .catch(() => caches.match(e.request)) // オフラインならキャッシュから
-    );
-    return;
-  }
-
-  // その他はキャッシュ優先
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        if (!res || res.status !== 200 || res.type === 'opaque') return res;
-        const clone = res.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        }
         return res;
-      });
-    })
+      })
+      .catch(() => {
+        // オフラインならキャッシュから返す
+        return caches.match(e.request);
+      })
   );
 });
