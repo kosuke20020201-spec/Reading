@@ -188,8 +188,119 @@
 <body>
 <div class="bg-orbs"></div>
 
-<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;display:flex;align-items:center;gap:0.75rem">
-  <span style="font-size:1.5rem;flex-shrink:0">📚</span>
-  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使用可能</div></div>
-  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;flex-shrink:0">追加</button>
-  <button id="btnDismiss" style="background:none;border:none;cursor:pointer;color:#a8a29e;font
+<div class="container">
+  <header>
+    <div class="header-left">
+      <p class="header-eyebrow">Reading Journal</p>
+      <h1 class="header-title">読書ノート</h1>
+      <p class="header-meta" id="headerMeta"></p>
+    </div>
+    <div class="header-btns">
+      <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
+      <div class="header-btns-row">
+        <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
+        <button class="btn-sub" onclick="exportData()">📤 エクスポート</button>
+        <label class="btn-sub" style="cursor:pointer">📥 インポート<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+      </div>
+    </div>
+  </header>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="本・著者・内容・教訓・タグで検索…" oninput="onSearch(this.value)">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="tag-filters" id="tagFilters"></div>
+    <select class="sort-select" id="sortSelect" onchange="render()">
+      <option value="date">新しい順</option>
+      <option value="book">書名順</option>
+    </select>
+  </div>
+
+  <p class="results-count" id="resultsCount" style="display:none"></p>
+  <div id="cardsContainer"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="empty-icon">📭</div>
+    <p>記録が見つかりません</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">新しい読書記録</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field suggest-wrap">
+        <label>📚 本のタイトル</label>
+        <input type="text" id="fBook" placeholder="例: 思考の整理学" oninput="onBookInput(this.value)" autocomplete="off">
+        <div class="suggest-list" id="suggestList" style="display:none"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
+        <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55"></div>
+      </div>
+      <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
+      <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
+      <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
+      <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
+      <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field">
+        <label>🎨 スケッチ・図解</label>
+        <button class="btn-sub" onclick="openDrawingModal()" style="width:100%;justify-content:center">📐 スケッチを追加</button>
+        <div class="drawing-gallery" id="drawingGallery"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bookshelfOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📚 本棚</h2>
+      <button class="modal-close" onclick="closeBookshelf()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.8rem;color:var(--stone-400)">本を選ぶと、著者が自動入力された状態で記録追加できます</p>
+      <div class="bookshelf-list" id="bookshelfList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="aiKeyOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2 class="modal-title">✨ AI要約の設定</h2>
+      <button class="modal-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.82rem;color:var(--stone-600);line-height:1.7">AI要約にはAnthropic APIキーが必要です。<br>キーはこのブラウザにのみ保存されます。</p>
+      <div class="field"><label>APIキー</label><input type="password" id="apiKeyInput" placeholder="sk-ant-..."></div>
+      <p class="ai-key-note">※ <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> で取得できます。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAiModal()">キャンセル</button>
+      <button class="btn-save" onclick="confirmApiKey()">保存して要約する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="drawingOverlay">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h2 class="modal-title">🎨 スケッチを描画</h2>
+      <button class="modal-close" onclick="closeDrawingModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drawing-canvas-wrap">
+        <div class="drawing-tools">
+          <button class="drawing-tool-btn active" id="toolDraw" onclick="setDrawingMode('draw')">✏️ 描画</button>
+          <button class="drawing-tool-btn" id="toolErase" onclick="setDrawingMode('erase')">🧹 消す</button>
+          <input type="color" id="brushColor" value="#292524" style="width:40
