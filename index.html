@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="読書ノート">
 <meta name="theme-color" content="#f59e0b">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link class="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -59,28 +59,4 @@
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
   /* BOOK GROUP */
-  .book-group { margin-bottom: 1.5rem; }
-  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: box-shadow 0.2s; }
-  .book-group-header:hover { box-shadow: 0 3px 12px #00000010; }
-  .book-group-icon { font-size: 1.4rem; flex-shrink: 0; }
-  .book-group-info { flex: 1; min-width: 0; }
-  .book-group-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 0.95rem; }
-  .book-group-author { font-size: 0.72rem; color: var(--stone-400); margin-top: 0.15rem; }
-  .book-group-count { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
-  .book-group-toggle { color: var(--stone-300); font-size: 0.85rem; transition: transform 0.2s; flex-shrink: 0; }
-  .book-group.collapsed .book-group-toggle { transform: rotate(-90deg); }
-  .book-group-cards { display: flex; flex-direction: column; gap: 0.75rem; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); margin-left: 0.5rem; }
-  .book-group.collapsed .book-group-cards { display: none; }
-
-  /* CARD */
-  .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
-  .card:hover { box-shadow: 0 4px 16px #00000012; }
-  .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
-  .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
-  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-  .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
-  .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
-  .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
-  .card-actions { display: flex; gap: 0.2rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
-  .card:hover .card-actions, .card-actions:focus-within { opacity: 1; }
-  .card-action-btn { padding: 0.3rem; border-radius: 0.4rem;
+  .book-group { margin-bottom:
