@@ -1,5 +1,5 @@
 // ── Drawing ────────────────────────────────────
-let drawingCanvas, drawingCtx, isDrawing = false, lastX = 0, lastY = 0;
+let drawingCanvas, drawingCtx, isDrawing = false, lastX = 0, lastY = 0, canvasRect = null, dpiRatio = 1;
 
 function openDrawingModal() {
   document.getElementById('drawingOverlay').classList.add('open');
@@ -17,18 +17,21 @@ function openDrawingModal() {
 
 function resizeCanvasForDPI() {
   const rect = drawingCanvas.getBoundingClientRect();
-  const dpi = window.devicePixelRatio || 1;
+  dpiRatio = window.devicePixelRatio || 1;
   
-  // Set internal resolution
-  drawingCanvas.width = rect.width * dpi;
-  drawingCanvas.height = rect.height * dpi;
+  // Set internal resolution to match physical pixels
+  drawingCanvas.width = rect.width * dpiRatio;
+  drawingCanvas.height = rect.height * dpiRatio;
   
   // Scale context to match DPI
-  drawingCtx.scale(dpi, dpi);
+  drawingCtx.scale(dpiRatio, dpiRatio);
   
   // Set display size (CSS pixels)
   drawingCanvas.style.width = rect.width + 'px';
   drawingCanvas.style.height = rect.height + 'px';
+  
+  // Cache rect for coordinate calculations
+  canvasRect = rect;
 }
 
 function closeDrawingModal() {
@@ -45,19 +48,12 @@ function setDrawingMode(mode) {
 function setupDrawingListeners() {
   const canvas = drawingCanvas;
   
-  const getCoordinates = (e) => {
+  const getCoordinates = (clientX, clientY) => {
+    // Always recalculate rect for touch devices
     const rect = canvas.getBoundingClientRect();
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  };
-
-  const getTouchCoordinates = (touch) => {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top
+      x: clientX - rect.left,
+      y: clientY - rect.top
     };
   };
 
@@ -76,47 +72,62 @@ function setupDrawingListeners() {
     }
   };
 
-  // マウスイベント
+  // ポインターイベント（マウス対応）
   canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse') return; // タッチはタッチイベントで処理
     isDrawing = true;
     saveDrawingState();
-    const coords = getCoordinates(e);
+    const coords = getCoordinates(e.clientX, e.clientY);
     lastX = coords.x;
     lastY = coords.y;
   }, { passive: false });
   
   canvas.addEventListener('pointermove', (e) => {
-    if (!isDrawing) return;
+    if (e.pointerType !== 'mouse' || !isDrawing) return;
     e.preventDefault();
-    const coords = getCoordinates(e);
+    const coords = getCoordinates(e.clientX, e.clientY);
     drawLine(lastX, lastY, coords.x, coords.y);
     lastX = coords.x;
     lastY = coords.y;
   }, { passive: false });
   
-  canvas.addEventListener('pointerup', () => { isDrawing = false; }, { passive: false });
-  canvas.addEventListener('pointerleave', () => { isDrawing = false; }, { passive: false });
+  canvas.addEventListener('pointerup', (e) => {
+    if (e.pointerType === 'mouse') isDrawing = false;
+  }, { passive: false });
   
-  // タッチイベント
+  canvas.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'mouse') isDrawing = false;
+  }, { passive: false });
+  
+  // タッチイベント（スマートフォン・タブレット対応）
   canvas.addEventListener('touchstart', (e) => {
     e.preventDefault();
     isDrawing = true;
     saveDrawingState();
-    const coords = getTouchCoordinates(e.touches[0]);
+    const touch = e.touches[0];
+    const coords = getCoordinates(touch.clientX, touch.clientY);
     lastX = coords.x;
     lastY = coords.y;
   }, { passive: false });
   
   canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    if (!isDrawing) return;
-    const coords = getTouchCoordinates(e.touches[0]);
+    if (!isDrawing || !e.touches[0]) return;
+    const touch = e.touches[0];
+    const coords = getCoordinates(touch.clientX, touch.clientY);
     drawLine(lastX, lastY, coords.x, coords.y);
     lastX = coords.x;
     lastY = coords.y;
   }, { passive: false });
   
-  canvas.addEventListener('touchend', () => { isDrawing = false; }, { passive: false });
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    isDrawing = false;
+  }, { passive: false });
+  
+  canvas.addEventListener('touchcancel', () => {
+    isDrawing = false;
+  });
 }
 
 function saveDrawingState() {
