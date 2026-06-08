@@ -163,7 +163,7 @@
   .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; transition: all 0.1s; }
   .drawing-tool-btn:hover { border-color: var(--amber); background: var(--amber-light); }
   .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
-  .drawing-canvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; cursor: crosshair; display: block; max-width: 100%; }
+  .drawing-canvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; cursor: crosshair; display: block; width: 100%; height: auto; }
   #drawingCanvas { touch-action: none; }
 
   /* TOAST */
@@ -305,22 +305,20 @@
 
 <!-- 描画モーダル -->
 <div class="modal-overlay" id="drawingOverlay">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:100%;max-height:100%;display:flex;flex-direction:column">
     <div class="modal-header">
       <h2 class="modal-title">🎨 スケッチを描画</h2>
       <button class="modal-close" onclick="closeDrawingModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="drawing-canvas-wrap">
-        <div class="drawing-tools">
-          <button class="drawing-tool-btn active" onclick="setDrawingMode('draw')">✏️ 描画</button>
-          <button class="drawing-tool-btn" onclick="setDrawingMode('erase')">🧹 消す</button>
-          <input type="color" id="brushColor" value="#292524" style="width:40px;height:32px;border:1px solid var(--stone-200);border-radius:0.4rem;cursor:pointer">
-          <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
-          <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
-        </div>
-        <canvas id="drawingCanvas" class="drawing-canvas" width="480" height="360"></canvas>
+    <div class="modal-body" style="flex:1;display:flex;flex-direction:column;gap:0.5rem;min-height:0">
+      <div class="drawing-tools">
+        <button class="drawing-tool-btn active" onclick="setDrawingMode('draw')">✏️ 描画</button>
+        <button class="drawing-tool-btn" onclick="setDrawingMode('erase')">🧹 消す</button>
+        <input type="color" id="brushColor" value="#292524" style="width:40px;height:32px;border:1px solid var(--stone-200);border-radius:0.4rem;cursor:pointer">
+        <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
+        <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
       </div>
+      <canvas id="drawingCanvas" class="drawing-canvas" style="flex:1;border:2px solid var(--stone-200);border-radius:0.8rem;background:white"></canvas>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
@@ -518,7 +516,7 @@ function cardHTML(e) {
     <div class="section-block" style="border-radius:0.6rem;padding:0.6rem 0.75rem;">
       <div class="section-label">🎨 スケッチ</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;margin-top:0.5rem;">
-        ${e.drawings.map((d,i) => `<img src="${esc(d)}" style="width:100%;border-radius:0.4rem;border:1px solid var(--stone-200);" onclick="openDrawingViewer('${esc(d)}')" style="cursor:pointer">`).join('')}
+        ${e.drawings.map((d,i) => `<img src="${esc(d)}" style="width:100%;border-radius:0.4rem;border:1px solid var(--stone-200);cursor:pointer" onclick="openDrawingViewer('${esc(d)}')">`).join('')}
       </div>
     </div>` : '';
   return `<div class="card" id="card-${e.id}">
@@ -664,14 +662,25 @@ function saveEntry() {
 let drawingCanvas, drawingCtx, isDrawing = false;
 
 function openDrawingModal() {
-  drawingCanvas = document.getElementById('drawingCanvas');
-  drawingCtx = drawingCanvas.getContext('2d');
-  drawingHistory = [];
-  saveDrawingState();
-  drawingCtx.fillStyle = 'white';
-  drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
   document.getElementById('drawingOverlay').classList.add('open');
-  setupDrawingListeners();
+  setTimeout(() => {
+    drawingCanvas = document.getElementById('drawingCanvas');
+    drawingCtx = drawingCanvas.getContext('2d');
+    resizeCanvasForDPI();
+    drawingHistory = [];
+    saveDrawingState();
+    drawingCtx.fillStyle = 'white';
+    drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    setupDrawingListeners();
+  }, 10);
+}
+
+function resizeCanvasForDPI() {
+  const rect = drawingCanvas.getBoundingClientRect();
+  const dpi = window.devicePixelRatio || 1;
+  drawingCanvas.width = rect.width * dpi;
+  drawingCanvas.height = rect.height * dpi;
+  drawingCtx.scale(dpi, dpi);
 }
 
 function closeDrawingModal() {
@@ -688,32 +697,46 @@ function setDrawingMode(mode) {
 function setupDrawingListeners() {
   const canvas = drawingCanvas;
   
+  const getCoordinates = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const dpi = window.devicePixelRatio || 1;
+    return {
+      x: (e.clientX - rect.left) * dpi,
+      y: (e.clientY - rect.top) * dpi
+    };
+  };
+
+  const getTouchCoordinates = (touch) => {
+    const rect = canvas.getBoundingClientRect();
+    const dpi = window.devicePixelRatio || 1;
+    return {
+      x: (touch.clientX - rect.left) * dpi,
+      y: (touch.clientY - rect.top) * dpi
+    };
+  };
+  
   canvas.addEventListener('mousedown', (e) => {
     isDrawing = true;
     saveDrawingState();
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const coords = getCoordinates(e);
     if (drawingMode === 'draw') {
       drawingCtx.beginPath();
-      drawingCtx.moveTo(x, y);
+      drawingCtx.moveTo(coords.x, coords.y);
     }
   });
   
   canvas.addEventListener('mousemove', (e) => {
     if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const coords = getCoordinates(e);
     if (drawingMode === 'draw') {
       drawingCtx.lineWidth = 2;
       drawingCtx.lineCap = 'round';
       drawingCtx.lineJoin = 'round';
       drawingCtx.strokeStyle = document.getElementById('brushColor').value;
-      drawingCtx.lineTo(x, y);
+      drawingCtx.lineTo(coords.x, coords.y);
       drawingCtx.stroke();
     } else if (drawingMode === 'erase') {
-      drawingCtx.clearRect(x - 10, y - 10, 20, 20);
+      drawingCtx.clearRect(coords.x - 10, coords.y - 10, 20, 20);
     }
   });
   
@@ -725,32 +748,26 @@ function setupDrawingListeners() {
     e.preventDefault();
     isDrawing = true;
     saveDrawingState();
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    const coords = getTouchCoordinates(e.touches[0]);
     if (drawingMode === 'draw') {
       drawingCtx.beginPath();
-      drawingCtx.moveTo(x, y);
+      drawingCtx.moveTo(coords.x, coords.y);
     }
   });
   
   canvas.addEventListener('touchmove', (e) => {
     e.preventDefault();
     if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    const coords = getTouchCoordinates(e.touches[0]);
     if (drawingMode === 'draw') {
       drawingCtx.lineWidth = 2;
       drawingCtx.lineCap = 'round';
       drawingCtx.lineJoin = 'round';
       drawingCtx.strokeStyle = document.getElementById('brushColor').value;
-      drawingCtx.lineTo(x, y);
+      drawingCtx.lineTo(coords.x, coords.y);
       drawingCtx.stroke();
     } else if (drawingMode === 'erase') {
-      drawingCtx.clearRect(x - 10, y - 10, 20, 20);
+      drawingCtx.clearRect(coords.x - 10, coords.y - 10, 20, 20);
     }
   });
   
@@ -831,7 +848,7 @@ async function runAI(id, btn, key) {
     const r = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}\」著者:${e.author}\n\n${e.content}\n\n学んだこと:${e.lesson}`}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n\n${e.content}\n\n学んだこと:${e.lesson}`}]})
     });
     const d = await r.json();
     res.textContent = d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
