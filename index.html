@@ -36,18 +36,18 @@
   .header-btns { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
   .header-btns-row { display: flex; gap: 0.4rem; }
 
-  .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer; box-shadow: 0 2px 8px #f59e0b44; transition: all 0.15s; white-space: nowrap; font-family: inherit; }
+  .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 600; border: none; cursor: pointer; font-size: 0.82rem; transition: all 0.2s; }
   .btn-add:hover { filter: brightness(1.08); } .btn-add:active { transform: scale(0.97); }
-  .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 600; font-size: 0.78rem; cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+  .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.78rem; transition: all 0.15s; }
   .btn-sub:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
 
   /* SEARCH */
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
   .search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
-  .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; color: var(--stone-800); font-family: inherit; outline: none; transition: all 0.15s; }
+  .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; font-family: inherit; transition: all 0.2s; }
   .search-input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b22; }
   .search-input::placeholder { color: var(--stone-300); }
-  .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; padding: 0.2rem; display: none; }
+  .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; }
 
   /* FILTER */
   .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
@@ -55,12 +55,12 @@
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .tag-btn:hover { border-color: var(--stone-400); }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
-  .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
+  .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
   /* BOOK GROUP */
   .book-group { margin-bottom: 1.5rem; }
-  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: box-shadow 0.2s; }
+  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: all 0.2s; }
   .book-group-header:hover { box-shadow: 0 3px 12px #00000010; }
   .book-group-icon { font-size: 1.4rem; flex-shrink: 0; }
   .book-group-info { flex: 1; min-width: 0; }
@@ -96,7 +96,7 @@
   .lesson-bg { background: var(--amber-light); } .lesson-bg .section-text { color: #78350f; }
   .supplement-bg { background: var(--stone-50); } .supplement-bg .section-text { color: var(--stone-600); }
   .ai-area { margin-top: 0.75rem; }
-  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; box-shadow: 0 1px 4px #f59e0b33; transition: all 0.15s; font-family: inherit; }
+  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; transition: all 0.2s; }
   .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
   .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; display: none; }
   .ai-result.visible { display: block; }
@@ -118,21 +118,21 @@
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; color: var(--stone-800); outline: none; transition: all 0.15s; resize: none; }
+  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; transition: all 0.2s; }
   .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
   .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
   .lesson-field { background: var(--amber-light) !important; border-color: var(--amber-border) !important; }
   .lesson-field:focus { box-shadow: 0 0 0 3px #f59e0b22 !important; }
-  .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); transition: background 0.1s; font-family: inherit; }
+  .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); transition: background 0.1s; }
   .btn-cancel:hover { background: var(--stone-100); }
-  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 700; font-family: inherit; box-shadow: 0 1px 4px #f59e0b33; transition: all 0.15s; }
+  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.2s; }
   .btn-save:hover { filter: brightness(1.08); }
   .ai-key-note { font-size: 0.75rem; color: var(--stone-400); line-height: 1.6; }
   .ai-key-note a { color: var(--amber); }
 
   /* SUGGEST */
   .suggest-wrap { position: relative; }
-  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow: hidden; margin-top: 0.25rem; }
+  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow: hidden; }
   .suggest-item { padding: 0.65rem 0.875rem; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--stone-100); }
   .suggest-item:last-child { border-bottom: none; }
   .suggest-item:hover { background: var(--amber-light); }
@@ -149,42 +149,8 @@
   .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
   .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
 
-
-  /* DRAWING */
-  .draw-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: #1c160f; flex-direction: column; }
-  .draw-overlay.open { display: flex; }
-  .draw-toolbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #292524; flex-wrap: wrap; flex-shrink: 0; }
-  .draw-tool-btn { padding: 0.4rem 0.7rem; border-radius: 0.5rem; border: 2px solid transparent; background: #3a3330; color: white; cursor: pointer; font-size: 0.85rem; font-family: inherit; transition: all 0.1s; }
-  .draw-tool-btn.active { border-color: var(--amber); background: #4a3f20; }
-  .draw-tool-btn:hover { background: #4a3f20; }
-  .draw-colors { display: flex; gap: 0.35rem; align-items: center; }
-  .draw-color-btn { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
-  .draw-color-btn.active { border-color: white; transform: scale(1.2); }
-  .draw-size-wrap { display: flex; align-items: center; gap: 0.4rem; }
-  .draw-size-wrap input { width: 5rem; accent-color: var(--amber); cursor: pointer; }
-  .draw-size-label { font-size: 0.7rem; color: #a8a29e; white-space: nowrap; }
-  .draw-sep { width: 1px; height: 1.5rem; background: #4a4540; flex-shrink: 0; }
-  .draw-canvas-wrap { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0.5rem; }
-  #drawCanvas { background: white; border-radius: 0.5rem; touch-action: none; cursor: crosshair; max-width: 100%; max-height: 100%; }
-  .draw-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.75rem 1rem; background: #292524; flex-shrink: 0; }
-
-  .drawing-section { margin-top: 0.75rem; }
-  .drawing-section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.4rem; }
-  .drawing-thumbs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .drawing-thumb-wrap { position: relative; }
-  .drawing-thumb { width: 80px; height: 60px; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; }
-  .drawing-thumb:hover { border-color: var(--amber); }
-  .drawing-thumb-del { position: absolute; top: -0.3rem; right: -0.3rem; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 1.1rem; height: 1.1rem; font-size: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
-  .btn-draw { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
-  .btn-draw:hover { border-color: var(--amber); color: var(--amber); }
-
-  .lightbox { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-  .lightbox.open { display: flex; }
-  .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 0.5rem; }
-  .lightbox-close { position: absolute; top: 1rem; right: 1rem; background: white; border: none; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
   /* TOAST */
-  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.3s; }
   .toast.show { opacity: 1; }
 
   /* TAG COLORS */
@@ -194,30 +160,6 @@
   .tc-3 { background: #ffe4e6; color: #9f1239; }
   .tc-4 { background: #ede9fe; color: #4c1d95; }
   .tc-5 { background: #ffedd5; color: #7c2d12; }
-
-
-  /* DRAWING */
-  .drawing-toolbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: var(--stone-50); border-bottom: 1px solid var(--stone-200); flex-wrap: wrap; flex-shrink: 0; }
-  .drawing-canvas-wrap { flex: 1; overflow: hidden; background: #fff; display: flex; align-items: stretch; justify-content: center; min-height: 0; }
-  #drawingCanvas { touch-action: none; cursor: crosshair; display: block; width: 100%; height: 100%; }
-  .tool-btn { width: 2.1rem; height: 2.1rem; border-radius: 0.5rem; border: 2px solid transparent; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.1s; flex-shrink: 0; }
-  .tool-btn.active { border-color: var(--amber); background: var(--amber-light); }
-  .tool-btn:hover { background: var(--stone-100); }
-  .color-btn { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 2px solid var(--stone-200); cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
-  .color-btn.active { border-color: var(--stone-800); transform: scale(1.25); }
-  .size-slider { width: 4.5rem; accent-color: var(--amber); cursor: pointer; }
-  .draw-divider { width: 1px; height: 1.5rem; background: var(--stone-200); flex-shrink: 0; }
-  .drawing-modal { max-width: 600px !important; height: 88vh; }
-  .drawing-thumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
-  .drawing-thumb-wrap { position: relative; display: inline-block; }
-  .drawing-thumb { width: 80px; height: 60px; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: box-shadow 0.15s; }
-  .drawing-thumb:hover { box-shadow: 0 2px 8px #00000025; }
-  .drawing-thumb-del { position: absolute; top: -0.35rem; right: -0.35rem; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #f43f5e; color: white; border: none; cursor: pointer; font-size: 0.6rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-  .btn-draw { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; color: var(--stone-600); transition: all 0.15s; font-family: inherit; margin-top: 0.6rem; }
-  .btn-draw:hover { border-color: var(--amber); color: var(--amber); }
-  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
-  .viewer-overlay.open { display: flex; }
-  .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
 
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
@@ -230,10 +172,10 @@
 <div class="bg-orbs"></div>
 
 <!-- インストールバナー -->
-<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;box-shadow:0 8px 32px #00000022;border:1px solid #fde68a;padding:0.875rem 1rem;align-items:center;gap:0.75rem;">
+<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:0.875rem;display:flex;align-items:center;gap:0.875rem">
   <span style="font-size:1.5rem;flex-shrink:0">📚</span>
-  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使えます</div></div>
-  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit">追加する</button>
+  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインで使用可能</div></div>
+  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;flex-shrink:0">追加</button>
   <button id="btnDismiss" style="background:none;border:none;cursor:pointer;color:#a8a29e;font-size:1.1rem;padding:0.2rem;line-height:1;flex-shrink:0">✕</button>
 </div>
 
@@ -276,44 +218,6 @@
   </div>
 </div>
 
-
-<!-- 手書きモーダル -->
-<div class="draw-overlay" id="drawOverlay">
-  <div class="draw-toolbar">
-    <button class="draw-tool-btn active" id="toolPen" onclick="setDrawTool('pen')">🖊 ペン</button>
-    <button class="draw-tool-btn" id="toolEraser" onclick="setDrawTool('eraser')">🧹 消しゴム</button>
-    <div class="draw-sep"></div>
-    <div class="draw-colors">
-      <button class="draw-color-btn active" style="background:#000000" onclick="setDrawColor('#000000',this)" title="黒"></button>
-      <button class="draw-color-btn" style="background:#ef4444" onclick="setDrawColor('#ef4444',this)" title="赤"></button>
-      <button class="draw-color-btn" style="background:#3b82f6" onclick="setDrawColor('#3b82f6',this)" title="青"></button>
-      <button class="draw-color-btn" style="background:#22c55e" onclick="setDrawColor('#22c55e',this)" title="緑"></button>
-      <button class="draw-color-btn" style="background:#f59e0b" onclick="setDrawColor('#f59e0b',this)" title="黄"></button>
-    </div>
-    <div class="draw-sep"></div>
-    <div class="draw-size-wrap">
-      <span class="draw-size-label">太さ</span>
-      <input type="range" id="drawSizeSlider" min="1" max="20" value="4" oninput="drawSize=+this.value">
-    </div>
-    <div class="draw-sep"></div>
-    <button class="draw-tool-btn" onclick="undoDraw()">↩ Undo</button>
-    <button class="draw-tool-btn" onclick="clearDraw()">🗑 クリア</button>
-  </div>
-  <div class="draw-canvas-wrap">
-    <canvas id="drawCanvas"></canvas>
-  </div>
-  <div class="draw-footer">
-    <button class="btn-cancel" style="color:#a8a29e" onclick="closeDrawModal()">キャンセル</button>
-    <button class="btn-save" onclick="saveDraw()">✓ 保存</button>
-  </div>
-</div>
-
-<!-- ライトボックス -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightboxImg" src="" alt="">
-</div>
-
 <!-- 記録モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -336,60 +240,12 @@
       <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
       <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
       <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
-      <div class="field">
-        <label>✏️ 手書きメモ</label>
-        <div class="drawing-thumbs" id="drawingThumbsContainer"></div>
-        <button type="button" class="btn-draw" onclick="openDrawingModal(null)">＋ 手書きを追加</button>
-      </div>
-    </div>
-    <div style="padding:0.5rem 1.5rem 0;border-top:1px solid var(--stone-100);">
-      <div class="drawing-section-label">✏️ 手書きメモ</div>
-      <div class="drawing-thumbs" id="modalDrawingThumbs"></div>
-      <button class="btn-draw" style="margin-top:0.4rem" onclick="openDrawModal(null)">＋ 手書きを追加</button>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
     </div>
   </div>
-</div>
-
-
-<!-- 手書きモーダル -->
-<div class="modal-overlay" id="drawingOverlay">
-  <div class="modal drawing-modal">
-    <div class="modal-header">
-      <h2 class="modal-title">✏️ 手書きメモ</h2>
-      <button class="modal-close" onclick="closeDrawingModal()">✕</button>
-    </div>
-    <div class="drawing-toolbar">
-      <button class="tool-btn active" id="tool-pen" onclick="setDrawTool('pen')" title="ペン">🖊</button>
-      <button class="tool-btn" id="tool-eraser" onclick="setDrawTool('eraser')" title="消しゴム">🧹</button>
-      <div class="draw-divider"></div>
-      <button class="color-btn active" data-color="#1a1a1a" style="background:#1a1a1a" onclick="setDrawColor('#1a1a1a')"></button>
-      <button class="color-btn" data-color="#ef4444" style="background:#ef4444" onclick="setDrawColor('#ef4444')"></button>
-      <button class="color-btn" data-color="#3b82f6" style="background:#3b82f6" onclick="setDrawColor('#3b82f6')"></button>
-      <button class="color-btn" data-color="#22c55e" style="background:#22c55e" onclick="setDrawColor('#22c55e')"></button>
-      <button class="color-btn" data-color="#f59e0b" style="background:#f59e0b" onclick="setDrawColor('#f59e0b')"></button>
-      <div class="draw-divider"></div>
-      <input class="size-slider" type="range" id="sizeSlider" min="1" max="20" value="4" oninput="drawSize=+this.value">
-      <div class="draw-divider"></div>
-      <button class="tool-btn" onclick="undoDraw()" title="元に戻す">↩</button>
-      <button class="tool-btn" onclick="clearCanvas()" title="全消し">🗑</button>
-    </div>
-    <div class="drawing-canvas-wrap" id="canvasWrap">
-      <canvas id="drawingCanvas"></canvas>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
-      <button class="btn-save" onclick="saveDrawing()">保存する</button>
-    </div>
-  </div>
-</div>
-
-<!-- 画像ビューアー -->
-<div class="viewer-overlay" id="viewerOverlay" onclick="closeViewer()">
-  <img class="viewer-img" id="viewerImg" src="" alt="手書きメモ">
 </div>
 
 <!-- 本棚モーダル -->
@@ -443,8 +299,8 @@ function addDeletedId(id) {
 
 const SAMPLE = [
   { id: 1, title: "グライダー型人間について", book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
-    content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダーを量産しているという指摘。",
-    lesson: "受け身で知識を受け取るだけでなく、自ら問いを立てて考える習慣を持つ必要がある。インプットした後に必ず「自分ならどう使うか」を問う。",
+    content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダー型を量産している。",
+    lesson: "受け身で知識を受け取るだけでなく、自ら問いを立てて考える習慣を持つ必要がある。インプットした後に必ず「自分ならどう使うか」を考える。",
     supplement: "ソクラテスの産婆術も同様の思想。知識を与えるのではなく、相手の中にある答えを引き出す教育法。",
     tags: ["思考法","教育","自律性"], createdAt: "2024-11-15" },
   { id: 2, book: "思考の整理学", author: "外山滋比古", page: "pp.88–102",
@@ -454,7 +310,7 @@ const SAMPLE = [
     tags: ["思考法","創造性"], createdAt: "2024-11-22" },
   { id: 3, book: "FACTFULNESS", author: "ハンス・ロスリング", page: "pp.18–30",
     content: "人間には10の本能的な思い込みがある。その中でも「ネガティブ本能」は世界が悪化していると信じさせる。実際には多くの指標で世界は改善している。",
-    lesson: "感情ではなくデータで世界を見ること。悪いニュースはよく報道されるが、ゆっくりした改善は目立たない。意識してポジティブなデータも探す。",
+    lesson: "感情ではなくデータで世界を見ること。悪いニュースはよく報道されるが、ゆっくりした改善は目立たない。意識してポジティブなデータを探す。",
     supplement: "メディアリテラシーとも関連。センセーショナルな情報に惑わされないためにも、一次データを参照する習慣が重要。",
     tags: ["統計","認知バイアス","世界観"], createdAt: "2024-12-03" }
 ];
@@ -483,11 +339,8 @@ async function loadFromCloud() {
     const r = await fetch(CLOUD_URL + '?t=' + Date.now());
     const cloud = await r.json();
     if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
-    // ローカルで削除済みのIDを取得
     const deletedIds = getDeletedIds();
-    // deletedフラグ＆削除済みIDを除外
     const filteredCloud = cloud.filter(e => !deletedIds.has(String(e.id)) && !e.deleted && e.deleted !== 'TRUE');
-    // クラウドと手元をマージ（クラウド優先、ただし削除済みは除外）
     const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
     const cloudMap = Object.fromEntries(filteredCloud.map(e => [e.id, e]));
     const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
@@ -508,7 +361,7 @@ async function loadFromCloud() {
 function showSyncStatus(msg) {
   let el = document.getElementById('syncStatus');
   if (!el) { el = document.createElement('div'); el.id = 'syncStatus'; document.body.appendChild(el); }
-  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#92400e;z-index:400;box-shadow:0 2px 8px #00000015;';
+  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#92400e;z-index:300;box-shadow:0 4px 12px #00000010';
 }
 function hideSyncStatus() {
   const el = document.getElementById('syncStatus');
@@ -522,7 +375,6 @@ function tagClass(tag) { let h=0; for(let i=0;i<tag.length;i++) h=(h*31+tag.char
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function allTags() { const s=new Set(); entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); return [...s]; }
 
-// 本ごとにグループ化（代表情報は最初の記録から取得）
 function bookGroups() {
   const map = new Map();
   entries.forEach(e => {
@@ -550,7 +402,6 @@ function render() {
   const tags = allTags();
   document.getElementById('headerMeta').textContent = `${entries.length}件の記録 · ${bookGroups().size}冊 · ${tags.length}個のタグ`;
 
-  // タグフィルター
   const wrap = document.getElementById('tagFilters');
   wrap.innerHTML = `<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag(this,'')">すべて</button>`;
   tags.forEach(t => {
@@ -571,7 +422,6 @@ function render() {
   if (!list.length) { container.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
 
-  // 本ごとにグループ化して表示
   const grouped = new Map();
   list.forEach(e => {
     const key = (e.book||'').trim() || '（タイトル未入力）';
@@ -627,13 +477,6 @@ function cardHTML(e) {
     <div class="ai-area">
       <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ AI要約</button>
       <div class="ai-result" id="ai-${e.id}"></div>
-    </div>
-    ${(e.drawings&&e.drawings.length) ? `<div class="drawing-section">
-      <div class="drawing-section-label">✏️ 手書きメモ</div>
-      <div class="drawing-thumbs">${(e.drawings||[]).map((d,i)=>`<div class="drawing-thumb-wrap"><img class="drawing-thumb" src="${d}" onclick="openLightbox('${d}')" alt="手書き${i+1}"></div>`).join('')}</div>
-    </div>` : ''}
-    <div style="margin-top:0.5rem">
-      <button class="btn-draw" onclick="openDrawModal(${e.id})">＋ 手書きを追加</button>
     </div>
   </div>
 </div>`;
@@ -704,8 +547,6 @@ function openModal(entry) {
   editingId = entry?.id ?? null;
   document.getElementById('modalTitle').textContent = entry ? '記録を編集' : '新しい読書記録';
   document.getElementById('btnSave').textContent = entry ? '更新する' : '保存する';
-  currentDrawings = entry ? [...(entry.drawings||[])] : [];
-  renderDrawingThumbs();
   document.getElementById('fTitle').value = entry?.title||'';
   document.getElementById('fBook').value = entry?.book||'';
   document.getElementById('fAuthor').value = entry?.author||'';
@@ -715,9 +556,6 @@ function openModal(entry) {
   document.getElementById('fSupplement').value = entry?.supplement||'';
   document.getElementById('fTags').value = (entry?.tags||[]).join(', ');
   document.getElementById('suggestList').style.display = 'none';
-  // 手書きサムネイル表示
-  currentModalDrawings = entry ? [...(entry.drawings||[])] : [];
-  renderModalDrawings();
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('fBook').focus(),50);
 }
@@ -737,7 +575,6 @@ function saveEntry() {
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const data = {
     title: document.getElementById('fTitle').value,
-    drawings: currentModalDrawings,
     book: document.getElementById('fBook').value,
     author: document.getElementById('fAuthor').value,
     page: document.getElementById('fPage').value,
@@ -773,7 +610,7 @@ async function runAI(id, btn, key) {
     const r = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」(${e.author}) ${e.page}\n内容:${e.content}\n教訓:${e.lesson}\n補足:${e.supplement}\n\n要点を箇条書きにせず、流れるような文章でまとめてください。`}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:「${e.author}」\n\n内容:\n${e.content}\n\n教訓:\n${e.lesson}`}]})
     });
     const d = await r.json();
     res.textContent = d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
@@ -819,22 +656,19 @@ function showToast(msg) {
 }
 
 // ── Keyboard / Click outside ───────────────────────
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();closeViewer();} });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();} });
 document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeModal(); });
 document.getElementById('aiKeyOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeAiModal(); });
 document.getElementById('bookshelfOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeBookshelf(); });
-document.getElementById('drawingOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeDrawingModal(); });
 document.addEventListener('click', e=>{ if(!e.target.closest('.suggest-wrap')) document.getElementById('suggestList').style.display='none'; });
 
 // ── Service Worker ─────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
-    // 既存のSWを全解除してキャッシュを削除
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(regs.map(r => r.unregister()));
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
-    // 新しいSWを登録
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
