@@ -36,18 +36,18 @@
   .header-btns { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
   .header-btns-row { display: flex; gap: 0.4rem; }
 
-  .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 600; border: none; cursor: pointer; font-size: 0.82rem; transition: all 0.2s; }
+  .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 600; border: none; cursor: pointer; font-size: 0.82rem; transition: filter 0.1s; }
   .btn-add:hover { filter: brightness(1.08); } .btn-add:active { transform: scale(0.97); }
-  .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.78rem; transition: all 0.15s; }
+  .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.77rem; transition: all 0.1s; }
   .btn-sub:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
 
   /* SEARCH */
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
   .search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
-  .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; font-family: inherit; transition: all 0.2s; }
+  .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; font-family: inherit; transition: border-color 0.1s; }
   .search-input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b22; }
   .search-input::placeholder { color: var(--stone-300); }
-  .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; }
+  .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; transition: color 0.1s; }
 
   /* FILTER */
   .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
@@ -55,12 +55,12 @@
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .tag-btn:hover { border-color: var(--stone-400); }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
-  .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; }
+  .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; transition: all 0.1s; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
   /* BOOK GROUP */
   .book-group { margin-bottom: 1.5rem; }
-  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: all 0.2s; }
+  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: box-shadow 0.2s; }
   .book-group-header:hover { box-shadow: 0 3px 12px #00000010; }
   .book-group-icon { font-size: 1.4rem; flex-shrink: 0; }
   .book-group-info { flex: 1; min-width: 0; }
@@ -96,10 +96,18 @@
   .lesson-bg { background: var(--amber-light); } .lesson-bg .section-text { color: #78350f; }
   .supplement-bg { background: var(--stone-50); } .supplement-bg .section-text { color: var(--stone-600); }
   .ai-area { margin-top: 0.75rem; }
-  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; transition: all 0.2s; }
+  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; transition: filter 0.1s; }
   .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
   .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; display: none; }
   .ai-result.visible { display: block; }
+
+  /* DRAWING GALLERY */
+  .drawing-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+  .drawing-thumb { position: relative; width: 80px; height: 80px; border: 1px solid var(--stone-200); border-radius: 0.6rem; background: white; overflow: hidden; cursor: pointer; transition: all 0.1s; }
+  .drawing-thumb:hover { border-color: var(--amber); box-shadow: 0 2px 8px #00000010; }
+  .drawing-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; display: none; background: rgba(244, 63, 94, 0.9); border: none; border-radius: 4px; color: white; font-size: 0.8rem; padding: 2px 4px; cursor: pointer; z-index: 10; }
+  .drawing-thumb:hover .drawing-thumb-delete { display: block; }
 
   /* EMPTY */
   .empty { text-align: center; padding: 4rem 0; color: var(--stone-300); }
@@ -118,21 +126,21 @@
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; transition: all 0.2s; }
+  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; transition: border-color 0.1s; }
   .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
   .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
   .lesson-field { background: var(--amber-light) !important; border-color: var(--amber-border) !important; }
   .lesson-field:focus { box-shadow: 0 0 0 3px #f59e0b22 !important; }
   .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); transition: background 0.1s; }
   .btn-cancel:hover { background: var(--stone-100); }
-  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.2s; }
+  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: filter 0.1s; }
   .btn-save:hover { filter: brightness(1.08); }
   .ai-key-note { font-size: 0.75rem; color: var(--stone-400); line-height: 1.6; }
   .ai-key-note a { color: var(--amber); }
 
   /* SUGGEST */
   .suggest-wrap { position: relative; }
-  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow: hidden; }
+  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow-y: auto; max-height: 200px; }
   .suggest-item { padding: 0.65rem 0.875rem; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--stone-100); }
   .suggest-item:last-child { border-bottom: none; }
   .suggest-item:hover { background: var(--amber-light); }
@@ -149,8 +157,17 @@
   .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
   .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
 
+  /* DRAWING MODAL */
+  .drawing-canvas-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+  .drawing-tools { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; transition: all 0.1s; }
+  .drawing-tool-btn:hover { border-color: var(--amber); background: var(--amber-light); }
+  .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
+  .drawing-canvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; cursor: crosshair; display: block; max-width: 100%; }
+  #drawingCanvas { touch-action: none; }
+
   /* TOAST */
-  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.3s; }
+  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; }
   .toast.show { opacity: 1; }
 
   /* TAG COLORS */
@@ -172,9 +189,9 @@
 <div class="bg-orbs"></div>
 
 <!-- インストールバナー -->
-<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:0.875rem;display:flex;align-items:center;gap:0.875rem">
+<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;display:flex;align-items:center;gap:0.75rem">
   <span style="font-size:1.5rem;flex-shrink:0">📚</span>
-  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインで使用可能</div></div>
+  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使用可能</div></div>
   <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;flex-shrink:0">追加</button>
   <button id="btnDismiss" style="background:none;border:none;cursor:pointer;color:#a8a29e;font-size:1.1rem;padding:0.2rem;line-height:1;flex-shrink:0">✕</button>
 </div>
@@ -240,6 +257,11 @@
       <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
       <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
       <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field">
+        <label>🎨 スケッチ・図解</label>
+        <button class="btn-sub" onclick="openDrawingModal()" style="width:100%;justify-content:center">📐 スケッチを追加</button>
+        <div class="drawing-gallery" id="drawingGallery"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
@@ -281,12 +303,39 @@
   </div>
 </div>
 
+<!-- 描画モーダル -->
+<div class="modal-overlay" id="drawingOverlay">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h2 class="modal-title">🎨 スケッチを描画</h2>
+      <button class="modal-close" onclick="closeDrawingModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drawing-canvas-wrap">
+        <div class="drawing-tools">
+          <button class="drawing-tool-btn active" onclick="setDrawingMode('draw')">✏️ 描画</button>
+          <button class="drawing-tool-btn" onclick="setDrawingMode('erase')">🧹 消す</button>
+          <input type="color" id="brushColor" value="#292524" style="width:40px;height:32px;border:1px solid var(--stone-200);border-radius:0.4rem;cursor:pointer">
+          <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
+          <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
+        </div>
+        <canvas id="drawingCanvas" class="drawing-canvas" width="480" height="360"></canvas>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveDrawing()">保存する</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'reading_log_v1';
 const DELETED_KEY = 'reading_log_deleted';
 const API_KEY_KEY = 'reading_log_api_key';
 const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null, isSyncing = false;
+let drawingMode = 'draw', drawingHistory = [];
 
 function getDeletedIds() {
   try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY) || '[]')); } catch { return new Set(); }
@@ -299,20 +348,20 @@ function addDeletedId(id) {
 
 const SAMPLE = [
   { id: 1, title: "グライダー型人間について", book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
-    content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダー型を量産している。",
+    content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダーを育てている。",
     lesson: "受け身で知識を受け取るだけでなく、自ら問いを立てて考える習慣を持つ必要がある。インプットした後に必ず「自分ならどう使うか」を考える。",
     supplement: "ソクラテスの産婆術も同様の思想。知識を与えるのではなく、相手の中にある答えを引き出す教育法。",
-    tags: ["思考法","教育","自律性"], createdAt: "2024-11-15" },
+    tags: ["思考法","教育","自律性"], drawings: [], createdAt: "2024-11-15" },
   { id: 2, book: "思考の整理学", author: "外山滋比古", page: "pp.88–102",
     content: "「寝させる」という概念。アイデアはすぐに使わず、時間を置くことで熟成される。忘却は創造の母である。",
     lesson: "メモしたアイデアをすぐ形にしようとせず、意図的に寝かせる期間を作る。定期的に見返すことで新たな繋がりが生まれる。",
     supplement: "エジソンやダーウィンも同様の手法を用いていたとされる。",
-    tags: ["思考法","創造性"], createdAt: "2024-11-22" },
+    tags: ["思考法","創造性"], drawings: [], createdAt: "2024-11-22" },
   { id: 3, book: "FACTFULNESS", author: "ハンス・ロスリング", page: "pp.18–30",
     content: "人間には10の本能的な思い込みがある。その中でも「ネガティブ本能」は世界が悪化していると信じさせる。実際には多くの指標で世界は改善している。",
-    lesson: "感情ではなくデータで世界を見ること。悪いニュースはよく報道されるが、ゆっくりした改善は目立たない。意識してポジティブなデータを探す。",
+    lesson: "感情ではなくデータで世界を見ること。悪いニュースはよく報道されるが、ゆっくりした改善は目立たない。意識してポジティブなデータも見る必要がある。",
     supplement: "メディアリテラシーとも関連。センセーショナルな情報に惑わされないためにも、一次データを参照する習慣が重要。",
-    tags: ["統計","認知バイアス","世界観"], createdAt: "2024-12-03" }
+    tags: ["統計","認知バイアス","世界観"], drawings: [], createdAt: "2024-12-03" }
 ];
 
 // ── Persistence ────────────────────────────────────
@@ -361,7 +410,7 @@ async function loadFromCloud() {
 function showSyncStatus(msg) {
   let el = document.getElementById('syncStatus');
   if (!el) { el = document.createElement('div'); el.id = 'syncStatus'; document.body.appendChild(el); }
-  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#92400e;z-index:300;box-shadow:0 4px 12px #00000010';
+  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#78716c;z-index:999;';
 }
 function hideSyncStatus() {
   const el = document.getElementById('syncStatus');
@@ -451,9 +500,27 @@ function toggleGroup(key) {
   if (el) el.classList.toggle('collapsed');
 }
 
+function renderDrawingThumbs(drawings) {
+  const gallery = document.getElementById('drawingGallery');
+  if (!drawings || !drawings.length) { gallery.innerHTML = ''; return; }
+  gallery.innerHTML = drawings.map((data, idx) => `
+    <div class="drawing-thumb">
+      <img src="${esc(data)}" alt="Drawing">
+      <button class="drawing-thumb-delete" onclick="deleteDrawing(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+
 function cardHTML(e) {
   const tagPills = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)}">${esc(t)}</span>`).join('');
   const sec = (cls,icon,label,txt) => txt ? `<div class="section-block ${cls}"><div class="section-label">${icon} ${label}</div><div class="section-text">${esc(txt)}</div></div>` : '';
+  const drawingHTML = (e.drawings && e.drawings.length) ? `
+    <div class="section-block" style="border-radius:0.6rem;padding:0.6rem 0.75rem;">
+      <div class="section-label">🎨 スケッチ</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;margin-top:0.5rem;">
+        ${e.drawings.map((d,i) => `<img src="${esc(d)}" style="width:100%;border-radius:0.4rem;border:1px solid var(--stone-200);" onclick="openDrawingViewer('${esc(d)}')" style="cursor:pointer">`).join('')}
+      </div>
+    </div>` : '';
   return `<div class="card" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
@@ -473,6 +540,7 @@ function cardHTML(e) {
       ${sec('content-bg','📖','内容',e.content)}
       ${sec('lesson-bg','💡','教訓',e.lesson)}
       ${sec('supplement-bg','🔍','補足',e.supplement)}
+      ${drawingHTML}
     </div>
     <div class="ai-area">
       <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ AI要約</button>
@@ -555,6 +623,7 @@ function openModal(entry) {
   document.getElementById('fLesson').value = entry?.lesson||'';
   document.getElementById('fSupplement').value = entry?.supplement||'';
   document.getElementById('fTags').value = (entry?.tags||[]).join(', ');
+  renderDrawingThumbs(entry?.drawings||[]);
   document.getElementById('suggestList').style.display = 'none';
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('fBook').focus(),50);
@@ -573,6 +642,8 @@ function deleteEntry(id) {
 
 function saveEntry() {
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const gallery = document.getElementById('drawingGallery');
+  const drawings = [...gallery.querySelectorAll('img')].map(img => img.src);
   const data = {
     title: document.getElementById('fTitle').value,
     book: document.getElementById('fBook').value,
@@ -581,11 +652,161 @@ function saveEntry() {
     content: document.getElementById('fContent').value,
     lesson: document.getElementById('fLesson').value,
     supplement: document.getElementById('fSupplement').value,
-    tags
+    tags,
+    drawings
   };
   if (editingId) { entries = entries.map(e=>e.id===editingId?{...e,...data}:e); }
   else { entries.unshift({...data, id:Date.now(), createdAt:new Date().toISOString().slice(0,10)}); }
   persist(); closeModal(); render();
+}
+
+// ── Drawing ────────────────────────────────────────
+let drawingCanvas, drawingCtx, isDrawing = false;
+
+function openDrawingModal() {
+  drawingCanvas = document.getElementById('drawingCanvas');
+  drawingCtx = drawingCanvas.getContext('2d');
+  drawingHistory = [];
+  saveDrawingState();
+  drawingCtx.fillStyle = 'white';
+  drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+  document.getElementById('drawingOverlay').classList.add('open');
+  setupDrawingListeners();
+}
+
+function closeDrawingModal() {
+  document.getElementById('drawingOverlay').classList.remove('open');
+  isDrawing = false;
+}
+
+function setDrawingMode(mode) {
+  drawingMode = mode;
+  document.querySelectorAll('.drawing-tool-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function setupDrawingListeners() {
+  const canvas = drawingCanvas;
+  
+  canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    saveDrawingState();
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (drawingMode === 'draw') {
+      drawingCtx.beginPath();
+      drawingCtx.moveTo(x, y);
+    }
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (drawingMode === 'draw') {
+      drawingCtx.lineWidth = 2;
+      drawingCtx.lineCap = 'round';
+      drawingCtx.lineJoin = 'round';
+      drawingCtx.strokeStyle = document.getElementById('brushColor').value;
+      drawingCtx.lineTo(x, y);
+      drawingCtx.stroke();
+    } else if (drawingMode === 'erase') {
+      drawingCtx.clearRect(x - 10, y - 10, 20, 20);
+    }
+  });
+  
+  canvas.addEventListener('mouseup', () => { isDrawing = false; });
+  canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+  
+  // Touch support
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    isDrawing = true;
+    saveDrawingState();
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    if (drawingMode === 'draw') {
+      drawingCtx.beginPath();
+      drawingCtx.moveTo(x, y);
+    }
+  });
+  
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    if (drawingMode === 'draw') {
+      drawingCtx.lineWidth = 2;
+      drawingCtx.lineCap = 'round';
+      drawingCtx.lineJoin = 'round';
+      drawingCtx.strokeStyle = document.getElementById('brushColor').value;
+      drawingCtx.lineTo(x, y);
+      drawingCtx.stroke();
+    } else if (drawingMode === 'erase') {
+      drawingCtx.clearRect(x - 10, y - 10, 20, 20);
+    }
+  });
+  
+  canvas.addEventListener('touchend', () => { isDrawing = false; });
+}
+
+function saveDrawingState() {
+  drawingHistory.push(drawingCanvas.toDataURL());
+}
+
+function undoDrawing() {
+  if (drawingHistory.length > 1) {
+    drawingHistory.pop();
+    const img = new Image();
+    img.onload = () => {
+      drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+      drawingCtx.drawImage(img, 0, 0);
+    };
+    img.src = drawingHistory[drawingHistory.length - 1];
+  }
+}
+
+function clearDrawing() {
+  if (confirm('スケッチをクリアしますか？')) {
+    drawingHistory = [];
+    saveDrawingState();
+    drawingCtx.fillStyle = 'white';
+    drawingCtx.fillRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+  }
+}
+
+function saveDrawing() {
+  const dataUrl = drawingCanvas.toDataURL('image/png');
+  const gallery = document.getElementById('drawingGallery');
+  const thumb = document.createElement('div');
+  thumb.className = 'drawing-thumb';
+  thumb.innerHTML = `
+    <img src="${dataUrl}" alt="Drawing">
+    <button class="drawing-thumb-delete" onclick="this.parentElement.remove()">✕</button>
+  `;
+  gallery.appendChild(thumb);
+  closeDrawingModal();
+  showToast('🎨 スケッチを保存しました');
+}
+
+function deleteDrawing(idx) {
+  const gallery = document.getElementById('drawingGallery');
+  const thumbs = gallery.querySelectorAll('.drawing-thumb');
+  if (thumbs[idx]) thumbs[idx].remove();
+}
+
+function openDrawingViewer(src) {
+  const viewer = document.createElement('div');
+  viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  viewer.innerHTML = `<img src="${src}" style="max-width:90vw;max-height:90vh;border-radius:1rem;" onclick="this.parentElement.remove()">`;
+  document.body.appendChild(viewer);
 }
 
 // ── AI ─────────────────────────────────────────────
@@ -610,7 +831,7 @@ async function runAI(id, btn, key) {
     const r = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:「${e.author}」\n\n内容:\n${e.content}\n\n教訓:\n${e.lesson}`}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}\」著者:${e.author}\n\n${e.content}\n\n学んだこと:${e.lesson}`}]})
     });
     const d = await r.json();
     res.textContent = d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
@@ -656,10 +877,11 @@ function showToast(msg) {
 }
 
 // ── Keyboard / Click outside ───────────────────────
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();} });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();} });
 document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeModal(); });
 document.getElementById('aiKeyOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeAiModal(); });
 document.getElementById('bookshelfOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeBookshelf(); });
+document.getElementById('drawingOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeDrawingModal(); });
 document.addEventListener('click', e=>{ if(!e.target.closest('.suggest-wrap')) document.getElementById('suggestList').style.display='none'; });
 
 // ── Service Worker ─────────────────────────────────
