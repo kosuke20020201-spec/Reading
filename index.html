@@ -149,6 +149,40 @@
   .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
   .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
 
+
+  /* DRAWING */
+  .draw-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: #1c160f; flex-direction: column; }
+  .draw-overlay.open { display: flex; }
+  .draw-toolbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: #292524; flex-wrap: wrap; flex-shrink: 0; }
+  .draw-tool-btn { padding: 0.4rem 0.7rem; border-radius: 0.5rem; border: 2px solid transparent; background: #3a3330; color: white; cursor: pointer; font-size: 0.85rem; font-family: inherit; transition: all 0.1s; }
+  .draw-tool-btn.active { border-color: var(--amber); background: #4a3f20; }
+  .draw-tool-btn:hover { background: #4a3f20; }
+  .draw-colors { display: flex; gap: 0.35rem; align-items: center; }
+  .draw-color-btn { width: 1.4rem; height: 1.4rem; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
+  .draw-color-btn.active { border-color: white; transform: scale(1.2); }
+  .draw-size-wrap { display: flex; align-items: center; gap: 0.4rem; }
+  .draw-size-wrap input { width: 5rem; accent-color: var(--amber); cursor: pointer; }
+  .draw-size-label { font-size: 0.7rem; color: #a8a29e; white-space: nowrap; }
+  .draw-sep { width: 1px; height: 1.5rem; background: #4a4540; flex-shrink: 0; }
+  .draw-canvas-wrap { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0.5rem; }
+  #drawCanvas { background: white; border-radius: 0.5rem; touch-action: none; cursor: crosshair; max-width: 100%; max-height: 100%; }
+  .draw-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.75rem 1rem; background: #292524; flex-shrink: 0; }
+
+  .drawing-section { margin-top: 0.75rem; }
+  .drawing-section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.4rem; }
+  .drawing-thumbs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .drawing-thumb-wrap { position: relative; }
+  .drawing-thumb { width: 80px; height: 60px; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; }
+  .drawing-thumb:hover { border-color: var(--amber); }
+  .drawing-thumb-del { position: absolute; top: -0.3rem; right: -0.3rem; background: #f43f5e; color: white; border: none; border-radius: 50%; width: 1.1rem; height: 1.1rem; font-size: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .btn-draw { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .btn-draw:hover { border-color: var(--amber); color: var(--amber); }
+
+  .lightbox { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 0.5rem; }
+  .lightbox-close { position: absolute; top: 1rem; right: 1rem; background: white; border: none; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
   /* TOAST */
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
   .toast.show { opacity: 1; }
@@ -160,6 +194,30 @@
   .tc-3 { background: #ffe4e6; color: #9f1239; }
   .tc-4 { background: #ede9fe; color: #4c1d95; }
   .tc-5 { background: #ffedd5; color: #7c2d12; }
+
+
+  /* DRAWING */
+  .drawing-toolbar { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: var(--stone-50); border-bottom: 1px solid var(--stone-200); flex-wrap: wrap; flex-shrink: 0; }
+  .drawing-canvas-wrap { flex: 1; overflow: hidden; background: #fff; display: flex; align-items: stretch; justify-content: center; min-height: 0; }
+  #drawingCanvas { touch-action: none; cursor: crosshair; display: block; width: 100%; height: 100%; }
+  .tool-btn { width: 2.1rem; height: 2.1rem; border-radius: 0.5rem; border: 2px solid transparent; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.1s; flex-shrink: 0; }
+  .tool-btn.active { border-color: var(--amber); background: var(--amber-light); }
+  .tool-btn:hover { background: var(--stone-100); }
+  .color-btn { width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 2px solid var(--stone-200); cursor: pointer; transition: all 0.1s; flex-shrink: 0; }
+  .color-btn.active { border-color: var(--stone-800); transform: scale(1.25); }
+  .size-slider { width: 4.5rem; accent-color: var(--amber); cursor: pointer; }
+  .draw-divider { width: 1px; height: 1.5rem; background: var(--stone-200); flex-shrink: 0; }
+  .drawing-modal { max-width: 600px !important; height: 88vh; }
+  .drawing-thumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+  .drawing-thumb-wrap { position: relative; display: inline-block; }
+  .drawing-thumb { width: 80px; height: 60px; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: box-shadow 0.15s; }
+  .drawing-thumb:hover { box-shadow: 0 2px 8px #00000025; }
+  .drawing-thumb-del { position: absolute; top: -0.35rem; right: -0.35rem; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #f43f5e; color: white; border: none; cursor: pointer; font-size: 0.6rem; line-height: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .btn-draw { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; color: var(--stone-600); transition: all 0.15s; font-family: inherit; margin-top: 0.6rem; }
+  .btn-draw:hover { border-color: var(--amber); color: var(--amber); }
+  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; }
+  .viewer-overlay.open { display: flex; }
+  .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
 
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
@@ -218,6 +276,44 @@
   </div>
 </div>
 
+
+<!-- 手書きモーダル -->
+<div class="draw-overlay" id="drawOverlay">
+  <div class="draw-toolbar">
+    <button class="draw-tool-btn active" id="toolPen" onclick="setDrawTool('pen')">🖊 ペン</button>
+    <button class="draw-tool-btn" id="toolEraser" onclick="setDrawTool('eraser')">🧹 消しゴム</button>
+    <div class="draw-sep"></div>
+    <div class="draw-colors">
+      <button class="draw-color-btn active" style="background:#000000" onclick="setDrawColor('#000000',this)" title="黒"></button>
+      <button class="draw-color-btn" style="background:#ef4444" onclick="setDrawColor('#ef4444',this)" title="赤"></button>
+      <button class="draw-color-btn" style="background:#3b82f6" onclick="setDrawColor('#3b82f6',this)" title="青"></button>
+      <button class="draw-color-btn" style="background:#22c55e" onclick="setDrawColor('#22c55e',this)" title="緑"></button>
+      <button class="draw-color-btn" style="background:#f59e0b" onclick="setDrawColor('#f59e0b',this)" title="黄"></button>
+    </div>
+    <div class="draw-sep"></div>
+    <div class="draw-size-wrap">
+      <span class="draw-size-label">太さ</span>
+      <input type="range" id="drawSizeSlider" min="1" max="20" value="4" oninput="drawSize=+this.value">
+    </div>
+    <div class="draw-sep"></div>
+    <button class="draw-tool-btn" onclick="undoDraw()">↩ Undo</button>
+    <button class="draw-tool-btn" onclick="clearDraw()">🗑 クリア</button>
+  </div>
+  <div class="draw-canvas-wrap">
+    <canvas id="drawCanvas"></canvas>
+  </div>
+  <div class="draw-footer">
+    <button class="btn-cancel" style="color:#a8a29e" onclick="closeDrawModal()">キャンセル</button>
+    <button class="btn-save" onclick="saveDraw()">✓ 保存</button>
+  </div>
+</div>
+
+<!-- ライトボックス -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
 <!-- 記録モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -240,12 +336,60 @@
       <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
       <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
       <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field">
+        <label>✏️ 手書きメモ</label>
+        <div class="drawing-thumbs" id="drawingThumbsContainer"></div>
+        <button type="button" class="btn-draw" onclick="openDrawingModal(null)">＋ 手書きを追加</button>
+      </div>
+    </div>
+    <div style="padding:0.5rem 1.5rem 0;border-top:1px solid var(--stone-100);">
+      <div class="drawing-section-label">✏️ 手書きメモ</div>
+      <div class="drawing-thumbs" id="modalDrawingThumbs"></div>
+      <button class="btn-draw" style="margin-top:0.4rem" onclick="openDrawModal(null)">＋ 手書きを追加</button>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
     </div>
   </div>
+</div>
+
+
+<!-- 手書きモーダル -->
+<div class="modal-overlay" id="drawingOverlay">
+  <div class="modal drawing-modal">
+    <div class="modal-header">
+      <h2 class="modal-title">✏️ 手書きメモ</h2>
+      <button class="modal-close" onclick="closeDrawingModal()">✕</button>
+    </div>
+    <div class="drawing-toolbar">
+      <button class="tool-btn active" id="tool-pen" onclick="setDrawTool('pen')" title="ペン">🖊</button>
+      <button class="tool-btn" id="tool-eraser" onclick="setDrawTool('eraser')" title="消しゴム">🧹</button>
+      <div class="draw-divider"></div>
+      <button class="color-btn active" data-color="#1a1a1a" style="background:#1a1a1a" onclick="setDrawColor('#1a1a1a')"></button>
+      <button class="color-btn" data-color="#ef4444" style="background:#ef4444" onclick="setDrawColor('#ef4444')"></button>
+      <button class="color-btn" data-color="#3b82f6" style="background:#3b82f6" onclick="setDrawColor('#3b82f6')"></button>
+      <button class="color-btn" data-color="#22c55e" style="background:#22c55e" onclick="setDrawColor('#22c55e')"></button>
+      <button class="color-btn" data-color="#f59e0b" style="background:#f59e0b" onclick="setDrawColor('#f59e0b')"></button>
+      <div class="draw-divider"></div>
+      <input class="size-slider" type="range" id="sizeSlider" min="1" max="20" value="4" oninput="drawSize=+this.value">
+      <div class="draw-divider"></div>
+      <button class="tool-btn" onclick="undoDraw()" title="元に戻す">↩</button>
+      <button class="tool-btn" onclick="clearCanvas()" title="全消し">🗑</button>
+    </div>
+    <div class="drawing-canvas-wrap" id="canvasWrap">
+      <canvas id="drawingCanvas"></canvas>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveDrawing()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 画像ビューアー -->
+<div class="viewer-overlay" id="viewerOverlay" onclick="closeViewer()">
+  <img class="viewer-img" id="viewerImg" src="" alt="手書きメモ">
 </div>
 
 <!-- 本棚モーダル -->
@@ -484,6 +628,13 @@ function cardHTML(e) {
       <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ AI要約</button>
       <div class="ai-result" id="ai-${e.id}"></div>
     </div>
+    ${(e.drawings&&e.drawings.length) ? `<div class="drawing-section">
+      <div class="drawing-section-label">✏️ 手書きメモ</div>
+      <div class="drawing-thumbs">${(e.drawings||[]).map((d,i)=>`<div class="drawing-thumb-wrap"><img class="drawing-thumb" src="${d}" onclick="openLightbox('${d}')" alt="手書き${i+1}"></div>`).join('')}</div>
+    </div>` : ''}
+    <div style="margin-top:0.5rem">
+      <button class="btn-draw" onclick="openDrawModal(${e.id})">＋ 手書きを追加</button>
+    </div>
   </div>
 </div>`;
 }
@@ -553,6 +704,8 @@ function openModal(entry) {
   editingId = entry?.id ?? null;
   document.getElementById('modalTitle').textContent = entry ? '記録を編集' : '新しい読書記録';
   document.getElementById('btnSave').textContent = entry ? '更新する' : '保存する';
+  currentDrawings = entry ? [...(entry.drawings||[])] : [];
+  renderDrawingThumbs();
   document.getElementById('fTitle').value = entry?.title||'';
   document.getElementById('fBook').value = entry?.book||'';
   document.getElementById('fAuthor').value = entry?.author||'';
@@ -562,6 +715,9 @@ function openModal(entry) {
   document.getElementById('fSupplement').value = entry?.supplement||'';
   document.getElementById('fTags').value = (entry?.tags||[]).join(', ');
   document.getElementById('suggestList').style.display = 'none';
+  // 手書きサムネイル表示
+  currentModalDrawings = entry ? [...(entry.drawings||[])] : [];
+  renderModalDrawings();
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('fBook').focus(),50);
 }
@@ -581,6 +737,7 @@ function saveEntry() {
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const data = {
     title: document.getElementById('fTitle').value,
+    drawings: currentModalDrawings,
     book: document.getElementById('fBook').value,
     author: document.getElementById('fAuthor').value,
     page: document.getElementById('fPage').value,
@@ -662,10 +819,11 @@ function showToast(msg) {
 }
 
 // ── Keyboard / Click outside ───────────────────────
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();} });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();closeViewer();} });
 document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeModal(); });
 document.getElementById('aiKeyOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeAiModal(); });
 document.getElementById('bookshelfOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeBookshelf(); });
+document.getElementById('drawingOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeDrawingModal(); });
 document.addEventListener('click', e=>{ if(!e.target.closest('.suggest-wrap')) document.getElementById('suggestList').style.display='none'; });
 
 // ── Service Worker ─────────────────────────────────
