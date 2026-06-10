@@ -189,7 +189,6 @@
 <body>
 <div class="bg-orbs"></div>
 
-<!-- インストールバナー -->
 <div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;align-items:center;gap:0.75rem">
   <span style="font-size:1.5rem;flex-shrink:0">📚</span>
   <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使用可能</div></div>
@@ -236,7 +235,6 @@
   </div>
 </div>
 
-<!-- 記録モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -246,7 +244,7 @@
     <div class="modal-body">
       <div class="field suggest-wrap">
         <label>📚 本のタイトル</label>
-        <input type="text" id="fBook" placeholder="例: 思考の整理学" autocomplete="off" oninput="onBookInput(this.value)">
+        <input type="text" id="fBook" placeholder="例: 思考の整理学" autocomplete="off" oninput="onBookInput(this.value)" onblur="onBookBlur()">
         <div class="suggest-list" id="suggestList" style="display:none"></div>
       </div>
       <div class="field-row">
@@ -279,7 +277,6 @@
   </div>
 </div>
 
-<!-- 本棚モーダル -->
 <div class="modal-overlay" id="bookshelfOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -293,7 +290,6 @@
   </div>
 </div>
 
-<!-- APIキーモーダル -->
 <div class="modal-overlay" id="aiKeyOverlay">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -312,7 +308,6 @@
   </div>
 </div>
 
-<!-- 描画モーダル -->
 <div class="modal-overlay" id="drawingOverlay">
   <div class="modal" style="max-width:540px">
     <div class="modal-header">
@@ -337,7 +332,6 @@
   </div>
 </div>
 
-<!-- 画像ビューアー -->
 <div class="viewer-overlay" id="viewerOverlay" onclick="closeViewer()">
   <img class="viewer-img" id="viewerImg" src="" alt="">
 </div>
@@ -430,7 +424,14 @@ function setApiKey(k) { localStorage.setItem(API_KEY_KEY,k); }
 // ── Helpers ────────────────────────────────────────
 function tagClass(t) { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%6; return `tc-${h}`; }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function allTags() { const s=new Set(); entries.forEach(e=>{(e.tags||[]).forEach(t=>s.add(t));(e.fixedTags||[]).forEach(t=>s.add(t));}); return [...s]; }
+function allTags() { 
+  const s=new Set(); 
+  entries.forEach(e=>{
+    (e.tags||[]).forEach(t=>s.add(t));
+    (e.fixedTags||[]).forEach(t=>s.add(t));
+  }); 
+  return [...s]; 
+}
 function bookGroups() {
   const map=new Map();
   entries.forEach(e=>{const k=(e.book||'').trim();if(!map.has(k))map.set(k,{book:e.book||'',author:e.author||'',entries:[]});map.get(k).entries.push(e);});
@@ -439,9 +440,10 @@ function bookGroups() {
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
   return entries.filter(e=>{
-    if(activeTag&&!(e.tags||[]).includes(activeTag)&&!(e.fixedTags||[]).includes(activeTag))return false;
+    const combinedTags = [...(e.tags||[]), ...(e.fixedTags||[])];
+    if(activeTag&&!combinedTags.includes(activeTag))return false;
     if(!q)return true;
-    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[]),...(e.fixedTags||[])].some(s=>(s||'').toLowerCase().includes(q));
+    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...combinedTags].some(s=>(s||'').toLowerCase().includes(q));
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
 
@@ -478,9 +480,11 @@ function render() {
 }
 
 function cardHTML(e) {
+  // すべての記録が保存されたe.fixedTagsを正しく保持するようになったためこれを参照
   const fixedPills=(e.fixedTags||[]).map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
   const freePills=(e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
   const pills=(fixedPills+freePills);
+  
   const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${esc(txt)}</div></div>`:'';
   const sketchHTML=(e.drawings&&e.drawings.length)?`
     <div class="section-block" style="background:var(--stone-50)">
@@ -488,6 +492,7 @@ function cardHTML(e) {
       <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}')">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
+  
   return `<div class="card" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
@@ -532,7 +537,7 @@ function onSearch(v) { searchQuery=v; document.getElementById('searchClear').sty
 function clearSearch() { document.getElementById('searchInput').value=''; onSearch(''); }
 function setTag(t) { activeTag=t; render(); }
 
-// ── Book Suggest ───────────────────────────────────
+// ── Book Suggest / Blur ────────────────────────────
 function onBookInput(val) {
   const list=document.getElementById('suggestList');
   if(!val.trim()){list.style.display='none';return;}
@@ -541,10 +546,26 @@ function onBookInput(val) {
   list.innerHTML=matches.map(g=>`<div class="suggest-item" onclick="selectBook('${esc(g.book)}','${esc(g.author)}')"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
   list.style.display='block';
 }
+function onBookBlur() {
+  setTimeout(() => {
+    const book = document.getElementById('fBook').value.trim();
+    if (book) {
+      const defaults = getBookDefaultTags(book);
+      if (defaults.length > 0) {
+        // すでに入力した固定タグを失わないようにマージする
+        const merged = new Set([...defaults, ...currentFixedTags]);
+        currentFixedTags = [...merged];
+        renderFixedTagChips();
+      }
+    }
+  }, 150); // サジェストクリック判定のためわずかに遅延させる
+}
+
 function selectBook(book,author) {
   document.getElementById('fBook').value=book;
   document.getElementById('fAuthor').value=author;
   document.getElementById('suggestList').style.display='none';
+  // サジェストから選択した場合は本専用の固定タグを完全にロード
   currentFixedTags=[...getBookDefaultTags(book)];
   renderFixedTagChips();
 }
@@ -601,6 +622,7 @@ function openModal(id=null) {
     currentDrawings=[...(e.drawings||[])];
   } else {
     ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(id=>document.getElementById(id).value='');
+    // 新規追加時は固定タグ配列を初期化（本の入力と同時にロードされる）
     currentFixedTags=[];
     renderFixedTagChips();
     currentDrawings=[];
@@ -625,22 +647,42 @@ function deleteEntry(id) {
 }
 
 function saveEntry() {
-  const tags=document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const bookName=document.getElementById('fBook').value;
+  const bookName = document.getElementById('fBook').value.trim();
+  const author = document.getElementById('fAuthor').value.trim();
+  const title = document.getElementById('fTitle').value.trim();
+  const content = document.getElementById('fContent').value.trim();
+  const lesson = document.getElementById('fLesson').value.trim();
+  const page = document.getElementById('fPage').value.trim();
+  const supplement = document.getElementById('fSupplement').value.trim();
+  const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+
+  // 記録としての内容があるかどうか（本棚からタグ編集だけ開いて保存した場合の判定用）
+  const hasRecordContent = title || content || lesson || page || supplement || currentDrawings.length > 0 || tags.length > 0;
+
+  // 本の名前がある場合、この本のグローバル固定タグ情報を更新し、同時にこの本の過去の全記録にも最新のタグを反映させる
+  if(bookName) {
+    setBookDefaultTags(bookName, [...currentFixedTags]);
+    entries = entries.map(e => (e.book || '').trim() === bookName ? { ...e, fixedTags: [...currentFixedTags] } : e);
+  }
+
+  // 新規追加モードで、本文が一切なく本と固定タグしかいじっていない場合は、空の記録を作らずに閉じる
+  if (!editingId && !hasRecordContent) {
+    persist(); closeModal(); render(); showToast('本の固定タグを更新しました');
+    return;
+  }
+
   const data={
-    book:bookName,
-    author:document.getElementById('fAuthor').value,
-    page:document.getElementById('fPage').value,
-    title:document.getElementById('fTitle').value,
-    content:document.getElementById('fContent').value,
-    lesson:document.getElementById('fLesson').value,
-    supplement:document.getElementById('fSupplement').value,
-    tags, drawings:currentDrawings,
-    fixedTags:currentFixedTags // 記録保存時の固定タグ状態を保持
+    book: bookName, author, page, title, content, lesson, supplement,
+    tags, drawings: currentDrawings,
+    fixedTags: [...currentFixedTags] // 参照ではなく配列のコピーを保存する（メモリ汚染防止）
   };
-  if(bookName) setBookDefaultTags(bookName, currentFixedTags);
-  if(editingId){entries=entries.map(e=>e.id===editingId?{...e,...data}:e);}
-  else{entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});}
+
+  if(editingId){
+    entries=entries.map(e=>e.id===editingId?{...e,...data}:e);
+  } else {
+    entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});
+  }
+  
   persist(); closeModal(); render(); showToast('保存しました');
 }
 
