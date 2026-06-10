@@ -648,7 +648,70 @@ function saveEntry() {
   else{entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});}
   persist(); closeModal(); render(); showToast('保存しました');
 }
+// ── Fixed Tags ────────────────────────────────────
 
+function renderFixedTagChips() {
+  const wrap = document.getElementById('fixedTagChips');
+
+  if (!currentFixedTags.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = currentFixedTags.map((tag, index) => `
+    <span class="fixed-tag-chip">
+      ${esc(tag)}
+      <button type="button"
+              onclick="removeFixedTag(${index})">
+        ✕
+      </button>
+    </span>
+  `).join('');
+}
+
+function removeFixedTag(index) {
+  currentFixedTags.splice(index, 1);
+  renderFixedTagChips();
+}
+
+function onFixedTagKeydown(event) {
+  if (event.key !== 'Enter') return;
+
+  event.preventDefault();
+
+  const input = document.getElementById('fFixedTagInput');
+  const value = input.value.trim();
+
+  if (!value) return;
+
+  if (!currentFixedTags.includes(value)) {
+    currentFixedTags.push(value);
+  }
+
+  input.value = '';
+  renderFixedTagChips();
+}
+
+function editBookTags(book) {
+  closeBookshelf();
+
+  openModal();
+
+  document.getElementById('fBook').value = book;
+
+  const group = [...bookGroups().values()]
+    .find(g => g.book === book);
+
+  if (group) {
+    document.getElementById('fAuthor').value = group.author || '';
+  }
+
+  currentFixedTags = [...getBookDefaultTags(book)];
+
+  renderFixedTagChips();
+
+  showToast('固定タグを編集できます');
+}
 // ── Drawing Gallery（フォーム内サムネイル） ─────────
 function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
