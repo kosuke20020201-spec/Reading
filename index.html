@@ -165,6 +165,16 @@
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
 
+  /* 固定タグ */
+  .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
+  .fixed-tag-chip { display:inline-flex; align-items:center; gap:0.2rem; font-size:0.7rem; font-weight:600; padding:0.2rem 0.5rem 0.2rem 0.6rem; border-radius:999px; background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
+  .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; padding:0; }
+  .fixed-tag-hint { font-size:0.68rem; color:var(--stone-400); margin-top:0.25rem; }
+  .tag-pill-fixed { background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
+  .tag-pill-free { }
+  .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
+  .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
+
   .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
   .tc-2{background:#d1fae5;color:#065f46} .tc-3{background:#ffe4e6;color:#9f1239}
   .tc-4{background:#ede9fe;color:#4c1d95} .tc-5{background:#ffedd5;color:#7c2d12}
@@ -247,7 +257,15 @@
       <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
       <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
       <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
-      <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field">
+        <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
+        <div class="fixed-tag-chips" id="fixedTagChips"></div>
+        <div style="display:flex;gap:0.5rem">
+          <input type="text" id="fFixedTagInput" placeholder="固定タグを追加してEnter" style="flex:1" onkeydown="onFixedTagKeydown(event)">
+        </div>
+        <p class="fixed-tag-hint">💡 編集するとこの本の全記録に反映されます</p>
+      </div>
+      <div class="field"><label>🏷 この記録の自由タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
       <div class="field">
         <label>🎨 スケッチ・図解</label>
         <div class="drawing-gallery" id="drawingGallery"></div>
@@ -331,15 +349,26 @@ const STORAGE_KEY  = 'reading_log_v1';
 const DELETED_KEY  = 'reading_log_deleted';
 const API_KEY_KEY  = 'reading_log_api_key';
 const CLOUD_URL    = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
+const BOOK_META_KEY = 'reading_log_book_meta';
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
-let currentDrawings = [], editingDrawingIndex = null;  // null=新規, 数値=上書き編集
+let currentDrawings = [], editingDrawingIndex = null;
+let currentFixedTags = [];  // null=新規, 数値=上書き編集
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
 function addDeletedId(id) { const ids=getDeletedIds(); ids.add(String(id)); localStorage.setItem(DELETED_KEY,JSON.stringify([...ids])); }
+
+// ── Book Meta (固定タグ) ──────────────────────────
+function getBookMeta() { try { return JSON.parse(localStorage.getItem(BOOK_META_KEY)||'{}'); } catch { return {}; } }
+function getBookDefaultTags(book) { return getBookMeta()[book]||[]; }
+function setBookDefaultTags(book, tags) {
+  if(!book)return;
+  const meta=getBookMeta(); meta[book]=tags;
+  localStorage.setItem(BOOK_META_KEY,JSON.stringify(meta));
+}
 
 const SAMPLE = [
   { id:1, title:"グライダー型人間について", book:"思考の整理学", author:"外山滋比古", page:"pp.42–55",
@@ -381,8 +410,9 @@ async function loadFromCloud() {
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
       if(!c) return l;
-      // drawingsはローカル優先（クラウドには保存されない）
-      return {...c, drawings:(l&&l.drawings)||[]};
+      // drawingsはクラウド優先、なければローカルを使用
+      const drawings = (c.drawings&&c.drawings.length) ? c.drawings : ((l&&l.drawings)||[]);
+      return {...c, drawings};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
@@ -404,7 +434,7 @@ function setApiKey(k) { localStorage.setItem(API_KEY_KEY,k); }
 // ── Helpers ────────────────────────────────────────
 function tagClass(t) { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%6; return `tc-${h}`; }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function allTags() { const s=new Set(); entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); return [...s]; }
+function allTags() { const s=new Set(); entries.forEach(e=>{(e.tags||[]).forEach(t=>s.add(t));(e.fixedTags||[]).forEach(t=>s.add(t));}); return [...s]; }
 function bookGroups() {
   const map=new Map();
   entries.forEach(e=>{const k=(e.book||'').trim();if(!map.has(k))map.set(k,{book:e.book||'',author:e.author||'',entries:[]});map.get(k).entries.push(e);});
@@ -413,9 +443,9 @@ function bookGroups() {
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
   return entries.filter(e=>{
-    if(activeTag&&!(e.tags||[]).includes(activeTag))return false;
+    if(activeTag&&!(e.tags||[]).includes(activeTag)&&!(e.fixedTags||[]).includes(activeTag))return false;
     if(!q)return true;
-    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
+    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[]),...(e.fixedTags||[])].some(s=>(s||'').toLowerCase().includes(q));
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
 
@@ -452,7 +482,9 @@ function render() {
 }
 
 function cardHTML(e) {
-  const pills=(e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)}">${esc(t)}</span>`).join('');
+  const fixedPills=(e.fixedTags||[]).map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
+  const freePills=(e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
+  const pills=(fixedPills+freePills);
   const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${esc(txt)}</div></div>`:'';
   const sketchHTML=(e.drawings&&e.drawings.length)?`
     <div class="section-block" style="background:var(--stone-50)">
@@ -514,16 +546,45 @@ function onBookInput(val) {
   list.innerHTML=matches.map(g=>`<div class="suggest-item" onclick="selectBook('${esc(g.book)}','${esc(g.author)}')"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
   list.style.display='block';
 }
-function selectBook(book,author) { document.getElementById('fBook').value=book; document.getElementById('fAuthor').value=author; document.getElementById('suggestList').style.display='none'; }
+function selectBook(book,author) {
+  document.getElementById('fBook').value=book;
+  document.getElementById('fAuthor').value=author;
+  document.getElementById('suggestList').style.display='none';
+  currentFixedTags=[...getBookDefaultTags(book)];
+  renderFixedTagChips();
+}
 
 // ── Bookshelf ──────────────────────────────────────
 function openBookshelf() {
   const groups=bookGroups(),list=document.getElementById('bookshelfList');
-  list.innerHTML=groups.size?[...groups.values()].map(g=>`<div class="bookshelf-item" onclick="selectBookFromShelf('${esc(g.book)}','${esc(g.author)}')"><span class="bookshelf-item-icon">📖</span><div class="bookshelf-item-info"><div class="bookshelf-item-title">${esc(g.book)}</div>${g.author?`<div class="bookshelf-item-meta">${esc(g.author)}</div>`:''}</div><span class="bookshelf-item-count">${g.entries.length}件</span></div>`).join(''):'<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
+  list.innerHTML=groups.size?[...groups.values()].map(g=>{
+    const dTags=getBookDefaultTags(g.book);
+    const tagChips=dTags.map(t=>`<span class="bookshelf-tag-chip">${esc(t)}</span>`).join('');
+    return `<div class="bookshelf-item" style="flex-direction:column;align-items:stretch;gap:0.4rem">
+      <div style="display:flex;align-items:center;gap:0.75rem" onclick="selectBookFromShelf('${esc(g.book)}','${esc(g.author)}')">
+        <span class="bookshelf-item-icon">📖</span>
+        <div class="bookshelf-item-info">
+          <div class="bookshelf-item-title">${esc(g.book)}</div>
+          ${g.author?`<div class="bookshelf-item-meta">${esc(g.author)}</div>`:''}
+        </div>
+        <span class="bookshelf-item-count">${g.entries.length}件</span>
+      </div>
+      <div style="padding-left:2.5rem">
+        <div class="bookshelf-item-tags">${tagChips||'<span style="font-size:0.68rem;color:var(--stone-300)">固定タグなし</span>'}</div>
+        <button class="btn-sub" style="margin-top:0.35rem;font-size:0.68rem;padding:0.2rem 0.6rem" onclick="editBookTags('${esc(g.book)}')">🏷 固定タグを編集</button>
+      </div>
+    </div>`;
+  }).join(''):'<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
   document.getElementById('bookshelfOverlay').classList.add('open');
 }
 function closeBookshelf() { document.getElementById('bookshelfOverlay').classList.remove('open'); }
-function selectBookFromShelf(book,author) { closeBookshelf(); openModal(); document.getElementById('fBook').value=book; document.getElementById('fAuthor').value=author; }
+function selectBookFromShelf(book,author) {
+  closeBookshelf(); openModal();
+  document.getElementById('fBook').value=book;
+  document.getElementById('fAuthor').value=author;
+  currentFixedTags=[...getBookDefaultTags(book)];
+  renderFixedTagChips();
+}
 
 // ── Record Modal ───────────────────────────────────
 function openModal(id=null) {
@@ -540,9 +601,13 @@ function openModal(id=null) {
     document.getElementById('fLesson').value=e.lesson||'';
     document.getElementById('fSupplement').value=e.supplement||'';
     document.getElementById('fTags').value=(e.tags||[]).join(', ');
+    currentFixedTags=[...(e.fixedTags||getBookDefaultTags(e.book||''))];
+    renderFixedTagChips();
     currentDrawings=[...(e.drawings||[])];
   } else {
     ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(id=>document.getElementById(id).value='');
+    currentFixedTags=[];
+    renderFixedTagChips();
     currentDrawings=[];
   }
   renderDrawingGallery();
@@ -574,8 +639,11 @@ function saveEntry() {
     content:document.getElementById('fContent').value,
     lesson:document.getElementById('fLesson').value,
     supplement:document.getElementById('fSupplement').value,
-    tags, drawings:currentDrawings
+    tags, drawings:currentDrawings,
+    fixedTags:currentFixedTags
   };
+  // 本の固定タグを更新
+  if(data.book) setBookDefaultTags(data.book, currentFixedTags);
   if(editingId){entries=entries.map(e=>e.id===editingId?{...e,...data}:e);}
   else{entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});}
   persist(); closeModal(); render(); showToast('保存しました');
@@ -699,16 +767,23 @@ function clearDrawing() {
 }
 
 function saveDrawing() {
-  const tmp=document.createElement('canvas');
+  // 表示用（フル解像度）
+  const full=document.createElement('canvas');
   const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
-  tmp.width=cssW; tmp.height=cssH;
-  tmp.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
-  const dataUrl=tmp.toDataURL('image/jpeg',0.8);
+  full.width=cssW; full.height=cssH;
+  full.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+
+  // 同期用に250x188へ圧縮（Sheetsのセル制限対策）
+  const sync=document.createElement('canvas');
+  sync.width=250; sync.height=188;
+  sync.getContext('2d').drawImage(full,0,0,250,188);
+  const dataUrl=sync.toDataURL('image/jpeg',0.45);
+
   if(editingDrawingIndex!==null) {
-    currentDrawings[editingDrawingIndex]=dataUrl;  // 上書き
+    currentDrawings[editingDrawingIndex]=dataUrl;
     showToast('✏️ スケッチを更新しました');
   } else {
-    currentDrawings.push(dataUrl);                 // 新規追加
+    currentDrawings.push(dataUrl);
     showToast('🎨 スケッチを保存しました');
   }
   renderDrawingGallery();
