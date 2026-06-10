@@ -353,7 +353,7 @@ const BOOK_META_KEY = 'reading_log_book_meta';
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
 let currentDrawings = [], editingDrawingIndex = null;
-let currentFixedTags = [];  // null=新規, 数値=上書き編集
+let currentFixedTags = []; 
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 
@@ -374,11 +374,7 @@ const SAMPLE = [
   { id:1, title:"グライダー型人間について", book:"思考の整理学", author:"外山滋比古", page:"pp.42–55",
     content:"グライダー型人間とエンジン型人間の違い。自力で飛べないか、自ら飛び立つか。",
     lesson:"受け身にならず、自ら問いを立てて考える習慣を持つ。",
-    supplement:"ソクラテスの産婆術も同様の思想。", tags:["思考法","教育"], drawings:[], createdAt:"2024-11-15" },
-  { id:2, book:"FACTFULNESS", author:"ハンス・ロスリング", page:"pp.18–30",
-    content:"人間には10の本能的な思い込みがある。「ネガティブ本能」は世界が悪化していると信じさせる。",
-    lesson:"感情ではなくデータで世界を見ること。",
-    supplement:"メディアリテラシーとも関連。", tags:["統計","認知バイアス"], drawings:[], createdAt:"2024-12-03" }
+    supplement:"ソクラテスの産婆術も同様の思想。", tags:["思考法","教育"], fixedTags:["必読"], drawings:[], createdAt:"2024-11-15" }
 ];
 
 // ── Persistence ────────────────────────────────────
@@ -410,7 +406,6 @@ async function loadFromCloud() {
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
       if(!c) return l;
-      // drawingsはクラウド優先、なければローカルを使用
       const drawings = (c.drawings&&c.drawings.length) ? c.drawings : ((l&&l.drawings)||[]);
       return {...c, drawings};
     });
@@ -424,7 +419,8 @@ async function loadFromCloud() {
 function showSyncStatus(msg) {
   let el=document.getElementById('syncStatus');
   if(!el){el=document.createElement('div');el.id='syncStatus';document.body.appendChild(el);}
-  el.textContent=msg; el.style.cssText='position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#78716c;z-index:999;box-shadow:0 2px 8px #00000015;';
+  el.style.cssText='position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#78716c;z-index:999;box-shadow:0 2px 8px #00000015;';
+  el.textContent=msg;
 }
 function hideSyncStatus() { const el=document.getElementById('syncStatus'); if(el)el.remove(); }
 
@@ -521,7 +517,6 @@ function cardHTML(e) {
 </div>`;
 }
 
-// カード内スケッチをビューアーで表示（インデックスで参照）
 function openViewer(entryId, idx) {
   const entry=entries.find(e=>String(e.id)===String(entryId));
   if(!entry||!entry.drawings)return;
@@ -631,8 +626,9 @@ function deleteEntry(id) {
 
 function saveEntry() {
   const tags=document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const bookName=document.getElementById('fBook').value;
   const data={
-    book:document.getElementById('fBook').value,
+    book:bookName,
     author:document.getElementById('fAuthor').value,
     page:document.getElementById('fPage').value,
     title:document.getElementById('fTitle').value,
@@ -640,79 +636,48 @@ function saveEntry() {
     lesson:document.getElementById('fLesson').value,
     supplement:document.getElementById('fSupplement').value,
     tags, drawings:currentDrawings,
-    fixedTags:currentFixedTags
+    fixedTags:currentFixedTags // 記録保存時の固定タグ状態を保持
   };
-  // 本の固定タグを更新
-  if(data.book) setBookDefaultTags(data.book, currentFixedTags);
+  if(bookName) setBookDefaultTags(bookName, currentFixedTags);
   if(editingId){entries=entries.map(e=>e.id===editingId?{...e,...data}:e);}
   else{entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});}
   persist(); closeModal(); render(); showToast('保存しました');
 }
-// ── Fixed Tags ────────────────────────────────────
 
+// ── Fixed Tags ────────────────────────────────────
 function renderFixedTagChips() {
   const wrap = document.getElementById('fixedTagChips');
-
-  if (!currentFixedTags.length) {
-    wrap.innerHTML = '';
-    return;
-  }
-
+  if (!currentFixedTags.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = currentFixedTags.map((tag, index) => `
     <span class="fixed-tag-chip">
       ${esc(tag)}
-      <button type="button"
-              onclick="removeFixedTag(${index})">
-        ✕
-      </button>
+      <button type="button" onclick="removeFixedTag(${index})">✕</button>
     </span>
   `).join('');
 }
-
-function removeFixedTag(index) {
-  currentFixedTags.splice(index, 1);
-  renderFixedTagChips();
-}
-
+function removeFixedTag(index) { currentFixedTags.splice(index, 1); renderFixedTagChips(); }
 function onFixedTagKeydown(event) {
   if (event.key !== 'Enter') return;
-
   event.preventDefault();
-
   const input = document.getElementById('fFixedTagInput');
   const value = input.value.trim();
-
   if (!value) return;
-
-  if (!currentFixedTags.includes(value)) {
-    currentFixedTags.push(value);
-  }
-
+  if (!currentFixedTags.includes(value)) { currentFixedTags.push(value); }
   input.value = '';
   renderFixedTagChips();
 }
-
 function editBookTags(book) {
   closeBookshelf();
-
   openModal();
-
   document.getElementById('fBook').value = book;
-
-  const group = [...bookGroups().values()]
-    .find(g => g.book === book);
-
-  if (group) {
-    document.getElementById('fAuthor').value = group.author || '';
-  }
-
+  const group = [...bookGroups().values()].find(g => g.book === book);
+  if (group) { document.getElementById('fAuthor').value = group.author || ''; }
   currentFixedTags = [...getBookDefaultTags(book)];
-
   renderFixedTagChips();
-
   showToast('固定タグを編集できます');
 }
-// ── Drawing Gallery（フォーム内サムネイル） ─────────
+
+// ── Drawing Gallery ────────────────────────────────
 function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
   gallery.innerHTML=currentDrawings.map((src,i)=>`
@@ -725,28 +690,22 @@ function renderDrawingGallery() {
 function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
 
 // ── Drawing Canvas ─────────────────────────────────
-// openDrawingModal(null)   → 新規追加
-// openDrawingModal(index)  → 既存スケッチを編集
 function openDrawingModal(editIndex) {
   editingDrawingIndex = (editIndex !== null && editIndex !== undefined) ? editIndex : null;
   const isEdit = editingDrawingIndex !== null;
   document.getElementById('drawingModalTitle').textContent = isEdit ? '🎨 スケッチを編集' : '🎨 スケッチを描画';
   document.getElementById('drawingOverlay').classList.add('open');
   setTimeout(()=>{
-    // canvasをcloneしてイベントリスナーをリセット
     const old=document.getElementById('drawingCanvas');
     const neo=old.cloneNode(false);
     old.parentNode.replaceChild(neo,old);
     dCanvas=neo; dCtx=dCanvas.getContext('2d');
-    // DPIスケーリング
     const cssW=dCanvas.offsetWidth||460, cssH=360;
     dpiRatio=window.devicePixelRatio||1;
     dCanvas.width=cssW*dpiRatio; dCanvas.height=cssH*dpiRatio;
     dCanvas.style.width=cssW+'px'; dCanvas.style.height=cssH+'px';
     dCtx.scale(dpiRatio,dpiRatio);
-    // 白背景
     dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
-    // 編集モードなら既存画像を読み込む
     if(isEdit && currentDrawings[editingDrawingIndex]) {
       const img=new Image();
       img.onload=()=>{ dCtx.drawImage(img,0,0,cssW,cssH); saveDrawState(); };
@@ -754,11 +713,9 @@ function openDrawingModal(editIndex) {
     } else {
       drawHistory=[]; saveDrawState();
     }
-    // ツールリセット
     drawMode='draw';
     document.getElementById('toolDraw').classList.add('active');
     document.getElementById('toolErase').classList.remove('active');
-    // イベント登録
     dCanvas.addEventListener('pointerdown',onPtrDown);
     dCanvas.addEventListener('pointermove',onPtrMove);
     dCanvas.addEventListener('pointerup',onPtrUp);
@@ -768,20 +725,17 @@ function openDrawingModal(editIndex) {
   },50);
 }
 function closeDrawingModal() { document.getElementById('drawingOverlay').classList.remove('open'); isDrawing=false; }
-
 function setDrawingMode(mode,btn) {
   drawMode=mode;
   document.querySelectorAll('.drawing-tool-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
 }
-
 function canvasPos(e) {
   const rect=dCanvas.getBoundingClientRect();
   const cx=e.clientX??e.touches?.[0]?.clientX??0;
   const cy=e.clientY??e.touches?.[0]?.clientY??0;
   return {x:cx-rect.left, y:cy-rect.top};
 }
-
 function onPtrDown(e) {
   e.preventDefault(); isDrawing=true; saveDrawState();
   const p=canvasPos(e); lastX=p.x; lastY=p.y;
@@ -801,7 +755,6 @@ function onPtrMove(e) {
   lastX=p.x; lastY=p.y;
 }
 function onPtrUp() { isDrawing=false; }
-
 function saveDrawState() {
   const tmp=document.createElement('canvas');
   const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
@@ -810,7 +763,6 @@ function saveDrawState() {
   drawHistory.push(tmp.toDataURL());
   if(drawHistory.length>20)drawHistory.shift();
 }
-
 function undoDrawing() {
   if(drawHistory.length<=1)return;
   drawHistory.pop();
@@ -822,26 +774,20 @@ function undoDrawing() {
   };
   img.src=drawHistory[drawHistory.length-1];
 }
-
 function clearDrawing() {
   const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
   dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
   drawHistory=[]; saveDrawState();
 }
-
 function saveDrawing() {
-  // 表示用（フル解像度）
   const full=document.createElement('canvas');
   const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
   full.width=cssW; full.height=cssH;
   full.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
-
-  // 同期用に250x188へ圧縮（Sheetsのセル制限対策）
   const sync=document.createElement('canvas');
   sync.width=250; sync.height=188;
   sync.getContext('2d').drawImage(full,0,0,250,188);
   const dataUrl=sync.toDataURL('image/jpeg',0.45);
-
   if(editingDrawingIndex!==null) {
     currentDrawings[editingDrawingIndex]=dataUrl;
     showToast('✏️ スケッチを更新しました');
@@ -872,7 +818,7 @@ async function runAI(id,btn,key) {
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20240620',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`}]})
     });
     const d=await r.json();
     e.aiSummary=d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
