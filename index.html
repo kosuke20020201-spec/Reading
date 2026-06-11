@@ -10,6 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="読書ノート">
 <meta name="theme-color" content="#f59e0b">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -613,41 +616,47 @@ function selectBookFromShelf(idx) {
   const g = getBookByIdx(idx);
   if (!g) return;
   closeBookshelf();
-  openModal();
-  document.getElementById('fBook').value = g.book;
-  document.getElementById('fAuthor').value = g.author;
-  // BUGFIX: openModal()後にその本の固定タグをセットして再描画
-  currentFixedTags = getBookFixedTags(g.book);
-  renderFixedTagChips();
+  openModal(null, g.book, g.author);
 }
 
-function openModal(id=null) {
+function openModal(id, presetBook, presetAuthor) {
+  id = id || null;
+  presetBook = presetBook || '';
+  presetAuthor = presetAuthor || '';
   editingId = id;
   document.getElementById('modalTitle').textContent = id ? '記録を編集' : '新しい読書記録';
   document.getElementById('btnSave').textContent = id ? '更新する' : '保存する';
+
+  // フォームをリセット
+  ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
+  currentFixedTags = [];
+  currentDrawings  = [];
+
   if (id) {
-    const e = entries.find(x=>x.id===id);
-    document.getElementById('fBook').value      = e.book||'';
-    document.getElementById('fAuthor').value    = e.author||'';
-    document.getElementById('fPage').value      = e.page||'';
-    document.getElementById('fTitle').value     = e.title||'';
-    document.getElementById('fContent').value   = e.content||'';
-    document.getElementById('fLesson').value    = e.lesson||'';
-    document.getElementById('fSupplement').value= e.supplement||'';
-    document.getElementById('fTags').value      = (e.tags||[]).join(', ');
-    // BUGFIX: 編集時もbook_metaからその本の固定タグを読み込む
-    currentFixedTags = getBookFixedTags(e.book||'');
-    currentDrawings  = [...(e.drawings||[])];
-  } else {
-    ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(fid=>document.getElementById(fid).value='');
-    currentFixedTags = [];
-    currentDrawings  = [];
+    var e = entries.find(function(x){ return x.id===id; });
+    if (e) {
+      document.getElementById('fBook').value       = e.book||'';
+      document.getElementById('fAuthor').value     = e.author||'';
+      document.getElementById('fPage').value       = e.page||'';
+      document.getElementById('fTitle').value      = e.title||'';
+      document.getElementById('fContent').value    = e.content||'';
+      document.getElementById('fLesson').value     = e.lesson||'';
+      document.getElementById('fSupplement').value = e.supplement||'';
+      document.getElementById('fTags').value       = (e.tags||[]).join(', ');
+      currentFixedTags = getBookFixedTags(e.book||'');
+      currentDrawings  = (e.drawings||[]).slice();
+    }
+  } else if (presetBook) {
+    document.getElementById('fBook').value   = presetBook;
+    document.getElementById('fAuthor').value = presetAuthor;
+    currentFixedTags = getBookFixedTags(presetBook);
   }
+
   renderFixedTagChips();
   renderDrawingGallery();
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('fBook').focus(),50);
+  setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
 function editEntry(id) { openModal(id); }
@@ -711,17 +720,12 @@ function onFixedTagKeydown(event) {
   renderFixedTagChips();
 }
 
-// BUGFIX: インデックスでbook特定するよう変更
 function editBookTags(idx) {
   const g = getBookByIdx(idx);
   if (!g) return;
   closeBookshelf();
-  openModal();
-  document.getElementById('fBook').value   = g.book;
-  document.getElementById('fAuthor').value = g.author;
-  // BUGFIX: openModal()のリセット後に、この本の固定タグを再セット＆再描画
-  currentFixedTags = getBookFixedTags(g.book);
-  renderFixedTagChips();
+  // openModal に本情報を渡すことで、リセット後に正しく固定タグがセットされる
+  openModal(null, g.book, g.author);
   showToast('固定タグを編集して「保存する」を押してください');
 }
 
@@ -909,14 +913,14 @@ document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.ta
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
 document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
 
+// Service Worker・キャッシュを完全クリア（古いキャッシュによる不具合防止）
 if('serviceWorker' in navigator){
-  window.addEventListener('load',async()=>{
-    const regs=await navigator.serviceWorker.getRegistrations();
-    await Promise.all(regs.map(r=>r.unregister()));
-    const keys=await caches.keys();
-    await Promise.all(keys.map(k=>caches.delete(k)));
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(r=>r.unregister());
   });
+}
+if('caches' in window){
+  caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
 }
 
 let deferredPrompt=null;
