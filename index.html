@@ -93,85 +93,47 @@
   .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
   .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; }
 
+  /* スケッチ */
   .sketch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.5rem; }
   .sketch-grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: opacity 0.1s; }
   .sketch-grid img:hover { opacity: 0.85; }
-
   .drawing-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
   .drawing-thumb { position: relative; width: 80px; height: 60px; border: 1px solid var(--stone-200); border-radius: 0.6rem; overflow: hidden; cursor: pointer; transition: border-color 0.1s; }
-  .drawing-thumb:hover { border-color: var(--amber); }
   .drawing-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; background: rgba(244,63,94,0.9); border: none; border-radius: 4px; color: white; font-size: 0.7rem; padding: 1px 5px; cursor: pointer; display: none; line-height: 1.4; }
+  .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; background: rgba(244,63,94,0.9); border: none; border-radius: 4px; color: white; font-size: 0.7rem; padding: 1px 5px; cursor: pointer; display: none; }
   .drawing-thumb:hover .drawing-thumb-delete { display: block; }
   .drawing-thumb-edit-badge { position: absolute; bottom: 2px; left: 2px; background: rgba(245,158,11,0.9); border-radius: 3px; color: white; font-size: 0.6rem; padding: 1px 4px; pointer-events: none; }
 
   .empty { text-align: center; padding: 4rem 0; color: var(--stone-300); }
   .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-  .empty p { font-size: 0.85rem; }
 
   .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 1rem; background: rgba(28,22,15,0.5); backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
   .modal { background: white; border-radius: 1.5rem; box-shadow: 0 20px 60px #00000022; width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
   .modal-header { padding: 1.25rem 1.5rem 0.875rem; border-bottom: 1px solid var(--stone-100); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .modal-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 1.05rem; }
-  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); line-height: 1; }
-  .modal-close:hover { background: var(--stone-100); }
+  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); }
   .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
+  
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
-  .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
-  .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
+  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; }
   .lesson-field { background: var(--amber-light) !important; border-color: var(--amber-border) !important; }
+  
   .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); font-family: inherit; }
-  .btn-cancel:hover { background: var(--stone-100); }
   .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; font-family: inherit; }
-  .btn-save:hover { filter: brightness(1.08); }
 
-  .suggest-wrap { position: relative; }
-  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow-y: auto; max-height: 200px; }
-  .suggest-item { padding: 0.65rem 0.875rem; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--stone-100); }
-  .suggest-item:last-child { border-bottom: none; }
-  .suggest-item:hover { background: var(--amber-light); }
-  .suggest-title { font-size: 0.82rem; font-weight: 600; color: var(--stone-800); }
-  .suggest-author { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
-
-  .bookshelf-list { display: flex; flex-direction: column; gap: 0.5rem; }
-  .bookshelf-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid var(--stone-200); cursor: pointer; transition: all 0.15s; background: white; }
-  .bookshelf-item:hover { border-color: var(--amber); background: var(--amber-light); }
-  .bookshelf-item-icon { font-size: 1.3rem; flex-shrink: 0; }
-  .bookshelf-item-info { flex: 1; min-width: 0; }
-  .bookshelf-item-title { font-weight: 700; font-size: 0.85rem; }
-  .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
-  .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
-
-  .drawing-tools { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
-  .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; font-family: inherit; transition: all 0.1s; }
-  .drawing-tool-btn:hover { border-color: var(--amber); }
-  .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
-  #drawingCanvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; display: block; width: 100%; touch-action: none; cursor: crosshair; }
-
-  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 1rem; }
-  .viewer-overlay.open { display: flex; }
-  .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
-
-  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
-  .toast.show { opacity: 1; }
-
+  /* 固定タグ */
   .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
   .fixed-tag-chip { display:inline-flex; align-items:center; gap:0.2rem; font-size:0.7rem; font-weight:600; padding:0.2rem 0.5rem 0.2rem 0.6rem; border-radius:999px; background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
-  .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; padding:0; }
+  .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; }
   .fixed-tag-hint { font-size:0.68rem; color:var(--stone-400); margin-top:0.25rem; }
   .tag-pill-fixed { background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
-  .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
-  .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
-
+  
   .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
   .tc-2{background:#d1fae5;color:#065f46} .tc-3{background:#ffe4e6;color:#9f1239}
   .tc-4{background:#ede9fe;color:#4c1d95} .tc-5{background:#ffedd5;color:#7c2d12}
-
-  @media (max-width: 480px) { .header-title { font-size: 1.6rem; } .field-row { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -181,41 +143,36 @@
     <div class="header-left">
       <p class="header-eyebrow">Reading Journal</p>
       <h1 class="header-title">読書ノート</h1>
+      <p class="header-meta" id="headerMeta"></p>
     </div>
     <div class="header-btns">
       <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
-      <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
+      <div class="header-btns-row">
+        <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
+      </div>
     </div>
   </header>
-
   <div id="cardsContainer"></div>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
-      <h2 class="modal-title" id="modalTitle">新しい読書記録</h2>
+      <h2 class="modal-title" id="modalTitle">記録</h2>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field suggest-wrap">
-        <label>📚 本のタイトル</label>
-        <input type="text" id="fBook" oninput="onBookInput(this.value)">
-        <div class="suggest-list" id="suggestList" style="display:none"></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>著者</label><input type="text" id="fAuthor"></div>
-        <div class="field"><label>ページ</label><input type="text" id="fPage"></div>
-      </div>
+      <div class="field"><label>📚 本のタイトル</label><input type="text" id="fBook" oninput="onBookInput(this.value)"></div>
       <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle"></div>
       <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3"></textarea></div>
       <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3"></textarea></div>
       <div class="field">
-        <label>📚 本の固定タグ</label>
+        <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（自動付与）</span></label>
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
         <input type="text" id="fFixedTagInput" placeholder="タグを入力してEnter" onkeydown="onFixedTagKeydown(event)">
+        <p class="fixed-tag-hint">💡 編集するとこの本の全記録に反映されます</p>
       </div>
-      <div class="field"><label>🏷 自由タグ（カンマ区切り）</label><input type="text" id="fTags"></div>
+      <div class="field"><label>🏷 自由タグ</label><input type="text" id="fTags"></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
@@ -224,15 +181,6 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="bookshelfOverlay">
-  <div class="modal">
-    <div class="modal-header"><h2 class="modal-title">📚 本棚</h2><button class="modal-close" onclick="closeBookshelf()">✕</button></div>
-    <div class="modal-body"><div class="bookshelf-list" id="bookshelfList"></div></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
 <script>
 const STORAGE_KEY = 'reading_log_v1';
 const BOOK_META_KEY = 'reading_log_book_meta';
@@ -240,28 +188,32 @@ let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let currentFixedTags = [];
 let editingId = null;
 
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+// --- 固定タグの管理 ---
+function getBookDefaultTags(book) {
+  const meta = JSON.parse(localStorage.getItem(BOOK_META_KEY) || '{}');
+  return meta[book] || [];
+}
 
-function getBookFixedTags(book) { return JSON.parse(localStorage.getItem(BOOK_META_KEY) || '{}')[book] || []; }
-function saveBookFixedTags(book, tags) {
+function setBookDefaultTags(book, tags) {
+  if (!book) return;
   const meta = JSON.parse(localStorage.getItem(BOOK_META_KEY) || '{}');
   meta[book] = tags;
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
 }
 
+// --- UI制御 ---
 function renderFixedTagChips() {
   const wrap = document.getElementById('fixedTagChips');
-  wrap.innerHTML = currentFixedTags.map((t, i) => `
-    <span class="fixed-tag-chip">${esc(t)}<button onclick="removeFixedTag(${i})">✕</button></span>
+  wrap.innerHTML = currentFixedTags.map((tag, i) => `
+    <span class="fixed-tag-chip">${esc(tag)}<button type="button" onclick="removeFixedTag(${i})">✕</button></span>
   `).join('');
 }
+
 function removeFixedTag(i) {
   currentFixedTags.splice(i, 1);
   renderFixedTagChips();
-  const book = document.getElementById('fBook').value.trim();
-  if(book) saveBookFixedTags(book, currentFixedTags);
 }
+
 function onFixedTagKeydown(e) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
@@ -270,98 +222,75 @@ function onFixedTagKeydown(e) {
   if (val && !currentFixedTags.includes(val)) {
     currentFixedTags.push(val);
     renderFixedTagChips();
-    const book = document.getElementById('fBook').value.trim();
-    if(book) saveBookFixedTags(book, currentFixedTags);
   }
   input.value = '';
+}
+
+function onBookInput(val) {
+  const book = val.trim();
+  if (book) {
+    currentFixedTags = [...getBookDefaultTags(book)];
+    renderFixedTagChips();
+  }
 }
 
 function openModal(id = null) {
   editingId = id;
   if (id) {
     const e = entries.find(x => x.id === id);
-    document.getElementById('fBook').value = e.book;
-    document.getElementById('fAuthor').value = e.author;
-    document.getElementById('fTags').value = (e.tags||[]).join(', ');
-    currentFixedTags = [...(e.fixedTags || getBookFixedTags(e.book))];
+    document.getElementById('fBook').value = e.book || '';
+    document.getElementById('fTitle').value = e.title || '';
+    document.getElementById('fContent').value = e.content || '';
+    document.getElementById('fLesson').value = e.lesson || '';
+    document.getElementById('fTags').value = (e.tags || []).join(', ');
+    currentFixedTags = e.fixedTags ? [...e.fixedTags] : [...getBookDefaultTags(e.book || '')];
   } else {
-    document.getElementById('fBook').value = '';
-    document.getElementById('fAuthor').value = '';
-    document.getElementById('fTags').value = '';
+    ['fBook','fTitle','fContent','fLesson','fTags'].forEach(id => document.getElementById(id).value = '');
     currentFixedTags = [];
   }
   renderFixedTagChips();
   document.getElementById('modalOverlay').classList.add('open');
 }
+
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
 function saveEntry() {
   const book = document.getElementById('fBook').value.trim();
-  if (!book) return alert('タイトルを入力してください');
+  const tags = document.getElementById('fTags').value.split(',').map(t => t.trim()).filter(Boolean);
   
-  saveBookFixedTags(book, currentFixedTags);
+  // 固定タグを保存
+  setBookDefaultTags(book, currentFixedTags);
+
   const data = {
     id: editingId || Date.now(),
-    book: book,
-    author: document.getElementById('fAuthor').value,
-    tags: document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean),
-    fixedTags: [...currentFixedTags]
+    book,
+    title: document.getElementById('fTitle').value,
+    content: document.getElementById('fContent').value,
+    lesson: document.getElementById('fLesson').value,
+    tags,
+    fixedTags: currentFixedTags // 記録自体にも保存
   };
+
+  if (editingId) {
+    entries = entries.map(e => e.id === editingId ? data : e);
+  } else {
+    entries.unshift(data);
+  }
   
-  if (editingId) entries = entries.map(e => e.id === editingId ? data : e);
-  else entries.unshift(data);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  closeModal(); render(); showToast('保存しました');
+  closeModal();
+  location.reload(); // 表示更新
 }
 
-function openBookshelf() {
-  const list = document.getElementById('bookshelfList');
-  const books = [...new Set(entries.map(e => e.book))];
-  list.innerHTML = books.map(b => `
-    <div class="bookshelf-item" onclick="selectBook('${esc(b)}')">
-      ${esc(b)}
-      <button onclick="event.stopPropagation(); editBookTags('${esc(b)}')">🏷 固定タグ編集</button>
-    </div>
-  `).join('');
-  document.getElementById('bookshelfOverlay').classList.add('open');
-}
-function closeBookshelf() { document.getElementById('bookshelfOverlay').classList.remove('open'); }
-function selectBook(book) {
-  closeBookshelf();
-  openModal();
-  document.getElementById('fBook').value = book;
-  currentFixedTags = [...getBookFixedTags(book)];
-  renderFixedTagChips();
-}
-function editBookTags(book) {
-  closeBookshelf();
-  openModal();
-  document.getElementById('fBook').value = book;
-  currentFixedTags = [...getBookFixedTags(book)];
-  renderFixedTagChips();
-}
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 
-function render() {
-  const container = document.getElementById('cardsContainer');
-  container.innerHTML = entries.map(e => `
-    <div class="card" onclick="openModal(${e.id})">
-      <div class="card-body">
-        <div class="card-title-note">${esc(e.book)}</div>
-        <div class="card-tags">
-          ${(e.fixedTags||[]).map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('')}
-          ${(e.tags||[]).map(t=>`<span class="tag-pill">${esc(t)}</span>`).join('')}
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function onBookInput(v) {
-  currentFixedTags = [...getBookFixedTags(v)];
-  renderFixedTagChips();
-}
-
-render();
+// 初期描画
+entries.forEach(e => {
+  const div = document.createElement('div');
+  div.innerHTML = `<h3>${esc(e.title)} (${esc(e.book)})</h3>`;
+  div.onclick = () => openModal(e.id);
+  document.getElementById('cardsContainer').appendChild(div);
+});
 </script>
 </body>
 </html>
