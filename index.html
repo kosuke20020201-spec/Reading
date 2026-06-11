@@ -93,10 +93,12 @@
   .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
   .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; }
 
+  /* スケッチ（カード内） */
   .sketch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.5rem; }
   .sketch-grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: opacity 0.1s; }
   .sketch-grid img:hover { opacity: 0.85; }
 
+  /* スケッチサムネイル（フォーム内） */
   .drawing-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
   .drawing-thumb { position: relative; width: 80px; height: 60px; border: 1px solid var(--stone-200); border-radius: 0.6rem; overflow: hidden; cursor: pointer; transition: border-color 0.1s; }
   .drawing-thumb:hover { border-color: var(--amber); }
@@ -148,12 +150,14 @@
   .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
   .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
 
+  /* 描画モーダル */
   .drawing-tools { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
   .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; font-family: inherit; transition: all 0.1s; }
   .drawing-tool-btn:hover { border-color: var(--amber); }
   .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
   #drawingCanvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; display: block; width: 100%; touch-action: none; cursor: crosshair; }
 
+  /* 画像ビューアー */
   .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 1rem; }
   .viewer-overlay.open { display: flex; }
   .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
@@ -161,6 +165,7 @@
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
 
+  /* 固定タグ */
   .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
   .fixed-tag-chip { display:inline-flex; align-items:center; gap:0.2rem; font-size:0.7rem; font-weight:600; padding:0.2rem 0.5rem 0.2rem 0.6rem; border-radius:999px; background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
   .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; padding:0; }
@@ -183,6 +188,7 @@
 </head>
 <body>
 <div class="bg-orbs"></div>
+
 <div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;align-items:center;gap:0.75rem">
   <span style="font-size:1.5rem;flex-shrink:0">📚</span>
   <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使用可能</div></div>
@@ -341,19 +347,20 @@ const BOOK_META_KEY = 'reading_log_book_meta';
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
 let currentDrawings = [], editingDrawingIndex = null;
-let currentFixedTags = [];
+let currentFixedTags = [];  
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 
+// ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
 function addDeletedId(id) { const ids=getDeletedIds(); ids.add(String(id)); localStorage.setItem(DELETED_KEY,JSON.stringify([...ids])); }
 
+// ── Book Meta (固定タグ) ──────────────────────────
 function getBookMeta() { try { return JSON.parse(localStorage.getItem(BOOK_META_KEY)||'{}'); } catch { return {}; } }
-// 修正: trim() を適用して余白による不一致を解消
-function getBookDefaultTags(book) { return getBookMeta()[book.trim()]||[]; }
+function getBookDefaultTags(book) { return getBookMeta()[book]||[]; }
 function setBookDefaultTags(book, tags) {
   if(!book)return;
-  const meta=getBookMeta(); meta[book.trim()]=tags; // trim()を適用
+  const meta=getBookMeta(); meta[book]=tags;
   localStorage.setItem(BOOK_META_KEY,JSON.stringify(meta));
 }
 
@@ -361,9 +368,14 @@ const SAMPLE = [
   { id:1, title:"グライダー型人間について", book:"思考の整理学", author:"外山滋比古", page:"pp.42–55",
     content:"グライダー型人間とエンジン型人間の違い。自力で飛べないか、自ら飛び立つか。",
     lesson:"受け身にならず、自ら問いを立てて考える習慣を持つ。",
-    supplement:"ソクラテスの産婆術も同様の思想。", tags:["思考法","教育"], drawings:[], createdAt:"2024-11-15" }
+    supplement:"ソクラテスの産婆術も同様の思想。", tags:["思考法","教育"], drawings:[], createdAt:"2024-11-15", fixedTags:[] },
+  { id:2, book:"FACTFULNESS", author:"ハンス・ロスリング", page:"pp.18–30",
+    content:"人間には10の本能的な思い込みがある。「ネガティブ本能」は世界が悪化していると信じさせる。",
+    lesson:"感情ではなくデータで世界を見ること。",
+    supplement:"メディアリテラシーとも関連。", tags:["統計","認知バイアス"], drawings:[], createdAt:"2024-12-03", fixedTags:[] }
 ];
 
+// ── Persistence ────────────────────────────────────
 function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSON.parse(r):SAMPLE; if(!Array.isArray(entries))entries=SAMPLE; } catch { entries=SAMPLE; } }
 
 function persist() {
@@ -371,6 +383,7 @@ function persist() {
   syncToCloud();
 }
 
+// ── Cloud Sync ─────────────────────────────────────
 async function syncToCloud() {
   try {
     await fetch(CLOUD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(entries)});
@@ -379,9 +392,10 @@ async function syncToCloud() {
 
 async function loadFromCloud() {
   try {
+    showSyncStatus('☁️ クラウドから同期中…');
     const r = await fetch(CLOUD_URL+'?t='+Date.now());
     const cloud = await r.json();
-    if (!Array.isArray(cloud)||cloud.length===0) return;
+    if (!Array.isArray(cloud)||cloud.length===0) { hideSyncStatus(); return; }
     const deletedIds = getDeletedIds();
     const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&String(e.deleted)!=='TRUE');
     const localMap = Object.fromEntries(entries.map(e=>[String(e.id),e]));
@@ -396,12 +410,21 @@ async function loadFromCloud() {
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
     render();
-  } catch(e) { console.warn('Cloud load failed:',e); }
+    showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
+  } catch(e) { console.warn('Cloud load failed:',e); hideSyncStatus(); }
 }
+
+function showSyncStatus(msg) {
+  let el=document.getElementById('syncStatus');
+  if(!el){el=document.createElement('div');el.id='syncStatus';document.body.appendChild(el);}
+  el.textContent=msg; el.style.cssText='position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#78716c;z-index:999;box-shadow:0 2px 8px #00000015;';
+}
+function hideSyncStatus() { const el=document.getElementById('syncStatus'); if(el)el.remove(); }
 
 function getApiKey() { return localStorage.getItem(API_KEY_KEY)||''; }
 function setApiKey(k) { localStorage.setItem(API_KEY_KEY,k); }
 
+// ── Helpers ────────────────────────────────────────
 function tagClass(t) { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%6; return `tc-${h}`; }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function allTags() { const s=new Set(); entries.forEach(e=>{(e.tags||[]).forEach(t=>s.add(t));(e.fixedTags||[]).forEach(t=>s.add(t));}); return [...s]; }
@@ -413,13 +436,13 @@ function bookGroups() {
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
   return entries.filter(e=>{
-    const combinedTags = [...(e.tags||[]), ...(e.fixedTags||[])];
-    if(activeTag&&!combinedTags.includes(activeTag))return false;
+    if(activeTag&&!(e.tags||[]).includes(activeTag)&&!(e.fixedTags||[]).includes(activeTag))return false;
     if(!q)return true;
-    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...combinedTags].some(s=>(s||'').toLowerCase().includes(q));
+    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[]),...(e.fixedTags||[])].some(s=>(s||'').toLowerCase().includes(q));
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
 
+// ── Render ─────────────────────────────────────────
 function render() {
   const tags=allTags(),groups=bookGroups();
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ`;
@@ -461,6 +484,7 @@ function cardHTML(e) {
       <div class="section-label">🎨 スケッチ</div>
       <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}')">`).join('')}</div>
     </div>`:'';
+  const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
@@ -481,6 +505,10 @@ function cardHTML(e) {
       ${sec('lesson-bg','💡','教訓',e.lesson)}
       ${sec('supplement-bg','🔍','補足',e.supplement)}
       ${sketchHTML}
+    </div>
+    <div class="ai-area">
+      <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
+      ${aiHTML}
     </div>
   </div>
 </div>`;
@@ -519,7 +547,7 @@ function selectBook(book,author) {
 function openBookshelf() {
   const groups=bookGroups(),list=document.getElementById('bookshelfList');
   list.innerHTML=groups.size?[...groups.values()].map(g=>{
-    const dTags=getBookDefaultTags(g.book); // trim済み
+    const dTags=getBookDefaultTags(g.book);
     const tagChips=dTags.map(t=>`<span class="bookshelf-tag-chip">${esc(t)}</span>`).join('');
     return `<div class="bookshelf-item" style="flex-direction:column;align-items:stretch;gap:0.4rem">
       <div style="display:flex;align-items:center;gap:0.75rem" onclick="selectBookFromShelf('${esc(g.book)}','${esc(g.author)}')">
@@ -571,22 +599,31 @@ function openModal(id=null) {
     currentDrawings=[];
   }
   renderDrawingGallery();
+  document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('fBook').focus(),50);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
 function editEntry(id) { openModal(id); }
 
 function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？'))return;
   addDeletedId(id);
-  entries=entries.filter(e=>String(e.id)!==String(id));
+  entries=entries.map(e=>e.id===id?{...e,deleted:true}:e);
   persist();
+  entries=entries.filter(e=>!e.deleted);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
   render();
+  showToast('削除しました');
 }
 
 function saveEntry() {
   const bookName = document.getElementById('fBook').value.trim();
-  if(!bookName){ alert('本タイトルを入力してください'); return; }
+  if(!bookName) { alert('本タイトルを入力してください'); return; }
+  
+  // 1. 最新の固定タグを保存
+  setBookDefaultTags(bookName, currentFixedTags);
+
   const tags=document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const data={
     book:bookName,
@@ -597,20 +634,17 @@ function saveEntry() {
     lesson:document.getElementById('fLesson').value,
     supplement:document.getElementById('fSupplement').value,
     tags, drawings:currentDrawings,
-    fixedTags:[...currentFixedTags] // コピーを保存
+    fixedTags: [...currentFixedTags] // 記録にタグを保持
   };
-  setBookDefaultTags(bookName, [...currentFixedTags]); // 保存
-  
-  if(editingId){
-    entries=entries.map(e=>e.id===editingId?{...e,...data}:e);
-  } else {
-    entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});
-  }
-  persist(); closeModal(); render();
+
+  if(editingId){entries=entries.map(e=>e.id===editingId?{...e,...data}:e);}
+  else{entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});}
+  persist(); closeModal(); render(); showToast('保存しました');
 }
 
 function renderFixedTagChips() {
   const wrap = document.getElementById('fixedTagChips');
+  if (!currentFixedTags.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = currentFixedTags.map((tag, index) => `
     <span class="fixed-tag-chip">
       ${esc(tag)}
@@ -624,17 +658,21 @@ function onFixedTagKeydown(event) {
   event.preventDefault();
   const input = document.getElementById('fFixedTagInput');
   const value = input.value.trim();
-  if (!value || currentFixedTags.includes(value)) return;
-  currentFixedTags.push(value);
+  if (!value) return;
+  if (!currentFixedTags.includes(value)) { currentFixedTags.push(value); }
   input.value = '';
   renderFixedTagChips();
 }
+
 function editBookTags(book) {
   closeBookshelf();
-  openModal();
+  openModal(); // 新規入力状態で開くが、中身は既存のものを読み込む
   document.getElementById('fBook').value = book;
+  const group = [...bookGroups().values()].find(g => g.book === book);
+  if (group) document.getElementById('fAuthor').value = group.author || '';
   currentFixedTags = [...getBookDefaultTags(book)];
   renderFixedTagChips();
+  showToast('固定タグを編集できます');
 }
 
 function renderDrawingGallery() {
@@ -647,18 +685,200 @@ function renderDrawingGallery() {
     </div>`).join('');
 }
 function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
+
 function openDrawingModal(editIndex) {
   editingDrawingIndex = (editIndex !== null && editIndex !== undefined) ? editIndex : null;
+  const isEdit = editingDrawingIndex !== null;
+  document.getElementById('drawingModalTitle').textContent = isEdit ? '🎨 スケッチを編集' : '🎨 スケッチを描画';
   document.getElementById('drawingOverlay').classList.add('open');
-  // Canvas setup...
+  setTimeout(()=>{
+    const old=document.getElementById('drawingCanvas');
+    const neo=old.cloneNode(false);
+    old.parentNode.replaceChild(neo,old);
+    dCanvas=neo; dCtx=dCanvas.getContext('2d');
+    const cssW=dCanvas.offsetWidth||460, cssH=360;
+    dpiRatio=window.devicePixelRatio||1;
+    dCanvas.width=cssW*dpiRatio; dCanvas.height=cssH*dpiRatio;
+    dCanvas.style.width=cssW+'px'; dCanvas.style.height=cssH+'px';
+    dCtx.scale(dpiRatio,dpiRatio);
+    dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
+    if(isEdit && currentDrawings[editingDrawingIndex]) {
+      const img=new Image();
+      img.onload=()=>{ dCtx.drawImage(img,0,0,cssW,cssH); saveDrawState(); };
+      img.src=currentDrawings[editingDrawingIndex];
+    } else { drawHistory=[]; saveDrawState(); }
+    drawMode='draw';
+    document.getElementById('toolDraw').classList.add('active');
+    document.getElementById('toolErase').classList.remove('active');
+    dCanvas.addEventListener('pointerdown',onPtrDown);
+    dCanvas.addEventListener('pointermove',onPtrMove);
+    dCanvas.addEventListener('pointerup',onPtrUp);
+    dCanvas.addEventListener('pointercancel',onPtrUp);
+    dCanvas.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+    dCanvas.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  },50);
 }
-function closeDrawingModal() { document.getElementById('drawingOverlay').classList.remove('open'); }
-function setDrawingMode(mode,btn) { /* ... */ }
-function saveDrawing() { /* ... */ }
-function clearDrawing() { /* ... */ }
-function undoDrawing() { /* ... */ }
+function closeDrawingModal() { document.getElementById('drawingOverlay').classList.remove('open'); isDrawing=false; }
 
-// ... (他イベント処理)
+function setDrawingMode(mode,btn) {
+  drawMode=mode;
+  document.querySelectorAll('.drawing-tool-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function canvasPos(e) {
+  const rect=dCanvas.getBoundingClientRect();
+  const cx=e.clientX??e.touches?.[0]?.clientX??0;
+  const cy=e.clientY??e.touches?.[0]?.clientY??0;
+  return {x:cx-rect.left, y:cy-rect.top};
+}
+
+function onPtrDown(e) {
+  e.preventDefault(); isDrawing=true; saveDrawState();
+  const p=canvasPos(e); lastX=p.x; lastY=p.y;
+}
+function onPtrMove(e) {
+  if(!isDrawing)return; e.preventDefault();
+  const p=canvasPos(e);
+  dCtx.lineCap='round'; dCtx.lineJoin='round';
+  if(drawMode==='erase') {
+    const sz=+document.getElementById('brushSize').value*4;
+    dCtx.clearRect(p.x-sz/2,p.y-sz/2,sz,sz);
+  } else {
+    dCtx.strokeStyle=document.getElementById('brushColor').value;
+    dCtx.lineWidth=+document.getElementById('brushSize').value;
+    dCtx.beginPath(); dCtx.moveTo(lastX,lastY); dCtx.lineTo(p.x,p.y); dCtx.stroke();
+  }
+  lastX=p.x; lastY=p.y;
+}
+function onPtrUp() { isDrawing=false; }
+
+function saveDrawState() {
+  const tmp=document.createElement('canvas');
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  tmp.width=cssW; tmp.height=cssH;
+  tmp.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+  drawHistory.push(tmp.toDataURL());
+  if(drawHistory.length>20)drawHistory.shift();
+}
+
+function undoDrawing() {
+  if(drawHistory.length<=1)return;
+  drawHistory.pop();
+  const img=new Image();
+  img.onload=()=>{
+    const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+    dCtx.clearRect(0,0,cssW,cssH);
+    dCtx.drawImage(img,0,0,cssW,cssH);
+  };
+  img.src=drawHistory[drawHistory.length-1];
+}
+
+function clearDrawing() {
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
+  drawHistory=[]; saveDrawState();
+}
+
+function saveDrawing() {
+  const full=document.createElement('canvas');
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  full.width=cssW; full.height=cssH;
+  full.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+  const sync=document.createElement('canvas');
+  sync.width=250; sync.height=188;
+  sync.getContext('2d').drawImage(full,0,0,250,188);
+  const dataUrl=sync.toDataURL('image/jpeg',0.45);
+  if(editingDrawingIndex!==null) {
+    currentDrawings[editingDrawingIndex]=dataUrl;
+    showToast('✏️ スケッチを更新しました');
+  } else {
+    currentDrawings.push(dataUrl);
+    showToast('🎨 スケッチを保存しました');
+  }
+  renderDrawingGallery();
+  closeDrawingModal();
+}
+
+async function handleAI(id,btn) {
+  const key=getApiKey();
+  if(!key){pendingAiId=id;document.getElementById('apiKeyInput').value='';document.getElementById('aiKeyOverlay').classList.add('open');return;}
+  await runAI(id,btn,key);
+}
+function closeAiModal() { document.getElementById('aiKeyOverlay').classList.remove('open'); }
+function confirmApiKey() {
+  const k=document.getElementById('apiKeyInput').value.trim(); if(!k)return;
+  setApiKey(k); closeAiModal();
+  if(pendingAiId!==null){const btn=document.querySelector(`#card-${pendingAiId} .btn-ai`);runAI(pendingAiId,btn,k);pendingAiId=null;}
+}
+async function runAI(id,btn,key) {
+  const e=entries.find(e=>e.id===id); if(!e)return;
+  btn.disabled=true; btn.textContent='要約中…';
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`}]})
+    });
+    const d=await r.json();
+    e.aiSummary=d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
+    persist(); render(); showToast('✨ AI要約完了');
+  } catch { showToast('エラーが発生しました。'); }
+  finally { btn.disabled=false; btn.textContent=e.aiSummary?'✨ 再要約':'✨ AI要約'; }
+}
+
+function exportData() {
+  const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`reading-log-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  showToast('📤 エクスポートしました');
+}
+function importData(ev) {
+  const file=ev.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const imp=JSON.parse(e.target.result); if(!Array.isArray(imp))throw new Error();
+      const existIds=new Set(entries.map(e=>e.id));
+      const newMap=Object.fromEntries(imp.map(e=>[e.id,e]));
+      entries=[...entries.map(e=>newMap[e.id]?{...e,...newMap[e.id]}:e),...imp.filter(e=>!existIds.has(e.id))];
+      persist(); render(); showToast(`📥 ${imp.length}件をインポートしました`);
+    } catch { showToast('❌ ファイルの形式が正しくありません'); }
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('sh`ow'),2500);
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();closeViewer();}});
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
+document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
+document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
+document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',async()=>{
+    const regs=await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r=>r.unregister()));
+    const keys=await caches.keys();
+    await Promise.all(keys.map(k=>caches.delete(k)));
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+let deferredPrompt=null;
+const banner=document.getElementById('installBanner');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;banner.style.display='flex';});
+document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;banner.style.display='none';});
+document.getElementById('btnDismiss')?.addEventListener('click',()=>{banner.style.display='none';});
+window.addEventListener('appinstalled',()=>{banner.style.display='none';deferredPrompt=null;});
+
 load(); render(); loadFromCloud();
 </script>
 </body>
