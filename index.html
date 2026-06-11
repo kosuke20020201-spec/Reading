@@ -93,51 +93,109 @@
   .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
   .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; }
 
-  /* スケッチ */
+  /* スケッチ（カード内） */
   .sketch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.5rem; }
   .sketch-grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: opacity 0.1s; }
   .sketch-grid img:hover { opacity: 0.85; }
+
+  /* スケッチサムネイル（フォーム内） */
   .drawing-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
   .drawing-thumb { position: relative; width: 80px; height: 60px; border: 1px solid var(--stone-200); border-radius: 0.6rem; overflow: hidden; cursor: pointer; transition: border-color 0.1s; }
+  .drawing-thumb:hover { border-color: var(--amber); }
   .drawing-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; background: rgba(244,63,94,0.9); border: none; border-radius: 4px; color: white; font-size: 0.7rem; padding: 1px 5px; cursor: pointer; display: none; }
+  .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; background: rgba(244,63,94,0.9); border: none; border-radius: 4px; color: white; font-size: 0.7rem; padding: 1px 5px; cursor: pointer; display: none; line-height: 1.4; }
   .drawing-thumb:hover .drawing-thumb-delete { display: block; }
   .drawing-thumb-edit-badge { position: absolute; bottom: 2px; left: 2px; background: rgba(245,158,11,0.9); border-radius: 3px; color: white; font-size: 0.6rem; padding: 1px 4px; pointer-events: none; }
 
   .empty { text-align: center; padding: 4rem 0; color: var(--stone-300); }
   .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .empty p { font-size: 0.85rem; }
 
   .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 1rem; background: rgba(28,22,15,0.5); backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
   .modal { background: white; border-radius: 1.5rem; box-shadow: 0 20px 60px #00000022; width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
   .modal-header { padding: 1.25rem 1.5rem 0.875rem; border-bottom: 1px solid var(--stone-100); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .modal-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 1.05rem; }
-  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); }
+  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); line-height: 1; }
+  .modal-close:hover { background: var(--stone-100); }
   .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
-  
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; }
+  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
+  .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
   .lesson-field { background: var(--amber-light) !important; border-color: var(--amber-border) !important; }
-  
   .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); font-family: inherit; }
+  .btn-cancel:hover { background: var(--stone-100); }
   .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; font-family: inherit; }
+  .btn-save:hover { filter: brightness(1.08); }
+  .ai-key-note { font-size: 0.75rem; color: var(--stone-400); line-height: 1.6; }
+  .ai-key-note a { color: var(--amber); }
+
+  .suggest-wrap { position: relative; }
+  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow-y: auto; max-height: 200px; }
+  .suggest-item { padding: 0.65rem 0.875rem; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--stone-100); }
+  .suggest-item:last-child { border-bottom: none; }
+  .suggest-item:hover { background: var(--amber-light); }
+  .suggest-title { font-size: 0.82rem; font-weight: 600; color: var(--stone-800); }
+  .suggest-author { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
+
+  .bookshelf-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .bookshelf-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid var(--stone-200); cursor: pointer; transition: all 0.15s; background: white; }
+  .bookshelf-item:hover { border-color: var(--amber); background: var(--amber-light); }
+  .bookshelf-item-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .bookshelf-item-info { flex: 1; min-width: 0; }
+  .bookshelf-item-title { font-weight: 700; font-size: 0.85rem; }
+  .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
+  .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
+
+  /* 描画モーダル */
+  .drawing-tools { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; font-family: inherit; transition: all 0.1s; }
+  .drawing-tool-btn:hover { border-color: var(--amber); }
+  .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
+  #drawingCanvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; display: block; width: 100%; touch-action: none; cursor: crosshair; }
+
+  /* 画像ビューアー */
+  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 1rem; }
+  .viewer-overlay.open { display: flex; }
+  .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
+
+  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
+  .toast.show { opacity: 1; }
 
   /* 固定タグ */
   .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
   .fixed-tag-chip { display:inline-flex; align-items:center; gap:0.2rem; font-size:0.7rem; font-weight:600; padding:0.2rem 0.5rem 0.2rem 0.6rem; border-radius:999px; background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
-  .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; }
+  .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; padding:0; }
   .fixed-tag-hint { font-size:0.68rem; color:var(--stone-400); margin-top:0.25rem; }
   .tag-pill-fixed { background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
-  
+  .tag-pill-free { }
+  .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
+  .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
+
   .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
   .tc-2{background:#d1fae5;color:#065f46} .tc-3{background:#ffe4e6;color:#9f1239}
   .tc-4{background:#ede9fe;color:#4c1d95} .tc-5{background:#ffedd5;color:#7c2d12}
+
+  @media (max-width: 480px) {
+    .header-title { font-size: 1.6rem; }
+    .field-row { grid-template-columns: 1fr; }
+    .card-actions { opacity: 1; }
+  }
 </style>
 </head>
 <body>
 <div class="bg-orbs"></div>
+
+<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;align-items:center;gap:0.75rem">
+  <span style="font-size:1.5rem;flex-shrink:0">📚</span>
+  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使用可能</div></div>
+  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;flex-shrink:0;font-family:inherit">追加</button>
+  <button id="btnDismiss" style="background:none;border:none;cursor:pointer;color:#a8a29e;font-size:1.1rem;padding:0.2rem;line-height:1;flex-shrink:0">✕</button>
+</div>
+
 <div class="container">
   <header>
     <div class="header-left">
@@ -149,30 +207,68 @@
       <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
       <div class="header-btns-row">
         <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
+        <button class="btn-sub" onclick="exportData()">📤 エクスポート</button>
+        <label class="btn-sub" style="cursor:pointer">📥 インポート<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
       </div>
     </div>
   </header>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="本・著者・内容・教訓・タグで検索…" autocomplete="off" oninput="onSearch(this.value)">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="tag-filters" id="tagFilters"></div>
+    <select class="sort-select" id="sortSelect" onchange="render()">
+      <option value="date">新しい順</option>
+      <option value="book">書名順</option>
+    </select>
+  </div>
+
+  <p class="results-count" id="resultsCount" style="display:none"></p>
   <div id="cardsContainer"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="empty-icon">📭</div>
+    <p>記録が見つかりません</p>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
-      <h2 class="modal-title" id="modalTitle">記録</h2>
+      <h2 class="modal-title" id="modalTitle">新しい読書記録</h2>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field"><label>📚 本のタイトル</label><input type="text" id="fBook" oninput="onBookInput(this.value)"></div>
-      <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle"></div>
-      <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3"></textarea></div>
-      <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3"></textarea></div>
+      <div class="field suggest-wrap">
+        <label>📚 本のタイトル</label>
+        <input type="text" id="fBook" placeholder="例: 思考の整理学" autocomplete="off" oninput="onBookInput(this.value)">
+        <div class="suggest-list" id="suggestList" style="display:none"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
+        <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55"></div>
+      </div>
+      <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
+      <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
+      <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
+      <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
       <div class="field">
-        <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（自動付与）</span></label>
+        <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
-        <input type="text" id="fFixedTagInput" placeholder="タグを入力してEnter" onkeydown="onFixedTagKeydown(event)">
+        <div style="display:flex;gap:0.5rem">
+          <input type="text" id="fFixedTagInput" placeholder="固定タグを追加してEnter" style="flex:1" onkeydown="onFixedTagKeydown(event)">
+        </div>
         <p class="fixed-tag-hint">💡 編集するとこの本の全記録に反映されます</p>
       </div>
-      <div class="field"><label>🏷 自由タグ</label><input type="text" id="fTags"></div>
+      <div class="field"><label>🏷 この記録の自由タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field">
+        <label>🎨 スケッチ・図解</label>
+        <div class="drawing-gallery" id="drawingGallery"></div>
+        <button type="button" class="btn-sub" onclick="openDrawingModal(null)" style="margin-top:0.5rem;width:100%;justify-content:center">📐 スケッチを追加</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
@@ -181,116 +277,609 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="bookshelfOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📚 本棚</h2>
+      <button class="modal-close" onclick="closeBookshelf()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.8rem;color:var(--stone-400)">本を選ぶと、著者が自動入力された状態で記録追加できます</p>
+      <div class="bookshelf-list" id="bookshelfList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="aiKeyOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2 class="modal-title">✨ AI要約の設定</h2>
+      <button class="modal-close" onclick="closeAiModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.82rem;color:var(--stone-600);line-height:1.7">AI要約にはAnthropic APIキーが必要です。<br>キーはこのブラウザにのみ保存されます。</p>
+      <div class="field"><label>APIキー</label><input type="password" id="apiKeyInput" placeholder="sk-ant-..."></div>
+      <p class="ai-key-note">※ <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> で取得できます。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAiModal()">キャンセル</button>
+      <button class="btn-save" onclick="confirmApiKey()">保存して要約する</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="drawingOverlay">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <h2 class="modal-title" id="drawingModalTitle">🎨 スケッチを描画</h2>
+      <button class="modal-close" onclick="closeDrawingModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drawing-tools">
+        <button class="drawing-tool-btn active" id="toolDraw" onclick="setDrawingMode('draw',this)">✏️ 描画</button>
+        <button class="drawing-tool-btn" id="toolErase" onclick="setDrawingMode('erase',this)">🧹 消す</button>
+        <input type="color" id="brushColor" value="#292524" title="色" style="width:36px;height:30px;border:1px solid var(--stone-200);border-radius:0.4rem;cursor:pointer;padding:2px">
+        <input type="range" id="brushSize" min="1" max="20" value="3" title="太さ" style="width:60px;accent-color:var(--amber)">
+        <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
+        <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
+      </div>
+      <canvas id="drawingCanvas" height="360"></canvas>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveDrawing()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="viewer-overlay" id="viewerOverlay" onclick="closeViewer()">
+  <img class="viewer-img" id="viewerImg" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-const STORAGE_KEY = 'reading_log_v1';
+const STORAGE_KEY  = 'reading_log_v1';
+const DELETED_KEY  = 'reading_log_deleted';
+const API_KEY_KEY  = 'reading_log_api_key';
+const CLOUD_URL    = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 const BOOK_META_KEY = 'reading_log_book_meta';
-let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-let currentFixedTags = [];
-let editingId = null;
 
-// --- 固定タグの管理 ---
-function getBookDefaultTags(book) {
-  const meta = JSON.parse(localStorage.getItem(BOOK_META_KEY) || '{}');
-  return meta[book] || [];
-}
+let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
+let currentDrawings = [], editingDrawingIndex = null;
+let currentFixedTags = [];  
+let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
+let dCanvas = null, dCtx = null, dpiRatio = 1;
 
+// ── 削除ID管理 ─────────────────────────────────────
+function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
+function addDeletedId(id) { const ids=getDeletedIds(); ids.add(String(id)); localStorage.setItem(DELETED_KEY,JSON.stringify([...ids])); }
+
+// ── Book Meta (固定タグ) ──────────────────────────
+function getBookMeta() { try { return JSON.parse(localStorage.getItem(BOOK_META_KEY)||'{}'); } catch { return {}; } }
+function getBookDefaultTags(book) { return getBookMeta()[book]||[]; }
 function setBookDefaultTags(book, tags) {
-  if (!book) return;
-  const meta = JSON.parse(localStorage.getItem(BOOK_META_KEY) || '{}');
-  meta[book] = tags;
-  localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+  if(!book)return;
+  const meta=getBookMeta(); meta[book]=tags;
+  localStorage.setItem(BOOK_META_KEY,JSON.stringify(meta));
 }
 
-// --- UI制御 ---
-function renderFixedTagChips() {
-  const wrap = document.getElementById('fixedTagChips');
-  wrap.innerHTML = currentFixedTags.map((tag, i) => `
-    <span class="fixed-tag-chip">${esc(tag)}<button type="button" onclick="removeFixedTag(${i})">✕</button></span>
-  `).join('');
+const SAMPLE = [
+  { id:1, title:"グライダー型人間について", book:"思考の整理学", author:"外山滋比古", page:"pp.42–55",
+    content:"グライダー型人間とエンジン型人間の違い。自力で飛べないか、自ら飛び立つか。",
+    lesson:"受け身にならず、自ら問いを立てて考える習慣を持つ。",
+    supplement:"ソクラテスの産婆術も同様の思想。", tags:["思考法","教育"], drawings:[], createdAt:"2024-11-15", fixedTags:[] },
+  { id:2, book:"FACTFULNESS", author:"ハンス・ロスリング", page:"pp.18–30",
+    content:"人間には10の本能的な思い込みがある。「ネガティブ本能」は世界が悪化していると信じさせる。",
+    lesson:"感情ではなくデータで世界を見ること。",
+    supplement:"メディアリテラシーとも関連。", tags:["統計","認知バイアス"], drawings:[], createdAt:"2024-12-03", fixedTags:[] }
+];
+
+// ── Persistence ────────────────────────────────────
+function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSON.parse(r):SAMPLE; if(!Array.isArray(entries))entries=SAMPLE; } catch { entries=SAMPLE; } }
+
+function persist() {
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
+  syncToCloud();
 }
 
-function removeFixedTag(i) {
-  currentFixedTags.splice(i, 1);
-  renderFixedTagChips();
+// ── Cloud Sync ─────────────────────────────────────
+async function syncToCloud() {
+  try {
+    await fetch(CLOUD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(entries)});
+  } catch(e) { console.warn('Cloud sync failed:',e); }
 }
 
-function onFixedTagKeydown(e) {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
-  const input = document.getElementById('fFixedTagInput');
-  const val = input.value.trim();
-  if (val && !currentFixedTags.includes(val)) {
-    currentFixedTags.push(val);
-    renderFixedTagChips();
-  }
-  input.value = '';
+async function loadFromCloud() {
+  try {
+    showSyncStatus('☁️ クラウドから同期中…');
+    const r = await fetch(CLOUD_URL+'?t='+Date.now());
+    const cloud = await r.json();
+    if (!Array.isArray(cloud)||cloud.length===0) { hideSyncStatus(); return; }
+    const deletedIds = getDeletedIds();
+    const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&String(e.deleted)!=='TRUE');
+    const localMap = Object.fromEntries(entries.map(e=>[String(e.id),e]));
+    const cloudMap = Object.fromEntries(filtered.map(e=>[String(e.id),e]));
+    const allIds = new Set([...Object.keys(localMap),...Object.keys(cloudMap)]);
+    entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
+      const c=cloudMap[id], l=localMap[id];
+      if(!c) return l;
+      const drawings = (c.drawings&&c.drawings.length) ? c.drawings : ((l&&l.drawings)||[]);
+      return {...c, drawings};
+    });
+    entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
+    render();
+    showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
+  } catch(e) { console.warn('Cloud load failed:',e); hideSyncStatus(); }
 }
+
+function showSyncStatus(msg) {
+  let el=document.getElementById('syncStatus');
+  if(!el){el=document.createElement('div');el.id='syncStatus';document.body.appendChild(el);}
+  el.textContent=msg; el.style.cssText='position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#78716c;z-index:999;box-shadow:0 2px 8px #00000015;';
+}
+function hideSyncStatus() { const el=document.getElementById('syncStatus'); if(el)el.remove(); }
+
+function getApiKey() { return localStorage.getItem(API_KEY_KEY)||''; }
+function setApiKey(k) { localStorage.setItem(API_KEY_KEY,k); }
+
+// ── Helpers ────────────────────────────────────────
+function tagClass(t) { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%6; return `tc-${h}`; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function allTags() { const s=new Set(); entries.forEach(e=>{(e.tags||[]).forEach(t=>s.add(t));(e.fixedTags||[]).forEach(t=>s.add(t));}); return [...s]; }
+function bookGroups() {
+  const map=new Map();
+  entries.forEach(e=>{const k=(e.book||'').trim();if(!map.has(k))map.set(k,{book:e.book||'',author:e.author||'',entries:[]});map.get(k).entries.push(e);});
+  return map;
+}
+function getFiltered() {
+  const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
+  return entries.filter(e=>{
+    if(activeTag&&!(e.tags||[]).includes(activeTag)&&!(e.fixedTags||[]).includes(activeTag))return false;
+    if(!q)return true;
+    return[e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[]),...(e.fixedTags||[])].some(s=>(s||'').toLowerCase().includes(q));
+  }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
+}
+
+// ── Render ─────────────────────────────────────────
+function render() {
+  const tags=allTags(),groups=bookGroups();
+  document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ`;
+
+  const wrap=document.getElementById('tagFilters');
+  wrap.innerHTML=`<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag('')">すべて</button>`;
+  tags.forEach(t=>{const b=document.createElement('button');b.className=`tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;b.textContent=t;b.onclick=()=>setTag(t);wrap.appendChild(b);});
+
+  const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
+  if(searchQuery||activeTag){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
+  if(!list.length){container.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+
+  const grouped=new Map();
+  list.forEach(e=>{const k=(e.book||'').trim()||'（タイトル未入力）';if(!grouped.has(k))grouped.set(k,{book:e.book||'',author:e.author||'',entries:[]});grouped.get(k).entries.push(e);});
+
+  container.innerHTML=[...grouped.entries()].map(([k,g],gi)=>`
+<div class="book-group" id="grp-${gi}">
+  <div class="book-group-header" onclick="document.getElementById('grp-${gi}').classList.toggle('collapsed')">
+    <span class="book-group-icon">📖</span>
+    <div class="book-group-info">
+      <div class="book-group-title">${esc(g.book||'（タイトル未入力）')}</div>
+      ${g.author?`<div class="book-group-author">${esc(g.author)}</div>`:''}
+    </div>
+    <span class="book-group-count">${g.entries.length}件</span>
+    <span class="book-group-toggle">▼</span>
+  </div>
+  <div class="book-group-cards">${g.entries.map(e=>cardHTML(e)).join('')}</div>
+</div>`).join('');
+}
+
+function cardHTML(e) {
+  const fixedPills=(e.fixedTags||[]).map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
+  const freePills=(e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
+  const pills=(fixedPills+freePills);
+  const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${esc(txt)}</div></div>`:'';
+  const sketchHTML=(e.drawings&&e.drawings.length)?`
+    <div class="section-block" style="background:var(--stone-50)">
+      <div class="section-label">🎨 スケッチ</div>
+      <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}')">`).join('')}</div>
+    </div>`:'';
+  const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
+  return `<div class="card" id="card-${e.id}">
+  <div class="card-accent"></div>
+  <div class="card-body">
+    <div class="card-header">
+      <div>
+        ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
+        ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
+        ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" onclick="editEntry(${e.id})">✏️</button>
+        <button class="card-action-btn delete" onclick="deleteEntry(${e.id})">🗑</button>
+      </div>
+    </div>
+    ${pills?`<div class="card-tags">${pills}</div>`:''}
+    <div class="card-sections">
+      ${sec('content-bg','📖','内容',e.content)}
+      ${sec('lesson-bg','💡','教訓',e.lesson)}
+      ${sec('supplement-bg','🔍','補足',e.supplement)}
+      ${sketchHTML}
+    </div>
+    <div class="ai-area">
+      <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
+      ${aiHTML}
+    </div>
+  </div>
+</div>`;
+}
+
+function openViewer(entryId, idx) {
+  const entry=entries.find(e=>String(e.id)===String(entryId));
+  if(!entry||!entry.drawings)return;
+  const src=entry.drawings[parseInt(idx)];
+  if(!src)return;
+  document.getElementById('viewerImg').src=src;
+  document.getElementById('viewerOverlay').classList.add('open');
+}
+function closeViewer() { document.getElementById('viewerOverlay').classList.remove('open'); }
+
+function onSearch(v) { searchQuery=v; document.getElementById('searchClear').style.display=v?'block':'none'; render(); }
+function clearSearch() { document.getElementById('searchInput').value=''; onSearch(''); }
+function setTag(t) { activeTag=t; render(); }
 
 function onBookInput(val) {
-  const book = val.trim();
-  if (book) {
-    currentFixedTags = [...getBookDefaultTags(book)];
-    renderFixedTagChips();
-  }
+  const list=document.getElementById('suggestList');
+  if(!val.trim()){list.style.display='none';return;}
+  const q=val.toLowerCase(),matches=[...bookGroups().values()].filter(g=>g.book.toLowerCase().includes(q)&&g.book.toLowerCase()!==q).slice(0,5);
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(g=>`<div class="suggest-item" onclick="selectBook('${esc(g.book)}','${esc(g.author)}')"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
+  list.style.display='block';
 }
-
-function openModal(id = null) {
-  editingId = id;
-  if (id) {
-    const e = entries.find(x => x.id === id);
-    document.getElementById('fBook').value = e.book || '';
-    document.getElementById('fTitle').value = e.title || '';
-    document.getElementById('fContent').value = e.content || '';
-    document.getElementById('fLesson').value = e.lesson || '';
-    document.getElementById('fTags').value = (e.tags || []).join(', ');
-    currentFixedTags = e.fixedTags ? [...e.fixedTags] : [...getBookDefaultTags(e.book || '')];
-  } else {
-    ['fBook','fTitle','fContent','fLesson','fTags'].forEach(id => document.getElementById(id).value = '');
-    currentFixedTags = [];
-  }
+function selectBook(book,author) {
+  document.getElementById('fBook').value=book;
+  document.getElementById('fAuthor').value=author;
+  document.getElementById('suggestList').style.display='none';
+  currentFixedTags=[...getBookDefaultTags(book)];
   renderFixedTagChips();
-  document.getElementById('modalOverlay').classList.add('open');
 }
 
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function openBookshelf() {
+  const groups=bookGroups(),list=document.getElementById('bookshelfList');
+  list.innerHTML=groups.size?[...groups.values()].map(g=>{
+    const dTags=getBookDefaultTags(g.book);
+    const tagChips=dTags.map(t=>`<span class="bookshelf-tag-chip">${esc(t)}</span>`).join('');
+    return `<div class="bookshelf-item" style="flex-direction:column;align-items:stretch;gap:0.4rem">
+      <div style="display:flex;align-items:center;gap:0.75rem" onclick="selectBookFromShelf('${esc(g.book)}','${esc(g.author)}')">
+        <span class="bookshelf-item-icon">📖</span>
+        <div class="bookshelf-item-info">
+          <div class="bookshelf-item-title">${esc(g.book)}</div>
+          ${g.author?`<div class="bookshelf-item-meta">${esc(g.author)}</div>`:''}
+        </div>
+        <span class="bookshelf-item-count">${g.entries.length}件</span>
+      </div>
+      <div style="padding-left:2.5rem">
+        <div class="bookshelf-item-tags">${tagChips||'<span style="font-size:0.68rem;color:var(--stone-300)">固定タグなし</span>'}</div>
+        <button class="btn-sub" style="margin-top:0.35rem;font-size:0.68rem;padding:0.2rem 0.6rem" onclick="editBookTags('${esc(g.book)}')">🏷 固定タグを編集</button>
+      </div>
+    </div>`;
+  }).join(''):'<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
+  document.getElementById('bookshelfOverlay').classList.add('open');
+}
+function closeBookshelf() { document.getElementById('bookshelfOverlay').classList.remove('open'); }
+function selectBookFromShelf(book,author) {
+  closeBookshelf(); openModal();
+  document.getElementById('fBook').value=book;
+  document.getElementById('fAuthor').value=author;
+  currentFixedTags=[...getBookDefaultTags(book)];
+  renderFixedTagChips();
+}
+
+function openModal(id=null) {
+  editingId=id;
+  document.getElementById('modalTitle').textContent=id?'記録を編集':'新しい読書記録';
+  document.getElementById('btnSave').textContent=id?'更新する':'保存する';
+  if(id) {
+    const e=entries.find(x=>x.id===id);
+    document.getElementById('fBook').value=e.book||'';
+    document.getElementById('fAuthor').value=e.author||'';
+    document.getElementById('fPage').value=e.page||'';
+    document.getElementById('fTitle').value=e.title||'';
+    document.getElementById('fContent').value=e.content||'';
+    document.getElementById('fLesson').value=e.lesson||'';
+    document.getElementById('fSupplement').value=e.supplement||'';
+    document.getElementById('fTags').value=(e.tags||[]).join(', ');
+    currentFixedTags=[...(e.fixedTags||getBookDefaultTags(e.book||''))];
+    renderFixedTagChips();
+    currentDrawings=[...(e.drawings||[])];
+  } else {
+    ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(id=>document.getElementById(id).value='');
+    currentFixedTags=[];
+    renderFixedTagChips();
+    currentDrawings=[];
+  }
+  renderDrawingGallery();
+  document.getElementById('suggestList').style.display='none';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('fBook').focus(),50);
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
+function editEntry(id) { openModal(id); }
+
+function deleteEntry(id) {
+  if(!confirm('この記録を削除しますか？'))return;
+  addDeletedId(id);
+  entries=entries.map(e=>e.id===id?{...e,deleted:true}:e);
+  persist();
+  entries=entries.filter(e=>!e.deleted);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
+  render();
+  showToast('削除しました');
+}
 
 function saveEntry() {
-  const book = document.getElementById('fBook').value.trim();
-  const tags = document.getElementById('fTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const bookName = document.getElementById('fBook').value.trim();
+  if(!bookName) { alert('本タイトルを入力してください'); return; }
   
-  // 固定タグを保存
-  setBookDefaultTags(book, currentFixedTags);
+  // 1. 最新の固定タグを保存
+  setBookDefaultTags(bookName, currentFixedTags);
 
-  const data = {
-    id: editingId || Date.now(),
-    book,
-    title: document.getElementById('fTitle').value,
-    content: document.getElementById('fContent').value,
-    lesson: document.getElementById('fLesson').value,
-    tags,
-    fixedTags: currentFixedTags // 記録自体にも保存
+  const tags=document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const data={
+    book:bookName,
+    author:document.getElementById('fAuthor').value,
+    page:document.getElementById('fPage').value,
+    title:document.getElementById('fTitle').value,
+    content:document.getElementById('fContent').value,
+    lesson:document.getElementById('fLesson').value,
+    supplement:document.getElementById('fSupplement').value,
+    tags, drawings:currentDrawings,
+    fixedTags: [...currentFixedTags] // 記録にタグを保持
   };
 
-  if (editingId) {
-    entries = entries.map(e => e.id === editingId ? data : e);
-  } else {
-    entries.unshift(data);
-  }
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  closeModal();
-  location.reload(); // 表示更新
+  if(editingId){entries=entries.map(e=>e.id===editingId?{...e,...data}:e);}
+  else{entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)});}
+  persist(); closeModal(); render(); showToast('保存しました');
 }
 
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function renderFixedTagChips() {
+  const wrap = document.getElementById('fixedTagChips');
+  if (!currentFixedTags.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = currentFixedTags.map((tag, index) => `
+    <span class="fixed-tag-chip">
+      ${esc(tag)}
+      <button type="button" onclick="removeFixedTag(${index})">✕</button>
+    </span>
+  `).join('');
+}
+function removeFixedTag(index) { currentFixedTags.splice(index, 1); renderFixedTagChips(); }
+function onFixedTagKeydown(event) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  const input = document.getElementById('fFixedTagInput');
+  const value = input.value.trim();
+  if (!value) return;
+  if (!currentFixedTags.includes(value)) { currentFixedTags.push(value); }
+  input.value = '';
+  renderFixedTagChips();
+}
 
-// 初期描画
-entries.forEach(e => {
-  const div = document.createElement('div');
-  div.innerHTML = `<h3>${esc(e.title)} (${esc(e.book)})</h3>`;
-  div.onclick = () => openModal(e.id);
-  document.getElementById('cardsContainer').appendChild(div);
-});
+function editBookTags(book) {
+  closeBookshelf();
+  openModal(); // 新規入力状態で開くが、中身は既存のものを読み込む
+  document.getElementById('fBook').value = book;
+  const group = [...bookGroups().values()].find(g => g.book === book);
+  if (group) document.getElementById('fAuthor').value = group.author || '';
+  currentFixedTags = [...getBookDefaultTags(book)];
+  renderFixedTagChips();
+  showToast('固定タグを編集できます');
+}
+
+function renderDrawingGallery() {
+  const gallery=document.getElementById('drawingGallery');
+  gallery.innerHTML=currentDrawings.map((src,i)=>`
+    <div class="drawing-thumb" title="クリックで編集">
+      <img src="${src}" alt="スケッチ${i+1}" onclick="openDrawingModal(${i})">
+      <div class="drawing-thumb-edit-badge">編集</div>
+      <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempDrawing(${i})">✕</button>
+    </div>`).join('');
+}
+function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
+
+function openDrawingModal(editIndex) {
+  editingDrawingIndex = (editIndex !== null && editIndex !== undefined) ? editIndex : null;
+  const isEdit = editingDrawingIndex !== null;
+  document.getElementById('drawingModalTitle').textContent = isEdit ? '🎨 スケッチを編集' : '🎨 スケッチを描画';
+  document.getElementById('drawingOverlay').classList.add('open');
+  setTimeout(()=>{
+    const old=document.getElementById('drawingCanvas');
+    const neo=old.cloneNode(false);
+    old.parentNode.replaceChild(neo,old);
+    dCanvas=neo; dCtx=dCanvas.getContext('2d');
+    const cssW=dCanvas.offsetWidth||460, cssH=360;
+    dpiRatio=window.devicePixelRatio||1;
+    dCanvas.width=cssW*dpiRatio; dCanvas.height=cssH*dpiRatio;
+    dCanvas.style.width=cssW+'px'; dCanvas.style.height=cssH+'px';
+    dCtx.scale(dpiRatio,dpiRatio);
+    dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
+    if(isEdit && currentDrawings[editingDrawingIndex]) {
+      const img=new Image();
+      img.onload=()=>{ dCtx.drawImage(img,0,0,cssW,cssH); saveDrawState(); };
+      img.src=currentDrawings[editingDrawingIndex];
+    } else { drawHistory=[]; saveDrawState(); }
+    drawMode='draw';
+    document.getElementById('toolDraw').classList.add('active');
+    document.getElementById('toolErase').classList.remove('active');
+    dCanvas.addEventListener('pointerdown',onPtrDown);
+    dCanvas.addEventListener('pointermove',onPtrMove);
+    dCanvas.addEventListener('pointerup',onPtrUp);
+    dCanvas.addEventListener('pointercancel',onPtrUp);
+    dCanvas.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+    dCanvas.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  },50);
+}
+function closeDrawingModal() { document.getElementById('drawingOverlay').classList.remove('open'); isDrawing=false; }
+
+function setDrawingMode(mode,btn) {
+  drawMode=mode;
+  document.querySelectorAll('.drawing-tool-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function canvasPos(e) {
+  const rect=dCanvas.getBoundingClientRect();
+  const cx=e.clientX??e.touches?.[0]?.clientX??0;
+  const cy=e.clientY??e.touches?.[0]?.clientY??0;
+  return {x:cx-rect.left, y:cy-rect.top};
+}
+
+function onPtrDown(e) {
+  e.preventDefault(); isDrawing=true; saveDrawState();
+  const p=canvasPos(e); lastX=p.x; lastY=p.y;
+}
+function onPtrMove(e) {
+  if(!isDrawing)return; e.preventDefault();
+  const p=canvasPos(e);
+  dCtx.lineCap='round'; dCtx.lineJoin='round';
+  if(drawMode==='erase') {
+    const sz=+document.getElementById('brushSize').value*4;
+    dCtx.clearRect(p.x-sz/2,p.y-sz/2,sz,sz);
+  } else {
+    dCtx.strokeStyle=document.getElementById('brushColor').value;
+    dCtx.lineWidth=+document.getElementById('brushSize').value;
+    dCtx.beginPath(); dCtx.moveTo(lastX,lastY); dCtx.lineTo(p.x,p.y); dCtx.stroke();
+  }
+  lastX=p.x; lastY=p.y;
+}
+function onPtrUp() { isDrawing=false; }
+
+function saveDrawState() {
+  const tmp=document.createElement('canvas');
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  tmp.width=cssW; tmp.height=cssH;
+  tmp.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+  drawHistory.push(tmp.toDataURL());
+  if(drawHistory.length>20)drawHistory.shift();
+}
+
+function undoDrawing() {
+  if(drawHistory.length<=1)return;
+  drawHistory.pop();
+  const img=new Image();
+  img.onload=()=>{
+    const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+    dCtx.clearRect(0,0,cssW,cssH);
+    dCtx.drawImage(img,0,0,cssW,cssH);
+  };
+  img.src=drawHistory[drawHistory.length-1];
+}
+
+function clearDrawing() {
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
+  drawHistory=[]; saveDrawState();
+}
+
+function saveDrawing() {
+  const full=document.createElement('canvas');
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  full.width=cssW; full.height=cssH;
+  full.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+  const sync=document.createElement('canvas');
+  sync.width=250; sync.height=188;
+  sync.getContext('2d').drawImage(full,0,0,250,188);
+  const dataUrl=sync.toDataURL('image/jpeg',0.45);
+  if(editingDrawingIndex!==null) {
+    currentDrawings[editingDrawingIndex]=dataUrl;
+    showToast('✏️ スケッチを更新しました');
+  } else {
+    currentDrawings.push(dataUrl);
+    showToast('🎨 スケッチを保存しました');
+  }
+  renderDrawingGallery();
+  closeDrawingModal();
+}
+
+async function handleAI(id,btn) {
+  const key=getApiKey();
+  if(!key){pendingAiId=id;document.getElementById('apiKeyInput').value='';document.getElementById('aiKeyOverlay').classList.add('open');return;}
+  await runAI(id,btn,key);
+}
+function closeAiModal() { document.getElementById('aiKeyOverlay').classList.remove('open'); }
+function confirmApiKey() {
+  const k=document.getElementById('apiKeyInput').value.trim(); if(!k)return;
+  setApiKey(k); closeAiModal();
+  if(pendingAiId!==null){const btn=document.querySelector(`#card-${pendingAiId} .btn-ai`);runAI(pendingAiId,btn,k);pendingAiId=null;}
+}
+async function runAI(id,btn,key) {
+  const e=entries.find(e=>e.id===id); if(!e)return;
+  btn.disabled=true; btn.textContent='要約中…';
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`}]})
+    });
+    const d=await r.json();
+    e.aiSummary=d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
+    persist(); render(); showToast('✨ AI要約完了');
+  } catch { showToast('エラーが発生しました。'); }
+  finally { btn.disabled=false; btn.textContent=e.aiSummary?'✨ 再要約':'✨ AI要約'; }
+}
+
+function exportData() {
+  const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`reading-log-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  showToast('📤 エクスポートしました');
+}
+function importData(ev) {
+  const file=ev.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const imp=JSON.parse(e.target.result); if(!Array.isArray(imp))throw new Error();
+      const existIds=new Set(entries.map(e=>e.id));
+      const newMap=Object.fromEntries(imp.map(e=>[e.id,e]));
+      entries=[...entries.map(e=>newMap[e.id]?{...e,...newMap[e.id]}:e),...imp.filter(e=>!existIds.has(e.id))];
+      persist(); render(); showToast(`📥 ${imp.length}件をインポートしました`);
+    } catch { showToast('❌ ファイルの形式が正しくありません'); }
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('sh`ow'),2500);
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();closeViewer();}});
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
+document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
+document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
+document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',async()=>{
+    const regs=await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r=>r.unregister()));
+    const keys=await caches.keys();
+    await Promise.all(keys.map(k=>caches.delete(k)));
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+let deferredPrompt=null;
+const banner=document.getElementById('installBanner');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;banner.style.display='flex';});
+document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;banner.style.display='none';});
+document.getElementById('btnDismiss')?.addEventListener('click',()=>{banner.style.display='none';});
+window.addEventListener('appinstalled',()=>{banner.style.display='none';deferredPrompt=null;});
+
+load(); render(); loadFromCloud();
 </script>
 </body>
 </html>
