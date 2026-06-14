@@ -1217,26 +1217,33 @@ document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.targ
 document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
-// 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあるため、
-// 既存のService Workerとキャッシュをすべて解除し、常に最新のindex.htmlを読み込むようにする。
+// 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
+// そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
+// その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v2';
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    if (!regs.length) return;
-    let unregistered = false;
-    regs.forEach(reg => { reg.unregister(); unregistered = true; });
-    if (unregistered && !sessionStorage.getItem('sw_cleanup_reloaded')) {
-      sessionStorage.setItem('sw_cleanup_reloaded', '1');
-      if (window.caches) {
-        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => location.reload());
-      } else {
-        location.reload();
+  (async () => {
+    try {
+      if (!localStorage.getItem(SW_CLEANUP_FLAG)) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        let hadOld = false;
+        for (const reg of regs) { await reg.unregister(); hadOld = true; }
+        if (window.caches) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        localStorage.setItem(SW_CLEANUP_FLAG, '1');
+        if (hadOld) { location.reload(); return; }
       }
+      // updateViaCache:'none' により、sw.js自体はブラウザ/CDNのHTTPキャッシュを
+      // 経由せず毎回取得され、新しいバージョンへの切り替えが確実に行われる。
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    } catch (err) {
+      console.warn('Service worker cleanup failed:', err);
     }
-  }).catch(err => { console.warn('Service worker cleanup failed:', err); });
-
-  if (window.caches) {
-    caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{});
-  }
+  })();
 }
 
 let deferredPrompt=null;
