@@ -256,7 +256,7 @@
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field suggest-wrap">
+      <div class="field suggest-wrap" id="bookSuggestWrap">
         <label>📚 本のタイトル</label>
         <input type="text" id="fBook" placeholder="例: 思考の整理学" autocomplete="off" oninput="onBookInput(this.value)">
         <div class="suggest-list" id="suggestList" style="display:none"></div>
@@ -278,7 +278,9 @@
         </div>
         <p class="fixed-tag-hint">💡 保存するとこの本の全記録に反映されます</p>
       </div>
-      <div class="field"><label>🏷 この記録の自由タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field suggest-wrap" id="tagSuggestWrap"><label>🏷 この記録の自由タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス" autocomplete="off" oninput="onTagsInput(this.value)">
+        <div class="suggest-list" id="tagSuggestList" style="display:none"></div>
+      </div>
       <div class="field">
         <label>🎨 スケッチ・図解</label>
         <div class="drawing-gallery" id="drawingGallery"></div>
@@ -862,6 +864,40 @@ function selectSuggestion(index) {
   if(g) selectBook(g.book, g.author);
 }
 
+// ── 記録ごとの自由タグのサジェスト ──────────────────
+function onTagsInput(val) {
+  const list = document.getElementById('tagSuggestList');
+  const parts = val.split(',');
+  const query = parts[parts.length-1].trim();
+  if (!query) { list.style.display='none'; return; }
+
+  const used = new Set(parts.slice(0,-1).map(t=>t.trim().toLocaleLowerCase('ja-JP')).filter(Boolean));
+  currentFixedTags.forEach(t => used.add(t.toLocaleLowerCase('ja-JP')));
+
+  const q = query.toLocaleLowerCase('ja-JP');
+  const matches = allTags().filter(function(t) {
+    const lower = t.toLocaleLowerCase('ja-JP');
+    return lower.includes(q) && lower !== q && !used.has(lower);
+  }).slice(0,8);
+
+  if (!matches.length) { list.style.display='none'; return; }
+  list._matches = matches;
+  list.innerHTML = matches.map((t,i)=>`<div class="suggest-item" onclick="selectTagSuggestion(${i})"><div class="suggest-title">${esc(t)}</div></div>`).join('');
+  list.style.display='block';
+}
+
+function selectTagSuggestion(index) {
+  const list = document.getElementById('tagSuggestList');
+  const tag = (list._matches||[])[index];
+  if (!tag) return;
+  const input = document.getElementById('fTags');
+  const parts = input.value.split(',').map(t=>t.trim()).filter(Boolean);
+  parts[parts.length-1] = tag;
+  input.value = parts.join(', ') + ', ';
+  list.style.display = 'none';
+  input.focus();
+}
+
 function selectBook(book, author) {
   document.getElementById('fBook').value = book;
   document.getElementById('fAuthor').value = author;
@@ -950,7 +986,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; fixedTagEditOnly=false; }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; document.getElementById('tagSuggestList').style.display='none'; fixedTagEditOnly=false; }
 function editEntry(id) { openModal(id); }
 
 function deleteEntry(id) {
@@ -1218,7 +1254,10 @@ document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
-document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
+  if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
+});
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
