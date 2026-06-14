@@ -51,20 +51,27 @@
   .tag-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
+  .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
+  .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
-  .bookshelf-main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 0.55rem; padding: 0.6rem 0 1.4rem; border-bottom: 8px solid #d6a34c; }
+  .bookshelf-main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 0.55rem; padding: 0.75rem 0.25rem 1.5rem; border-bottom: 10px solid #8a5a2b; background: linear-gradient(180deg, rgba(255,250,240,0.56), rgba(255,250,240,0) 60%), linear-gradient(90deg, rgba(120,53,15,0.08), rgba(255,255,255,0.22) 42%, rgba(92,64,51,0.06)); box-shadow: inset 0 -4px 0 rgba(87,53,24,0.18); }
+  .bookshelf-main.theme-library { border-bottom-color: #5b3f24; background: linear-gradient(180deg, rgba(253,246,229,0.5), rgba(253,246,229,0) 62%), linear-gradient(90deg, rgba(41,37,36,0.08), rgba(255,255,255,0.18), rgba(41,37,36,0.08)); }
+  .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
   .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
   .book-group.open { width: 100%; order: -1; }
-  .book-spine { width: var(--spine-width, 4.6rem); height: 15.5rem; padding: 0.65rem 0.45rem; border-radius: 0.5rem 0.5rem 0.25rem 0.25rem; border: 1px solid #d97706; background: linear-gradient(180deg, #f59e0b 0%, #f97316 100%); color: white; box-shadow: inset -4px 0 8px #7c2d1225, 0 5px 12px #00000014; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; overflow: hidden; }
-  .book-spine:hover { filter: brightness(1.04); transform: translateY(-2px); box-shadow: inset -4px 0 8px #7c2d1225, 0 8px 16px #00000018; }
+  .book-spine { position: relative; width: var(--spine-width, 4.6rem); height: 15.5rem; padding: 0.82rem 0.48rem 0.74rem; border-radius: 0.62rem 0.48rem 0.24rem 0.24rem; border: 1px solid var(--spine-edge, #4b2e21); border-left-color: var(--spine-light, #8a6a4b); border-right-color: var(--spine-shadow, #2f1f18); background: linear-gradient(90deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.16) 9%, rgba(255,255,255,0.03) 31%, rgba(0,0,0,0.08) 58%, rgba(0,0,0,0.26) 84%, rgba(0,0,0,0.44) 100%), linear-gradient(180deg, rgba(255,255,255,0.22) 0, rgba(255,255,255,0.06) 0.32rem, transparent 0.62rem, transparent calc(100% - 0.72rem), rgba(0,0,0,0.22) calc(100% - 0.34rem), rgba(0,0,0,0.36) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.055) 0 1px, transparent 1px 5px), repeating-linear-gradient(0deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 6px), linear-gradient(180deg, var(--spine-top, #79513a) 0%, var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18) 100%); color: var(--spine-ink, #fff4d6); box-shadow: inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; overflow: hidden; transform-origin: bottom center; }
+  .book-spine::before { content: ""; position: absolute; inset: 0.5rem 0.32rem 0.58rem; border-radius: 0.46rem 0.36rem 0.16rem 0.16rem; background: linear-gradient(90deg, rgba(255,255,255,0.18) 0 0.28rem, rgba(0,0,0,0.12) 0.36rem 0.46rem, transparent 0.68rem calc(100% - 0.46rem), rgba(0,0,0,0.18) calc(100% - 0.34rem) 100%), linear-gradient(180deg, transparent 0 13%, rgba(255,255,255,0.18) 13% 14.2%, rgba(0,0,0,0.25) 14.2% 16.3%, transparent 16.3% 36%, rgba(255,255,255,0.16) 36% 37.2%, rgba(0,0,0,0.23) 37.2% 39.4%, transparent 39.4% 61%, rgba(255,255,255,0.15) 61% 62.2%, rgba(0,0,0,0.22) 62.2% 64.4%, transparent 64.4% 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 6px 7px rgba(255,255,255,0.08), inset 0 -10px 12px rgba(0,0,0,0.16); opacity: 0.95; pointer-events: none; }
+  .book-spine::after { content: ""; position: absolute; left: 0.6rem; right: 0.58rem; top: 0.72rem; height: 2.35rem; border-radius: 0.34rem; border-top: 1px solid rgba(255,255,255,0.34); border-bottom: 1px solid rgba(0,0,0,0.22); background: linear-gradient(180deg, var(--spine-label, #f3e5c0), rgba(255,255,255,0.04)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.12); opacity: var(--spine-label-opacity, 0.16); pointer-events: none; }
+  .book-spine > * { position: relative; z-index: 1; }
+  .book-spine:hover { filter: brightness(1.04) saturate(1.02); transform: translateY(-2px); box-shadow: inset 4px 0 6px rgba(255,255,255,0.2), inset -9px 0 13px rgba(0,0,0,0.38), inset 0 5px 0 rgba(255,255,255,0.14), inset 0 -7px 0 rgba(0,0,0,0.27), 0 11px 20px rgba(41,37,36,0.28); }
   .book-group.open .book-spine { height: 18rem; }
-  .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Serif JP', serif; font-weight: 900; font-size: var(--title-size, 0.84rem); line-height: 1.15; color: white; writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; }
-  .book-spine-author { display: block; width: min(var(--title-width, 2.7rem), 2.7rem); height: 2.4rem; font-size: 0.62rem; opacity: 0.86; line-height: 1.1; color: white; writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: hidden; }
+  .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.16; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; font-feature-settings: "palt"; }
+  .book-spine-author { display: block; width: min(var(--title-width, 2.7rem), 2.7rem); height: 2.4rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 500; font-size: 0.62rem; opacity: 0.88; line-height: 1.12; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: hidden; font-feature-settings: "palt"; }
   .spine-word-latin { white-space: nowrap; }
   .book-spine-meta { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 0.25rem; width: 100%; }
-  .book-group-count { font-size: 0.68rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 999px; background: rgba(255,255,255,0.22); color: white; white-space: nowrap; }
+  .book-group-count { font-size: 0.68rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid var(--spine-badge-border, rgba(255,255,255,0.22)); background: var(--spine-badge-bg, rgba(255,255,255,0.16)); color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); white-space: nowrap; }
   .book-group-toggle { font-size: 0.78rem; transition: transform 0.2s; flex-shrink: 0; }
   .book-group.open .book-group-toggle { transform: rotate(90deg); }
   .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: min(540px, calc(100vw - 6.6rem)); max-width: 540px; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); }
@@ -235,10 +242,17 @@
 
   <div class="filter-bar">
     <div class="tag-filters" id="tagFilters"></div>
-    <select class="sort-select" id="sortSelect" onchange="render()">
-      <option value="date">新しい順</option>
-      <option value="book">書名順</option>
-    </select>
+    <div class="filter-controls">
+      <select class="sort-select theme-select" id="shelfThemeSelect" onchange="setShelfTheme(this.value)" aria-label="本棚の着せ替え">
+        <option value="classic">本棚：古書店</option>
+        <option value="library">本棚：図書館</option>
+        <option value="quiet">本棚：モノクロ</option>
+      </select>
+      <select class="sort-select" id="sortSelect" onchange="render()">
+        <option value="date">新しい順</option>
+        <option value="book">書名順</option>
+      </select>
+    </div>
   </div>
 
   <p class="results-count" id="resultsCount" style="display:none"></p>
@@ -361,6 +375,30 @@ const DELETED_KEY   = 'reading_log_deleted';
 const API_KEY_KEY   = 'reading_log_api_key';
 const CLOUD_URL     = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 const BOOK_META_KEY = 'reading_log_book_meta';
+const SHELF_THEME_KEY = 'reading_log_shelf_theme';
+const SPINE_THEMES = {
+  classic: [
+    { base:'#5a3825', top:'#7b5338', bottom:'#2f1f18', edge:'#3a2419', light:'#9f7b58', shadow:'#261912', ink:'#fff3d2', label:'#ead2a8', labelOpacity:'0.16', badgeBg:'rgba(255,244,214,0.16)', badgeInk:'#fff7df', badgeBorder:'rgba(255,244,214,0.22)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#e6d4ad', top:'#f7e9c8', bottom:'#bfa77d', edge:'#9a7b4f', light:'#fff3d4', shadow:'#8a6a42', ink:'#3b2a1f', label:'#7a5734', labelOpacity:'0.09', badgeBg:'rgba(91,57,39,0.11)', badgeInk:'#3b2a1f', badgeBorder:'rgba(91,57,39,0.18)', textShadow:'0 1px 0 rgba(255,255,255,0.52)' },
+    { base:'#22201d', top:'#3a3731', bottom:'#11100f', edge:'#151413', light:'#5a554c', shadow:'#080807', ink:'#f3e7c6', label:'#d8c08f', labelOpacity:'0.14', badgeBg:'rgba(243,231,198,0.13)', badgeInk:'#f7edd1', badgeBorder:'rgba(243,231,198,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.55)' },
+    { base:'#6a2420', top:'#8a3a31', bottom:'#351311', edge:'#4a1714', light:'#b06b56', shadow:'#270d0b', ink:'#ffe8c2', label:'#f1cf9a', labelOpacity:'0.14', badgeBg:'rgba(255,232,194,0.14)', badgeInk:'#fff1d8', badgeBorder:'rgba(255,232,194,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.48)' },
+    { base:'#3f4b34', top:'#63704d', bottom:'#20261b', edge:'#27301f', light:'#87936b', shadow:'#171d13', ink:'#f0ead1', label:'#ded0a0', labelOpacity:'0.13', badgeBg:'rgba(240,234,209,0.14)', badgeInk:'#f8f2dc', badgeBorder:'rgba(240,234,209,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#314052', top:'#536176', bottom:'#18222d', edge:'#1f2a38', light:'#738096', shadow:'#111922', ink:'#edf0d8', label:'#d6cda2', labelOpacity:'0.12', badgeBg:'rgba(237,240,216,0.13)', badgeInk:'#f8f7e3', badgeBorder:'rgba(237,240,216,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' }
+  ],
+  library: [
+    { base:'#47321f', top:'#6c4b2f', bottom:'#231810', edge:'#2d1d12', light:'#9c7b55', shadow:'#19100b', ink:'#f5e5bd', label:'#e6c98e', labelOpacity:'0.16', badgeBg:'rgba(245,229,189,0.14)', badgeInk:'#fff0cc', badgeBorder:'rgba(245,229,189,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#1f3d35', top:'#345f51', bottom:'#0f211d', edge:'#132b25', light:'#5f8777', shadow:'#0b1714', ink:'#f2edcf', label:'#d8c98f', labelOpacity:'0.14', badgeBg:'rgba(242,237,207,0.13)', badgeInk:'#fbf4d8', badgeBorder:'rgba(242,237,207,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#5c1f2a', top:'#833748', bottom:'#2e1017', edge:'#3e111b', light:'#a9606b', shadow:'#220b10', ink:'#f8dfbd', label:'#e8bd86', labelOpacity:'0.14', badgeBg:'rgba(248,223,189,0.14)', badgeInk:'#ffeccc', badgeBorder:'rgba(248,223,189,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#293348', top:'#46536b', bottom:'#141a26', edge:'#1b2334', light:'#67758e', shadow:'#0d121c', ink:'#ece6c9', label:'#d4bf82', labelOpacity:'0.13', badgeBg:'rgba(236,230,201,0.13)', badgeInk:'#f8efd2', badgeBorder:'rgba(236,230,201,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.52)' },
+    { base:'#cbb78d', top:'#eadbb9', bottom:'#a0875b', edge:'#8b7045', light:'#f8eccd', shadow:'#725936', ink:'#2d2519', label:'#6d4e2f', labelOpacity:'0.08', badgeBg:'rgba(45,37,25,0.1)', badgeInk:'#2d2519', badgeBorder:'rgba(45,37,25,0.18)', textShadow:'0 1px 0 rgba(255,255,255,0.5)' }
+  ],
+  quiet: [
+    { base:'#191919', top:'#353331', bottom:'#080808', edge:'#0f0f0f', light:'#55514b', shadow:'#050505', ink:'#f2ead6', label:'#d2bea1', labelOpacity:'0.13', badgeBg:'rgba(242,234,214,0.12)', badgeInk:'#f7efdf', badgeBorder:'rgba(242,234,214,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.55)' },
+    { base:'#eee5d4', top:'#fff6e5', bottom:'#c7b99d', edge:'#aa9a80', light:'#fffaf0', shadow:'#92836d', ink:'#292524', label:'#675546', labelOpacity:'0.08', badgeBg:'rgba(41,37,36,0.1)', badgeInk:'#292524', badgeBorder:'rgba(41,37,36,0.16)', textShadow:'0 1px 0 rgba(255,255,255,0.55)' },
+    { base:'#5a5147', top:'#7a6f61', bottom:'#2c2824', edge:'#39322d', light:'#948879', shadow:'#211e1b', ink:'#f4ead8', label:'#d9c4a5', labelOpacity:'0.12', badgeBg:'rgba(244,234,216,0.13)', badgeInk:'#fbf1df', badgeBorder:'rgba(244,234,216,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#3b2b20', top:'#5d4633', bottom:'#1d1510', edge:'#271b14', light:'#82664f', shadow:'#130e0b', ink:'#f1dfc0', label:'#ddbd88', labelOpacity:'0.12', badgeBg:'rgba(241,223,192,0.13)', badgeInk:'#f9e8ca', badgeBorder:'rgba(241,223,192,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' }
+  ]
+};
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
 let currentDrawings = [], editingDrawingIndex = null;
@@ -369,6 +407,8 @@ let fixedTagEditOnly = false;
 let openBookKey = null;
 let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
+let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
+if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 
@@ -673,6 +713,8 @@ function expandedRecordsForGroup(group) {
 function render() {
   const tags=allTags(),groups=bookGroups();
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ`;
+  const themeSelect = document.getElementById('shelfThemeSelect');
+  if (themeSelect) themeSelect.value = shelfTheme;
 
   const wrap=document.getElementById('tagFilters');
   wrap.innerHTML=`<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag('')">すべて</button>`;
@@ -686,8 +728,8 @@ function render() {
   const grouped=new Map();
   list.forEach(e=>{const k=bookKey(e.book)||'（タイトル未入力）';if(!grouped.has(k))grouped.set(k,{book:e.book||'',author:e.author||'',entries:[]});grouped.get(k).entries.push(e);});
 
-  container.innerHTML=`<div class="bookshelf-main">${[...grouped.entries()].map(([k,g],gi)=>{
-    const spineVars = spineStyle(g.book || 'タイトル未入力');
+  container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}">${[...grouped.entries()].map(([k,g],gi)=>{
+    const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const isOpen = openBookKey === k;
     return `
 <div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
@@ -732,7 +774,25 @@ function setExpandedRecordScope(value) {
   render();
 }
 
-function spineStyle(title) {
+function setShelfTheme(value) {
+  shelfTheme = SPINE_THEMES[value] ? value : 'classic';
+  localStorage.setItem(SHELF_THEME_KEY, shelfTheme);
+  render();
+}
+
+function hashString(text) {
+  let hash = 0;
+  const s = String(text || '');
+  for (let i = 0; i < s.length; i++) hash = ((hash * 31) + s.charCodeAt(i)) >>> 0;
+  return hash;
+}
+
+function spinePalette(title, index) {
+  const theme = SPINE_THEMES[shelfTheme] || SPINE_THEMES.classic;
+  return theme[(hashString(title) + index) % theme.length];
+}
+
+function spineStyle(title, index) {
   const len = [...String(title || '')].length;
   const columns = Math.max(2, Math.ceil(len / 13));
   const titleWidth = Math.max(2.7, columns * 1.18);
@@ -740,12 +800,26 @@ function spineStyle(title) {
   const titleWidthMobile = Math.max(2.35, columns * 1.02);
   const spineWidthMobile = titleWidthMobile + 1.3;
   const titleSize = len > 42 ? 0.74 : (len > 30 ? 0.78 : 0.84);
+  const palette = spinePalette(title, index || 0);
   return [
     `--title-width:${titleWidth.toFixed(2)}rem`,
     `--spine-width:${spineWidth.toFixed(2)}rem`,
     `--title-width-mobile:${titleWidthMobile.toFixed(2)}rem`,
     `--spine-width-mobile:${spineWidthMobile.toFixed(2)}rem`,
-    `--title-size:${titleSize}rem`
+    `--title-size:${titleSize}rem`,
+    `--spine-base:${palette.base}`,
+    `--spine-top:${palette.top}`,
+    `--spine-bottom:${palette.bottom}`,
+    `--spine-edge:${palette.edge}`,
+    `--spine-light:${palette.light}`,
+    `--spine-shadow:${palette.shadow}`,
+    `--spine-ink:${palette.ink}`,
+    `--spine-label:${palette.label}`,
+    `--spine-label-opacity:${palette.labelOpacity}`,
+    `--spine-badge-bg:${palette.badgeBg}`,
+    `--spine-badge-ink:${palette.badgeInk}`,
+    `--spine-badge-border:${palette.badgeBorder}`,
+    `--spine-text-shadow:${palette.textShadow}`
   ].join(';');
 }
 
@@ -1263,7 +1337,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v2';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v5';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

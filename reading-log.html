@@ -12,6 +12,7 @@
 <meta name="theme-color" content="#f59e0b">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -27,7 +28,6 @@
   .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(circle at 20% 20%, #fde68a22 0%, transparent 50%), radial-gradient(circle at 80% 80%, #fed7aa22 0%, transparent 50%); }
   .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
-  /* HEADER */
   header { margin-bottom: 2rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
   .header-left { align-self: stretch; }
   .header-eyebrow { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.25em; color: var(--amber); text-transform: uppercase; margin-bottom: 0.25rem; }
@@ -35,49 +35,58 @@
   .header-meta { font-size: 0.8rem; color: var(--stone-400); margin-top: 0.25rem; }
   .header-btns { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
   .header-btns-row { display: flex; gap: 0.4rem; }
-
-  .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer; box-shadow: 0 2px 8px #f59e0b44; transition: all 0.15s; white-space: nowrap; font-family: inherit; }
+  .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 600; border: none; cursor: pointer; font-size: 0.82rem; transition: filter 0.1s; font-family: inherit; }
   .btn-add:hover { filter: brightness(1.08); } .btn-add:active { transform: scale(0.97); }
-  .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 600; font-size: 0.78rem; cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+  .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.77rem; transition: all 0.1s; font-family: inherit; white-space: nowrap; }
   .btn-sub:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
 
-  /* SEARCH */
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
   .search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
-  .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; color: var(--stone-800); font-family: inherit; outline: none; transition: all 0.15s; }
+  .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; font-family: inherit; outline: none; transition: border-color 0.1s; }
   .search-input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b22; }
   .search-input::placeholder { color: var(--stone-300); }
-  .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; padding: 0.2rem; display: none; }
+  .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; display: none; }
 
-  /* FILTER */
   .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
   .tag-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
-  .tag-btn:hover { border-color: var(--stone-400); }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
+  .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
+  .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
-  /* BOOK GROUP */
-  .book-group { margin-bottom: 1.5rem; }
-  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: box-shadow 0.2s; }
-  .book-group-header:hover { box-shadow: 0 3px 12px #00000010; }
-  .book-group-icon { font-size: 1.4rem; flex-shrink: 0; }
-  .book-group-info { flex: 1; min-width: 0; }
-  .book-group-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 0.95rem; }
-  .book-group-author { font-size: 0.72rem; color: var(--stone-400); margin-top: 0.15rem; }
-  .book-group-count { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
-  .book-group-toggle { color: var(--stone-300); font-size: 0.85rem; transition: transform 0.2s; flex-shrink: 0; }
-  .book-group.collapsed .book-group-toggle { transform: rotate(-90deg); }
-  .book-group-cards { display: flex; flex-direction: column; gap: 0.75rem; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); margin-left: 0.5rem; }
-  .book-group.collapsed .book-group-cards { display: none; }
+  .bookshelf-main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 0.55rem; padding: 0.75rem 0.25rem 1.5rem; border-bottom: 10px solid #8a5a2b; background: linear-gradient(180deg, rgba(255,250,240,0.56), rgba(255,250,240,0) 60%), linear-gradient(90deg, rgba(120,53,15,0.08), rgba(255,255,255,0.22) 42%, rgba(92,64,51,0.06)); box-shadow: inset 0 -4px 0 rgba(87,53,24,0.18); }
+  .bookshelf-main.theme-library { border-bottom-color: #5b3f24; background: linear-gradient(180deg, rgba(253,246,229,0.5), rgba(253,246,229,0) 62%), linear-gradient(90deg, rgba(41,37,36,0.08), rgba(255,255,255,0.18), rgba(41,37,36,0.08)); }
+  .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
+  .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
+  .book-group.open { width: 100%; order: -1; }
+  .book-spine { position: relative; width: var(--spine-width, 4.6rem); height: 15.5rem; padding: 0.82rem 0.48rem 0.74rem; border-radius: 0.62rem 0.48rem 0.24rem 0.24rem; border: 1px solid var(--spine-edge, #4b2e21); border-left-color: var(--spine-light, #8a6a4b); border-right-color: var(--spine-shadow, #2f1f18); background: linear-gradient(90deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.16) 9%, rgba(255,255,255,0.03) 31%, rgba(0,0,0,0.08) 58%, rgba(0,0,0,0.26) 84%, rgba(0,0,0,0.44) 100%), linear-gradient(180deg, rgba(255,255,255,0.22) 0, rgba(255,255,255,0.06) 0.32rem, transparent 0.62rem, transparent calc(100% - 0.72rem), rgba(0,0,0,0.22) calc(100% - 0.34rem), rgba(0,0,0,0.36) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.055) 0 1px, transparent 1px 5px), repeating-linear-gradient(0deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 6px), linear-gradient(180deg, var(--spine-top, #79513a) 0%, var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18) 100%); color: var(--spine-ink, #fff4d6); box-shadow: inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; overflow: hidden; transform-origin: bottom center; }
+  .book-spine::before { content: ""; position: absolute; inset: 0.5rem 0.32rem 0.58rem; border-radius: 0.46rem 0.36rem 0.16rem 0.16rem; background: linear-gradient(90deg, rgba(255,255,255,0.18) 0 0.28rem, rgba(0,0,0,0.12) 0.36rem 0.46rem, transparent 0.68rem calc(100% - 0.46rem), rgba(0,0,0,0.18) calc(100% - 0.34rem) 100%), linear-gradient(180deg, transparent 0 13%, rgba(255,255,255,0.18) 13% 14.2%, rgba(0,0,0,0.25) 14.2% 16.3%, transparent 16.3% 36%, rgba(255,255,255,0.16) 36% 37.2%, rgba(0,0,0,0.23) 37.2% 39.4%, transparent 39.4% 61%, rgba(255,255,255,0.15) 61% 62.2%, rgba(0,0,0,0.22) 62.2% 64.4%, transparent 64.4% 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 6px 7px rgba(255,255,255,0.08), inset 0 -10px 12px rgba(0,0,0,0.16); opacity: 0.95; pointer-events: none; }
+  .book-spine::after { content: ""; position: absolute; left: 0.6rem; right: 0.58rem; top: 0.72rem; height: 2.35rem; border-radius: 0.34rem; border-top: 1px solid rgba(255,255,255,0.34); border-bottom: 1px solid rgba(0,0,0,0.22); background: linear-gradient(180deg, var(--spine-label, #f3e5c0), rgba(255,255,255,0.04)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.12); opacity: var(--spine-label-opacity, 0.16); pointer-events: none; }
+  .book-spine > * { position: relative; z-index: 1; }
+  .book-spine:hover { filter: brightness(1.04) saturate(1.02); transform: translateY(-2px); box-shadow: inset 4px 0 6px rgba(255,255,255,0.2), inset -9px 0 13px rgba(0,0,0,0.38), inset 0 5px 0 rgba(255,255,255,0.14), inset 0 -7px 0 rgba(0,0,0,0.27), 0 11px 20px rgba(41,37,36,0.28); }
+  .book-group.open .book-spine { height: 18rem; }
+  .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.16; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; font-feature-settings: "palt"; }
+  .book-spine-author { display: block; width: min(var(--title-width, 2.7rem), 2.7rem); height: 2.4rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 500; font-size: 0.62rem; opacity: 0.88; line-height: 1.12; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: hidden; font-feature-settings: "palt"; }
+  .spine-word-latin { white-space: nowrap; }
+  .book-spine-meta { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 0.25rem; width: 100%; }
+  .book-group-count { font-size: 0.68rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid var(--spine-badge-border, rgba(255,255,255,0.22)); background: var(--spine-badge-bg, rgba(255,255,255,0.16)); color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); white-space: nowrap; }
+  .book-group-toggle { font-size: 0.78rem; transition: transform 0.2s; flex-shrink: 0; }
+  .book-group.open .book-group-toggle { transform: rotate(90deg); }
+  .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: min(540px, calc(100vw - 6.6rem)); max-width: 540px; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); }
+  .book-group.open .book-group-cards { display: flex; }
+  .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
+  .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
+  .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
-  /* CARD */
   .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
   .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
   .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
   .card-actions { display: flex; gap: 0.2rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
@@ -95,50 +104,58 @@
   .lesson-bg { background: var(--amber-light); } .lesson-bg .section-text { color: #78350f; }
   .supplement-bg { background: var(--stone-50); } .supplement-bg .section-text { color: var(--stone-600); }
   .ai-area { margin-top: 0.75rem; }
-  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; box-shadow: 0 1px 4px #f59e0b33; transition: all 0.15s; font-family: inherit; }
+  .btn-ai { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.9rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; transition: filter 0.1s; font-family: inherit; }
   .btn-ai:hover { filter: brightness(1.08); } .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; }
-  .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; display: none; }
-  .ai-result.visible { display: block; }
+  .ai-result { margin-top: 0.5rem; padding: 0.75rem; border-radius: 0.75rem; background: var(--amber-light); border: 1px solid var(--amber-border); font-size: 0.82rem; line-height: 1.7; color: #78350f; }
 
-  /* EMPTY */
+  /* スケッチ（カード内） */
+  .sketch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.5rem; }
+  .sketch-grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: opacity 0.1s; }
+  .sketch-grid img:hover { opacity: 0.85; }
+
+  /* スケッチサムネイル（フォーム内） */
+  .drawing-gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+  .drawing-thumb { position: relative; width: 80px; height: 60px; border: 1px solid var(--stone-200); border-radius: 0.6rem; overflow: hidden; cursor: pointer; transition: border-color 0.1s; }
+  .drawing-thumb:hover { border-color: var(--amber); }
+  .drawing-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; background: rgba(244,63,94,0.9); border: none; border-radius: 4px; color: white; font-size: 0.7rem; padding: 1px 5px; cursor: pointer; display: none; line-height: 1.4; }
+  .drawing-thumb:hover .drawing-thumb-delete { display: block; }
+  .drawing-thumb-edit-badge { position: absolute; bottom: 2px; left: 2px; background: rgba(245,158,11,0.9); border-radius: 3px; color: white; font-size: 0.6rem; padding: 1px 4px; pointer-events: none; }
+
   .empty { text-align: center; padding: 4rem 0; color: var(--stone-300); }
   .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
   .empty p { font-size: 0.85rem; }
 
-  /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 1rem; background: rgba(28,22,15,0.5); backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
   .modal { background: white; border-radius: 1.5rem; box-shadow: 0 20px 60px #00000022; width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
   .modal-header { padding: 1.25rem 1.5rem 0.875rem; border-bottom: 1px solid var(--stone-100); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .modal-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 1.05rem; }
-  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); transition: background 0.1s; line-height: 1; }
+  .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); line-height: 1; }
   .modal-close:hover { background: var(--stone-100); }
   .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; color: var(--stone-800); outline: none; transition: all 0.15s; resize: none; }
+  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
   .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
   .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
   .lesson-field { background: var(--amber-light) !important; border-color: var(--amber-border) !important; }
-  .lesson-field:focus { box-shadow: 0 0 0 3px #f59e0b22 !important; }
-  .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); transition: background 0.1s; font-family: inherit; }
+  .btn-cancel { padding: 0.5rem 1.1rem; border-radius: 999px; background: none; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 500; color: var(--stone-500); font-family: inherit; }
   .btn-cancel:hover { background: var(--stone-100); }
-  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 700; font-family: inherit; box-shadow: 0 1px 4px #f59e0b33; transition: all 0.15s; }
+  .btn-save { padding: 0.5rem 1.25rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; font-family: inherit; }
   .btn-save:hover { filter: brightness(1.08); }
   .ai-key-note { font-size: 0.75rem; color: var(--stone-400); line-height: 1.6; }
   .ai-key-note a { color: var(--amber); }
 
-  /* SUGGEST */
   .suggest-wrap { position: relative; }
-  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow: hidden; margin-top: 0.25rem; }
+  .suggest-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--amber-border); border-radius: 0.75rem; box-shadow: 0 8px 24px #00000015; z-index: 200; overflow-y: auto; max-height: 200px; }
   .suggest-item { padding: 0.65rem 0.875rem; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--stone-100); }
   .suggest-item:last-child { border-bottom: none; }
   .suggest-item:hover { background: var(--amber-light); }
   .suggest-title { font-size: 0.82rem; font-weight: 600; color: var(--stone-800); }
   .suggest-author { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
 
-  /* BOOKSHELF MODAL */
   .bookshelf-list { display: flex; flex-direction: column; gap: 0.5rem; }
   .bookshelf-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid var(--stone-200); cursor: pointer; transition: all 0.15s; background: white; }
   .bookshelf-item:hover { border-color: var(--amber); background: var(--amber-light); }
@@ -146,42 +163,64 @@
   .bookshelf-item-info { flex: 1; min-width: 0; }
   .bookshelf-item-title { font-weight: 700; font-size: 0.85rem; }
   .bookshelf-item-meta { font-size: 0.7rem; color: var(--stone-400); margin-top: 0.1rem; }
-  .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
+  .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
 
-  /* TOAST */
-  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  /* 描画モーダル */
+  .drawing-tools { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; font-family: inherit; transition: all 0.1s; }
+  .drawing-tool-btn:hover { border-color: var(--amber); }
+  .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
+  #drawingCanvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; display: block; width: 100%; touch-action: none; cursor: crosshair; }
+
+  /* 画像ビューアー */
+  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 1rem; }
+  .viewer-overlay.open { display: flex; }
+  .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
+
+  .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
 
-  /* TAG COLORS */
-  .tc-0 { background: #fef3c7; color: #92400e; }
-  .tc-1 { background: #e0f2fe; color: #0c4a6e; }
-  .tc-2 { background: #d1fae5; color: #065f46; }
-  .tc-3 { background: #ffe4e6; color: #9f1239; }
-  .tc-4 { background: #ede9fe; color: #4c1d95; }
-  .tc-5 { background: #ffedd5; color: #7c2d12; }
+  /* 固定タグ */
+  .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
+  .fixed-tag-chip { display:inline-flex; align-items:center; gap:0.2rem; font-size:0.7rem; font-weight:600; padding:0.2rem 0.5rem 0.2rem 0.6rem; border-radius:999px; background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
+  .fixed-tag-chip button { background:none; border:none; cursor:pointer; color:#b45309; font-size:0.75rem; line-height:1; padding:0; }
+  .fixed-tag-hint { font-size:0.68rem; color:var(--stone-400); margin-top:0.25rem; }
+  .tag-pill-fixed { background:var(--amber-light); color:#92400e; border:1px solid var(--amber-border); }
+  .tag-pill-free { }
+  .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
+  .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
+
+  .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
+  .tc-2{background:#d1fae5;color:#065f46} .tc-3{background:#ffe4e6;color:#9f1239}
+  .tc-4{background:#ede9fe;color:#4c1d95} .tc-5{background:#ffedd5;color:#7c2d12}
 
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
     .card-actions { opacity: 1; }
+    .bookshelf-main { gap: 0.55rem 0.4rem; }
+    .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
+    .book-group.open .book-spine { height: 16.5rem; }
+    .book-spine-title { font-size: var(--title-size, 0.78rem); height: 10rem; width: var(--title-width-mobile, var(--title-width, 2.4rem)); }
+    .book-spine-author { font-size: 0.58rem; height: 2.2rem; width: min(var(--title-width-mobile, var(--title-width, 2.4rem)), 2.4rem); }
+    .book-group-cards { width: calc(100vw - 5.7rem); padding-left: 0.55rem; }
   }
 </style>
 </head>
 <body>
 <div class="bg-orbs"></div>
 
-<!-- インストールバナー -->
-<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;box-shadow:0 8px 32px #00000022;border:1px solid #fde68a;padding:0.875rem 1rem;align-items:center;gap:0.75rem;">
+<div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;align-items:center;gap:0.75rem">
   <span style="font-size:1.5rem;flex-shrink:0">📚</span>
-  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使えます</div></div>
-  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;font-family:inherit">追加する</button>
+  <div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:700;color:#292524">ホーム画面に追加</div><div style="font-size:0.72rem;color:#a8a29e;margin-top:0.1rem">オフラインでも使用可能</div></div>
+  <button id="btnInstall" style="padding:0.4rem 0.9rem;border-radius:999px;background:linear-gradient(to right,#f59e0b,#f97316);color:white;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;flex-shrink:0;font-family:inherit">追加</button>
   <button id="btnDismiss" style="background:none;border:none;cursor:pointer;color:#a8a29e;font-size:1.1rem;padding:0.2rem;line-height:1;flex-shrink:0">✕</button>
 </div>
 
 <div class="container">
   <header>
     <div class="header-left">
-      <p class="header-eyebrow">Reading Journal</p>
+      <p class="header-eyebrow">Reading Journal <span style="background:#ef4444;color:white;font-size:0.55rem;padding:0.1rem 0.4rem;border-radius:4px;letter-spacing:0;text-transform:none">v3-FIXED</span></p>
       <h1 class="header-title">読書ノート</h1>
       <p class="header-meta" id="headerMeta"></p>
     </div>
@@ -197,16 +236,23 @@
 
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input class="search-input" id="searchInput" type="text" placeholder="本・著者・内容・教訓・タグで検索…" oninput="onSearch(this.value)">
+    <input class="search-input" id="searchInput" type="text" placeholder="本・著者・内容・教訓・タグで検索…" autocomplete="off" oninput="onSearch(this.value)">
     <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
   </div>
 
   <div class="filter-bar">
     <div class="tag-filters" id="tagFilters"></div>
-    <select class="sort-select" id="sortSelect" onchange="render()">
-      <option value="date">新しい順</option>
-      <option value="book">書名順</option>
-    </select>
+    <div class="filter-controls">
+      <select class="sort-select theme-select" id="shelfThemeSelect" onchange="setShelfTheme(this.value)" aria-label="本棚の着せ替え">
+        <option value="classic">本棚：古書店</option>
+        <option value="library">本棚：図書館</option>
+        <option value="quiet">本棚：モノクロ</option>
+      </select>
+      <select class="sort-select" id="sortSelect" onchange="render()">
+        <option value="date">新しい順</option>
+        <option value="book">書名順</option>
+      </select>
+    </div>
   </div>
 
   <p class="results-count" id="resultsCount" style="display:none"></p>
@@ -217,7 +263,6 @@
   </div>
 </div>
 
-<!-- 記録モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -225,19 +270,36 @@
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field suggest-wrap">
+      <div class="field suggest-wrap" id="bookSuggestWrap">
         <label>📚 本のタイトル</label>
-        <input type="text" id="fBook" placeholder="例: 思考の整理学" oninput="onBookInput(this.value)" autocomplete="off">
+        <input type="text" id="fBook" placeholder="例: 思考の整理学" autocomplete="off" oninput="onBookInput(this.value)">
         <div class="suggest-list" id="suggestList" style="display:none"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
         <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55"></div>
       </div>
+      <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
       <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
       <div class="field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
       <div class="field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
-      <div class="field"><label>🏷 タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス"></div>
+      <div class="field">
+        <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
+        <div class="fixed-tag-chips" id="fixedTagChips"></div>
+        <div style="display:flex;gap:0.5rem">
+          <input type="text" id="fFixedTagInput" placeholder="固定タグを追加してEnter" style="flex:1" onkeydown="onFixedTagKeydown(event)">
+          <button type="button" class="btn-sub" onclick="addFixedTagFromInput()">追加</button>
+        </div>
+        <p class="fixed-tag-hint">💡 保存するとこの本の全記録に反映されます</p>
+      </div>
+      <div class="field suggest-wrap" id="tagSuggestWrap"><label>🏷 この記録の自由タグ（カンマ区切り）</label><input type="text" id="fTags" placeholder="思考法, 習慣, 認知バイアス" autocomplete="off" oninput="onTagsInput(this.value)">
+        <div class="suggest-list" id="tagSuggestList" style="display:none"></div>
+      </div>
+      <div class="field">
+        <label>🎨 スケッチ・図解</label>
+        <div class="drawing-gallery" id="drawingGallery"></div>
+        <button type="button" class="btn-sub" onclick="openDrawingModal(null)" style="margin-top:0.5rem;width:100%;justify-content:center">📐 スケッチを追加</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
@@ -246,7 +308,6 @@
   </div>
 </div>
 
-<!-- 本棚モーダル -->
 <div class="modal-overlay" id="bookshelfOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -260,7 +321,6 @@
   </div>
 </div>
 
-<!-- APIキーモーダル -->
 <div class="modal-overlay" id="aiKeyOverlay">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -279,382 +339,1038 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="drawingOverlay">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <h2 class="modal-title" id="drawingModalTitle">🎨 スケッチを描画</h2>
+      <button class="modal-close" onclick="closeDrawingModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drawing-tools">
+        <button class="drawing-tool-btn active" id="toolDraw" onclick="setDrawingMode('draw',this)">✏️ 描画</button>
+        <button class="drawing-tool-btn" id="toolErase" onclick="setDrawingMode('erase',this)">🧹 消す</button>
+        <input type="color" id="brushColor" value="#292524" title="色" style="width:36px;height:30px;border:1px solid var(--stone-200);border-radius:0.4rem;cursor:pointer;padding:2px">
+        <input type="range" id="brushSize" min="1" max="20" value="3" title="太さ" style="width:60px;accent-color:var(--amber)">
+        <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
+        <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
+      </div>
+      <canvas id="drawingCanvas" height="360"></canvas>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveDrawing()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="viewer-overlay" id="viewerOverlay" onclick="closeViewer()">
+  <img class="viewer-img" id="viewerImg" src="" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-const STORAGE_KEY = 'reading_log_v1';
-const API_KEY_KEY = 'reading_log_api_key';
-const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
-let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null, isSyncing = false;
+const STORAGE_KEY   = 'reading_log_v1';
+const DELETED_KEY   = 'reading_log_deleted';
+const API_KEY_KEY   = 'reading_log_api_key';
+const CLOUD_URL     = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
+const BOOK_META_KEY = 'reading_log_book_meta';
+const SHELF_THEME_KEY = 'reading_log_shelf_theme';
+const SPINE_THEMES = {
+  classic: [
+    { base:'#5a3825', top:'#7b5338', bottom:'#2f1f18', edge:'#3a2419', light:'#9f7b58', shadow:'#261912', ink:'#fff3d2', label:'#ead2a8', labelOpacity:'0.16', badgeBg:'rgba(255,244,214,0.16)', badgeInk:'#fff7df', badgeBorder:'rgba(255,244,214,0.22)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#e6d4ad', top:'#f7e9c8', bottom:'#bfa77d', edge:'#9a7b4f', light:'#fff3d4', shadow:'#8a6a42', ink:'#3b2a1f', label:'#7a5734', labelOpacity:'0.09', badgeBg:'rgba(91,57,39,0.11)', badgeInk:'#3b2a1f', badgeBorder:'rgba(91,57,39,0.18)', textShadow:'0 1px 0 rgba(255,255,255,0.52)' },
+    { base:'#22201d', top:'#3a3731', bottom:'#11100f', edge:'#151413', light:'#5a554c', shadow:'#080807', ink:'#f3e7c6', label:'#d8c08f', labelOpacity:'0.14', badgeBg:'rgba(243,231,198,0.13)', badgeInk:'#f7edd1', badgeBorder:'rgba(243,231,198,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.55)' },
+    { base:'#6a2420', top:'#8a3a31', bottom:'#351311', edge:'#4a1714', light:'#b06b56', shadow:'#270d0b', ink:'#ffe8c2', label:'#f1cf9a', labelOpacity:'0.14', badgeBg:'rgba(255,232,194,0.14)', badgeInk:'#fff1d8', badgeBorder:'rgba(255,232,194,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.48)' },
+    { base:'#3f4b34', top:'#63704d', bottom:'#20261b', edge:'#27301f', light:'#87936b', shadow:'#171d13', ink:'#f0ead1', label:'#ded0a0', labelOpacity:'0.13', badgeBg:'rgba(240,234,209,0.14)', badgeInk:'#f8f2dc', badgeBorder:'rgba(240,234,209,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#314052', top:'#536176', bottom:'#18222d', edge:'#1f2a38', light:'#738096', shadow:'#111922', ink:'#edf0d8', label:'#d6cda2', labelOpacity:'0.12', badgeBg:'rgba(237,240,216,0.13)', badgeInk:'#f8f7e3', badgeBorder:'rgba(237,240,216,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' }
+  ],
+  library: [
+    { base:'#47321f', top:'#6c4b2f', bottom:'#231810', edge:'#2d1d12', light:'#9c7b55', shadow:'#19100b', ink:'#f5e5bd', label:'#e6c98e', labelOpacity:'0.16', badgeBg:'rgba(245,229,189,0.14)', badgeInk:'#fff0cc', badgeBorder:'rgba(245,229,189,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#1f3d35', top:'#345f51', bottom:'#0f211d', edge:'#132b25', light:'#5f8777', shadow:'#0b1714', ink:'#f2edcf', label:'#d8c98f', labelOpacity:'0.14', badgeBg:'rgba(242,237,207,0.13)', badgeInk:'#fbf4d8', badgeBorder:'rgba(242,237,207,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#5c1f2a', top:'#833748', bottom:'#2e1017', edge:'#3e111b', light:'#a9606b', shadow:'#220b10', ink:'#f8dfbd', label:'#e8bd86', labelOpacity:'0.14', badgeBg:'rgba(248,223,189,0.14)', badgeInk:'#ffeccc', badgeBorder:'rgba(248,223,189,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#293348', top:'#46536b', bottom:'#141a26', edge:'#1b2334', light:'#67758e', shadow:'#0d121c', ink:'#ece6c9', label:'#d4bf82', labelOpacity:'0.13', badgeBg:'rgba(236,230,201,0.13)', badgeInk:'#f8efd2', badgeBorder:'rgba(236,230,201,0.2)', textShadow:'0 1px 1px rgba(0,0,0,0.52)' },
+    { base:'#cbb78d', top:'#eadbb9', bottom:'#a0875b', edge:'#8b7045', light:'#f8eccd', shadow:'#725936', ink:'#2d2519', label:'#6d4e2f', labelOpacity:'0.08', badgeBg:'rgba(45,37,25,0.1)', badgeInk:'#2d2519', badgeBorder:'rgba(45,37,25,0.18)', textShadow:'0 1px 0 rgba(255,255,255,0.5)' }
+  ],
+  quiet: [
+    { base:'#191919', top:'#353331', bottom:'#080808', edge:'#0f0f0f', light:'#55514b', shadow:'#050505', ink:'#f2ead6', label:'#d2bea1', labelOpacity:'0.13', badgeBg:'rgba(242,234,214,0.12)', badgeInk:'#f7efdf', badgeBorder:'rgba(242,234,214,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.55)' },
+    { base:'#eee5d4', top:'#fff6e5', bottom:'#c7b99d', edge:'#aa9a80', light:'#fffaf0', shadow:'#92836d', ink:'#292524', label:'#675546', labelOpacity:'0.08', badgeBg:'rgba(41,37,36,0.1)', badgeInk:'#292524', badgeBorder:'rgba(41,37,36,0.16)', textShadow:'0 1px 0 rgba(255,255,255,0.55)' },
+    { base:'#5a5147', top:'#7a6f61', bottom:'#2c2824', edge:'#39322d', light:'#948879', shadow:'#211e1b', ink:'#f4ead8', label:'#d9c4a5', labelOpacity:'0.12', badgeBg:'rgba(244,234,216,0.13)', badgeInk:'#fbf1df', badgeBorder:'rgba(244,234,216,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
+    { base:'#3b2b20', top:'#5d4633', bottom:'#1d1510', edge:'#271b14', light:'#82664f', shadow:'#130e0b', ink:'#f1dfc0', label:'#ddbd88', labelOpacity:'0.12', badgeBg:'rgba(241,223,192,0.13)', badgeInk:'#f9e8ca', badgeBorder:'rgba(241,223,192,0.18)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' }
+  ]
+};
+
+let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
+let currentDrawings = [], editingDrawingIndex = null;
+let currentFixedTags = [];
+let fixedTagEditOnly = false;
+let openBookKey = null;
+let expandedRecordSort = 'new';
+let expandedRecordScope = 'all';
+let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
+if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
+let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
+let dCanvas = null, dCtx = null, dpiRatio = 1;
+
+// ── 削除ID管理 ─────────────────────────────────────
+function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
+function addDeletedId(id) { const ids=getDeletedIds(); ids.add(String(id)); localStorage.setItem(DELETED_KEY,JSON.stringify([...ids])); }
+
+// ── Book Meta (固定タグ) ──────────────────────────
+function bookKey(book) {
+  return (book || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ja-JP');
+}
+
+function cleanTagList(tags) {
+  const seen = new Set();
+  const clean = [];
+  (Array.isArray(tags) ? tags : []).forEach(function(tag) {
+    const value = String(tag || '').trim();
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    clean.push(value);
+  });
+  return clean;
+}
+
+function getBookMeta() {
+  try {
+    const stored = localStorage.getItem(BOOK_META_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    // 配列やnullなど壊れたデータは空オブジェクトで返す
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch(e) { return {}; }
+}
+
+// ── 固定タグ(book_meta)をクラウドに同期するための特殊エントリ ──
+// 既存のスプレッドシート側のスキーマを変更せずに済むよう、
+// 通常のエントリと同じ形（idとcontent列）に乗せて book_meta 全体を運ぶ。
+const BOOK_META_SYNC_ID = '__book_meta__';
+
+function buildBookMetaSyncEntry() {
+  return {
+    id: BOOK_META_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getBookMeta()),
+    tags: [],
+    drawings: [],
+    createdAt: '1970-01-01',
+    isBookMeta: true
+  };
+}
+
+// クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
+// （クラウド側の値を優先しつつ、ローカルにしかないキーは保持する）
+function mergeBookMetaFromCloud(cloudMetaEntry) {
+  if (!cloudMetaEntry) return;
+  let cloudMeta;
+  try {
+    cloudMeta = JSON.parse(cloudMetaEntry.content || '{}');
+  } catch(e) { return; }
+  if (!cloudMeta || typeof cloudMeta !== 'object' || Array.isArray(cloudMeta)) return;
+
+  const localMeta = getBookMeta();
+  const merged = {...localMeta};
+  Object.keys(cloudMeta).forEach(function(key) {
+    merged[key] = cleanTagList(cloudMeta[key]);
+  });
+  localStorage.setItem(BOOK_META_KEY, JSON.stringify(merged));
+}
+
+function getBookFixedTags(book) {
+  const key = bookKey(book);
+  if (!key) return [];
+  const meta = getBookMeta();
+  const storedTags = cleanTagList(meta[key]);
+  if (storedTags.length) return storedTags;
+
+  // v3-FIXED以前は本タイトルそのものをキーにしていたため、旧キーも拾う。
+  const legacyKey = (book || '').trim();
+  const legacyTags = cleanTagList(meta[legacyKey]);
+  if (legacyTags.length) return legacyTags;
+
+  const fromEntries = [];
+  entries.forEach(function(entry) {
+    if (bookKey(entry.book) === key) fromEntries.push(...cleanTagList(entry.fixedTags));
+  });
+  return cleanTagList(fromEntries);
+}
+
+function setBookFixedTags(book, tags) {
+  const key = bookKey(book);
+  if (!key) return;
+  const meta = getBookMeta();
+  const cleanTags = cleanTagList(tags);
+  meta[key] = cleanTags;
+  const legacyKey = (book || '').trim();
+  if (legacyKey && legacyKey !== key) delete meta[legacyKey];
+  localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+  applyFixedTagsToEntries(book, cleanTags);
+}
+
+function applyFixedTagsToEntries(book, tags) {
+  const key = bookKey(book);
+  const cleanTags = cleanTagList(tags);
+  if (!key) return;
+  entries = entries.map(function(entry) {
+    if (bookKey(entry.book) !== key) return entry;
+    if (!cleanTags.length) {
+      const clone = {...entry};
+      delete clone.fixedTags;
+      return clone;
+    }
+    return {...entry, fixedTags: [...cleanTags]};
+  });
+}
+
+function syncEntryFixedTags() {
+  entries = entries.map(function(entry) {
+    const fixedTags = getBookFixedTags(entry.book);
+    if (!fixedTags.length) {
+      const clone = {...entry};
+      delete clone.fixedTags;
+      return clone;
+    }
+    return {...entry, fixedTags};
+  });
+}
+
+// 旧形式（e.fixedTags）→ BOOK_META_KEY へ自動マイグレーション
+function migrateOldFixedTags() {
+  const meta = getBookMeta();
+  let changed = false;
+
+  Object.keys(meta).forEach(function(rawKey) {
+    const normalizedKey = bookKey(rawKey);
+    if (!normalizedKey || normalizedKey === rawKey) return;
+    meta[normalizedKey] = cleanTagList([...(meta[normalizedKey] || []), ...(meta[rawKey] || [])]);
+    delete meta[rawKey];
+    changed = true;
+  });
+
+  entries.forEach(function(e) {
+    const book = (e.book || '').trim();
+    if (!book) return;
+    const key = bookKey(book);
+    const mergedTags = cleanTagList([...(meta[key] || []), ...(e.fixedTags || [])]);
+    if (mergedTags.length && JSON.stringify(meta[key] || []) !== JSON.stringify(mergedTags)) {
+      meta[key] = mergedTags;
+      changed = true;
+    }
+  });
+  if (changed) {
+    localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+  }
+  syncEntryFixedTags();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
 
 const SAMPLE = [
-  { id: 1, book: "思考の整理学", author: "外山滋比古", page: "pp.42–55",
-    content: "グライダー型人間とエンジン型人間の違い。グライダーは自力で飛べないが、エンジン型は自ら考え飛び立つことができる。現代教育はグライダーを量産しているという指摘。",
-    lesson: "受け身で知識を受け取るだけでなく、自ら問いを立てて考える習慣を持つ必要がある。インプットした後に必ず「自分ならどう使うか」を問う。",
-    supplement: "ソクラテスの産婆術も同様の思想。知識を与えるのではなく、相手の中にある答えを引き出す教育法。",
-    tags: ["思考法","教育","自律性"], createdAt: "2024-11-15" },
-  { id: 2, book: "思考の整理学", author: "外山滋比古", page: "pp.88–102",
-    content: "「寝させる」という概念。アイデアはすぐに使わず、時間を置くことで熟成される。忘却は創造の母である。",
-    lesson: "メモしたアイデアをすぐ形にしようとせず、意図的に寝かせる期間を作る。定期的に見返すことで新たな繋がりが生まれる。",
-    supplement: "エジソンやダーウィンも同様の手法を用いていたとされる。",
-    tags: ["思考法","創造性"], createdAt: "2024-11-22" },
-  { id: 3, book: "FACTFULNESS", author: "ハンス・ロスリング", page: "pp.18–30",
-    content: "人間には10の本能的な思い込みがある。その中でも「ネガティブ本能」は世界が悪化していると信じさせる。実際には多くの指標で世界は改善している。",
-    lesson: "感情ではなくデータで世界を見ること。悪いニュースはよく報道されるが、ゆっくりした改善は目立たない。意識してポジティブなデータも探す。",
-    supplement: "メディアリテラシーとも関連。センセーショナルな情報に惑わされないためにも、一次データを参照する習慣が重要。",
-    tags: ["統計","認知バイアス","世界観"], createdAt: "2024-12-03" }
+  { id:1, title:"グライダー型人間について", book:"思考の整理学", author:"外山滋比古", page:"pp.42–55",
+    content:"グライダー型人間とエンジン型人間の違い。自力で飛べないか、自ら飛び立つか。",
+    lesson:"受け身にならず、自ら問いを立てて考える習慣を持つ。",
+    supplement:"ソクラテスの産婆術も同様の思想。", tags:["思考法","教育"], drawings:[], createdAt:"2024-11-15" },
+  { id:2, book:"FACTFULNESS", author:"ハンス・ロスリング", page:"pp.18–30",
+    content:"人間には10の本能的な思い込みがある。「ネガティブ本能」は世界が悪化していると信じさせる。",
+    lesson:"感情ではなくデータで世界を見ること。",
+    supplement:"メディアリテラシーとも関連。", tags:["統計","認知バイアス"], drawings:[], createdAt:"2024-12-03" }
 ];
 
 // ── Persistence ────────────────────────────────────
-function load() { try { const r = localStorage.getItem(STORAGE_KEY); entries = r ? JSON.parse(r) : SAMPLE; } catch { entries = SAMPLE; } }
+function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSON.parse(r):SAMPLE; if(!Array.isArray(entries))entries=SAMPLE; } catch { entries=SAMPLE; } entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID); }
+
 function persist() {
+  syncEntryFixedTags();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   syncToCloud();
 }
 
+// ── Cloud Sync ─────────────────────────────────────
 async function syncToCloud() {
   try {
-    await fetch(CLOUD_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(entries)
-    });
-  } catch(e) { console.warn('Cloud sync failed:', e); }
+    const payload = [...entries, buildBookMetaSyncEntry()];
+    await fetch(CLOUD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+  } catch(e) { console.warn('Cloud sync failed:',e); }
 }
 
 async function loadFromCloud() {
   try {
     showSyncStatus('☁️ クラウドから同期中…');
-    const r = await fetch(CLOUD_URL + '?t=' + Date.now());
-    const cloud = await r.json();
-    if (!Array.isArray(cloud) || cloud.length === 0) { hideSyncStatus(); return; }
-    // クラウドと手元をマージ（IDベース、新しい方を優先）
-    const localMap = Object.fromEntries(entries.map(e => [e.id, e]));
-    const cloudMap = Object.fromEntries(cloud.map(e => [e.id, e]));
-    const allIds = new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]);
-    entries = [...allIds].map(id => cloudMap[id] || localMap[id]);
-    entries.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    const r = await fetch(CLOUD_URL+'?t='+Date.now());
+    const cloudRaw = await r.json();
+    if (!Array.isArray(cloudRaw)||cloudRaw.length===0) { hideSyncStatus(); return; }
+
+    // 固定タグ(book_meta)の同期用エントリを取り出してローカルへ統合
+    const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
+    mergeBookMetaFromCloud(cloudMetaEntry);
+    const cloud = cloudRaw.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
+
+    const deletedIds = getDeletedIds();
+    const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&String(e.deleted)!=='TRUE');
+    const localEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
+    const hadStraySentinel = localEntries.length !== entries.length;
+    const localMap = Object.fromEntries(localEntries.map(e=>[String(e.id),e]));
+    const cloudMap = Object.fromEntries(filtered.map(e=>[String(e.id),e]));
+    const allIds = new Set([...Object.keys(localMap),...Object.keys(cloudMap)]);
+    entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
+      const c=cloudMap[id], l=localMap[id];
+      if(!c) return l;
+      const drawings = (c.drawings&&c.drawings.length) ? c.drawings : ((l&&l.drawings)||[]);
+      return {...c, drawings};
+    });
+    entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    migrateOldFixedTags();
     render();
-    showSyncStatus('✅ 同期完了');
-    setTimeout(hideSyncStatus, 2000);
-  } catch(e) {
-    console.warn('Cloud load failed:', e);
-    hideSyncStatus();
-  }
+    // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
+    if (hadStraySentinel) { persist(); }
+    showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
+  } catch(e) { console.warn('Cloud load failed:',e); hideSyncStatus(); }
 }
 
 function showSyncStatus(msg) {
-  let el = document.getElementById('syncStatus');
-  if (!el) { el = document.createElement('div'); el.id = 'syncStatus'; document.body.appendChild(el); }
-  el.textContent = msg; el.style.cssText = 'position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#92400e;z-index:400;box-shadow:0 2px 8px #00000015;';
+  let el=document.getElementById('syncStatus');
+  if(!el){el=document.createElement('div');el.id='syncStatus';document.body.appendChild(el);}
+  el.textContent=msg; el.style.cssText='position:fixed;top:1rem;right:1rem;background:white;border:1px solid #fde68a;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.75rem;font-weight:600;color:#78716c;z-index:999;box-shadow:0 2px 8px #00000015;';
 }
-function hideSyncStatus() {
-  const el = document.getElementById('syncStatus');
-  if (el) el.remove();
-}
-function getApiKey() { return localStorage.getItem(API_KEY_KEY) || ''; }
-function setApiKey(k) { localStorage.setItem(API_KEY_KEY, k); }
+function hideSyncStatus() { const el=document.getElementById('syncStatus'); if(el)el.remove(); }
+
+function getApiKey() { return localStorage.getItem(API_KEY_KEY)||''; }
+function setApiKey(k) { localStorage.setItem(API_KEY_KEY,k); }
 
 // ── Helpers ────────────────────────────────────────
-function tagClass(tag) { let h=0; for(let i=0;i<tag.length;i++) h=(h*31+tag.charCodeAt(i))%6; return `tc-${h}`; }
+function tagClass(t) { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%6; return `tc-${h}`; }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function allTags() { const s=new Set(); entries.forEach(e=>(e.tags||[]).forEach(t=>s.add(t))); return [...s]; }
 
-// 本ごとにグループ化（代表情報は最初の記録から取得）
+function allTags() {
+  const s = new Set();
+  entries.forEach(e => {
+    (e.tags||[]).forEach(t => s.add(t));
+    // BUGFIX: 表示にはその本の固定タグをbook_metaから取得する
+    getBookFixedTags(e.book).forEach(t => s.add(t));
+  });
+  return [...s];
+}
+
 function bookGroups() {
   const map = new Map();
   entries.forEach(e => {
-    const key = (e.book||'').trim();
-    if (!map.has(key)) map.set(key, { book: e.book||'', author: e.author||'', entries: [] });
-    map.get(key).entries.push(e);
+    const k=bookKey(e.book);
+    if(!map.has(k)) map.set(k,{book:e.book||'',author:e.author||'',entries:[]});
+    map.get(k).entries.push(e);
   });
   return map;
 }
 
 function getFiltered() {
+  const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
+  return entries.filter(e=>{
+    if(activeTag && !entryHasTag(e, activeTag)) return false;
+    return entryMatchesSearch(e, q);
+  }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
+}
+
+function entryHasTag(entry, tag) {
+  if (!tag) return true;
+  return (entry.tags||[]).includes(tag) || getBookFixedTags(entry.book).includes(tag);
+}
+
+function entryMatchesSearch(entry, query) {
+  if (!query) return true;
+  const fixedTags = getBookFixedTags(entry.book);
+  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,...(entry.tags||[]),...fixedTags]
+    .some(s=>(s||'').toLowerCase().includes(query));
+}
+
+function entryPageValue(entry) {
+  const match = String(entry.page || '').match(/\d+/);
+  return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
+}
+
+function sortExpandedRecords(list) {
+  return list.slice().sort(function(a,b) {
+    const pageDiff = entryPageValue(a) - entryPageValue(b);
+    if (pageDiff !== 0) return expandedRecordSort === 'old' ? pageDiff : -pageDiff;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function expandedRecordsForGroup(group) {
+  const key = bookKey(group.book);
   const q = searchQuery.toLowerCase();
-  const sort = document.getElementById('sortSelect').value;
-  return entries.filter(e => {
-    if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
-    if (!q) return true;
-    return [e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[])].some(s=>(s||'').toLowerCase().includes(q));
-  }).sort((a,b) => sort==='date'
-    ? (b.createdAt||'').localeCompare(a.createdAt||'')
-    : (a.book||'').localeCompare(b.book||'','ja'));
+  let list = entries.filter(function(entry) {
+    return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
+  });
+  if (expandedRecordScope === 'activeTag' && activeTag) {
+    list = list.filter(function(entry) { return entryHasTag(entry, activeTag); });
+  }
+  return sortExpandedRecords(list);
 }
 
 // ── Render ─────────────────────────────────────────
 function render() {
-  const tags = allTags();
-  document.getElementById('headerMeta').textContent = `${entries.length}件の記録 · ${bookGroups().size}冊 · ${tags.length}個のタグ`;
+  const tags=allTags(),groups=bookGroups();
+  document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ`;
+  const themeSelect = document.getElementById('shelfThemeSelect');
+  if (themeSelect) themeSelect.value = shelfTheme;
 
-  // タグフィルター
-  const wrap = document.getElementById('tagFilters');
-  wrap.innerHTML = `<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag(this,'')">すべて</button>`;
-  tags.forEach(t => {
-    const b = document.createElement('button');
-    b.className = `tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;
-    b.textContent = t; b.onclick = () => setTag(b, t);
-    wrap.appendChild(b);
-  });
+  const wrap=document.getElementById('tagFilters');
+  wrap.innerHTML=`<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag('')">すべて</button>`;
+  tags.forEach(t=>{const b=document.createElement('button');b.className=`tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;b.textContent=t;b.onclick=()=>setTag(t);wrap.appendChild(b);});
 
-  const list = getFiltered();
-  const container = document.getElementById('cardsContainer');
-  const empty = document.getElementById('emptyState');
-  const countEl = document.getElementById('resultsCount');
-
-  if (searchQuery || activeTag) { countEl.style.display='block'; countEl.textContent=`${list.length}件 ヒット`; }
-  else { countEl.style.display='none'; }
-
-  if (!list.length) { container.innerHTML=''; empty.style.display='block'; return; }
+  const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
+  if(searchQuery||activeTag){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
+  if(!list.length){container.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
 
-  // 本ごとにグループ化して表示
-  const grouped = new Map();
-  list.forEach(e => {
-    const key = (e.book||'').trim() || '（タイトル未入力）';
-    if (!grouped.has(key)) grouped.set(key, { book: e.book||'', author: e.author||'', entries: [] });
-    grouped.get(key).entries.push(e);
-  });
+  const grouped=new Map();
+  list.forEach(e=>{const k=bookKey(e.book)||'（タイトル未入力）';if(!grouped.has(k))grouped.set(k,{book:e.book||'',author:e.author||'',entries:[]});grouped.get(k).entries.push(e);});
 
-  container.innerHTML = [...grouped.entries()].map(([key, g]) => `
-<div class="book-group" id="group-${CSS.escape(key)}">
-  <div class="book-group-header" onclick="toggleGroup('${esc(key)}')">
-    <span class="book-group-icon">📖</span>
-    <div class="book-group-info">
-      <div class="book-group-title">${esc(g.book||'（タイトル未入力）')}</div>
-      ${g.author ? `<div class="book-group-author">${esc(g.author)}</div>` : ''}
-    </div>
-    <span class="book-group-count">${g.entries.length}件</span>
-    <span class="book-group-toggle">▼</span>
-  </div>
-  <div class="book-group-cards">
-    ${g.entries.map(e => cardHTML(e)).join('')}
-  </div>
-</div>`).join('');
+  container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}">${[...grouped.entries()].map(([k,g],gi)=>{
+    const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
+    const isOpen = openBookKey === k;
+    return `
+<div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
+  <button type="button" class="book-spine" style="${spineVars}" onclick="toggleBookGroup(${gi})" data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
+    <span class="book-spine-title">${formatSpineText(g.book||'タイトル未入力')}</span>
+    ${g.author?`<span class="book-spine-author">${formatSpineText(g.author)}</span>`:''}
+    <span class="book-spine-meta">
+      <span class="book-group-count">${g.entries.length}件</span>
+      <span class="book-group-toggle">▶</span>
+    </span>
+  </button>
+  <div class="book-group-cards" id="grp-${gi}-cards">${expandedRecordsHTML(g)}</div>
+</div>`;
+  }).join('')}</div>`;
 }
 
-function toggleGroup(key) {
-  const el = document.getElementById(`group-${CSS.escape(key)}`);
-  if (el) el.classList.toggle('collapsed');
+function expandedRecordsHTML(group) {
+  const records = expandedRecordsForGroup(group);
+  const scopeValue = activeTag ? expandedRecordScope : 'all';
+  const activeTagLabel = activeTag ? `選択タグ「${esc(activeTag)}」のみ` : '選択タグのみ';
+  return `
+    <div class="record-view-controls">
+      <select class="record-view-select" onchange="setExpandedRecordSort(this.value)">
+        <option value="new"${expandedRecordSort==='new'?' selected':''}>新しい順（ページ大）</option>
+        <option value="old"${expandedRecordSort==='old'?' selected':''}>古い順（ページ小）</option>
+      </select>
+      <select class="record-view-select" onchange="setExpandedRecordScope(this.value)" ${activeTag?'':'disabled'}>
+        <option value="all"${scopeValue==='all'?' selected':''}>すべての記録</option>
+        <option value="activeTag"${scopeValue==='activeTag'?' selected':''}>${activeTagLabel}</option>
+      </select>
+    </div>
+    ${records.length ? records.map(e=>cardHTML(e)).join('') : '<div class="record-empty">該当する記録がありません</div>'}`;
+}
+
+function setExpandedRecordSort(value) {
+  expandedRecordSort = value === 'old' ? 'old' : 'new';
+  render();
+}
+
+function setExpandedRecordScope(value) {
+  expandedRecordScope = value === 'activeTag' ? 'activeTag' : 'all';
+  render();
+}
+
+function setShelfTheme(value) {
+  shelfTheme = SPINE_THEMES[value] ? value : 'classic';
+  localStorage.setItem(SHELF_THEME_KEY, shelfTheme);
+  render();
+}
+
+function hashString(text) {
+  let hash = 0;
+  const s = String(text || '');
+  for (let i = 0; i < s.length; i++) hash = ((hash * 31) + s.charCodeAt(i)) >>> 0;
+  return hash;
+}
+
+function spinePalette(title, index) {
+  const theme = SPINE_THEMES[shelfTheme] || SPINE_THEMES.classic;
+  return theme[(hashString(title) + index) % theme.length];
+}
+
+function spineStyle(title, index) {
+  const len = [...String(title || '')].length;
+  const columns = Math.max(2, Math.ceil(len / 13));
+  const titleWidth = Math.max(2.7, columns * 1.18);
+  const spineWidth = titleWidth + 1.65;
+  const titleWidthMobile = Math.max(2.35, columns * 1.02);
+  const spineWidthMobile = titleWidthMobile + 1.3;
+  const titleSize = len > 42 ? 0.74 : (len > 30 ? 0.78 : 0.84);
+  const palette = spinePalette(title, index || 0);
+  return [
+    `--title-width:${titleWidth.toFixed(2)}rem`,
+    `--spine-width:${spineWidth.toFixed(2)}rem`,
+    `--title-width-mobile:${titleWidthMobile.toFixed(2)}rem`,
+    `--spine-width-mobile:${spineWidthMobile.toFixed(2)}rem`,
+    `--title-size:${titleSize}rem`,
+    `--spine-base:${palette.base}`,
+    `--spine-top:${palette.top}`,
+    `--spine-bottom:${palette.bottom}`,
+    `--spine-edge:${palette.edge}`,
+    `--spine-light:${palette.light}`,
+    `--spine-shadow:${palette.shadow}`,
+    `--spine-ink:${palette.ink}`,
+    `--spine-label:${palette.label}`,
+    `--spine-label-opacity:${palette.labelOpacity}`,
+    `--spine-badge-bg:${palette.badgeBg}`,
+    `--spine-badge-ink:${palette.badgeInk}`,
+    `--spine-badge-border:${palette.badgeBorder}`,
+    `--spine-text-shadow:${palette.textShadow}`
+  ].join(';');
+}
+
+function formatSpineText(text) {
+  return String(text || '').split(/([A-Za-z0-9][A-Za-z0-9'’&.+-]*)/g).map(function(part) {
+    if (!part) return '';
+    if (/^[A-Za-z0-9]/.test(part)) return `<span class="spine-word-latin">${esc(part)}</span>`;
+    return esc(part);
+  }).join('');
+}
+
+function toggleBookGroup(index) {
+  const group = document.getElementById(`grp-${index}`);
+  if (!group) return;
+  const shouldOpen = !group.classList.contains('open');
+  const nextOpenKey = shouldOpen ? (group.dataset.bookKey || null) : null;
+  document.querySelectorAll('.book-group.open').forEach(function(openGroup) {
+    openGroup.classList.remove('open');
+    const openButton = openGroup.querySelector('.book-spine');
+    if (openButton) {
+      openButton.setAttribute('aria-expanded', 'false');
+      openButton.setAttribute('aria-label', openButton.dataset.bookTitle + 'の記録を開く');
+    }
+  });
+  openBookKey = nextOpenKey;
+  if (shouldOpen) group.classList.add('open');
+  const button = group.querySelector('.book-spine');
+  if (button) {
+    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    button.setAttribute('aria-label', button.dataset.bookTitle + 'の記録を' + (shouldOpen ? '閉じる' : '開く'));
+  }
 }
 
 function cardHTML(e) {
-  const tagPills = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)}">${esc(t)}</span>`).join('');
-  const sec = (cls,icon,label,txt) => txt ? `<div class="section-block ${cls}"><div class="section-label">${icon} ${label}</div><div class="section-text">${esc(txt)}</div></div>` : '';
+  // BOOK_META_KEYから取得。無ければ旧形式のe.fixedTagsをフォールバックで使用
+  let fixedTags = getBookFixedTags(e.book);
+  if (fixedTags.length === 0 && Array.isArray(e.fixedTags) && e.fixedTags.length > 0) {
+    fixedTags = e.fixedTags.filter(Boolean);
+    console.log('[Card fallback] "' + (e.book||'') + '" using e.fixedTags:', JSON.stringify(fixedTags));
+  }
+  const fixedPills = fixedTags.map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
+  const freePills  = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
+  const pills = fixedPills + freePills;
+
+  const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${esc(txt)}</div></div>`:'';
+  const sketchHTML=(e.drawings&&e.drawings.length)?`
+    <div class="section-block" style="background:var(--stone-50)">
+      <div class="section-label">🎨 スケッチ</div>
+      <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}')">`).join('')}</div>
+    </div>`:'';
+  const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
     <div class="card-header">
       <div>
-        ${e.page ? `<div class="card-page">${esc(e.page)}</div>` : ''}
-        ${e.createdAt ? `<div class="card-date">${esc(e.createdAt)}</div>` : ''}
+        ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
+        ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
+        ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
       </div>
       <div class="card-actions">
         <button class="card-action-btn" onclick="editEntry(${e.id})">✏️</button>
         <button class="card-action-btn delete" onclick="deleteEntry(${e.id})">🗑</button>
       </div>
     </div>
-    ${tagPills ? `<div class="card-tags">${tagPills}</div>` : ''}
+    ${pills?`<div class="card-tags">${pills}</div>`:''}
     <div class="card-sections">
       ${sec('content-bg','📖','内容',e.content)}
       ${sec('lesson-bg','💡','教訓',e.lesson)}
       ${sec('supplement-bg','🔍','補足',e.supplement)}
+      ${sketchHTML}
     </div>
     <div class="ai-area">
-      <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ AI要約</button>
-      <div class="ai-result" id="ai-${e.id}"></div>
+      <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
+      ${aiHTML}
     </div>
   </div>
 </div>`;
 }
 
-// ── Search / Filter ────────────────────────────────
+function openViewer(entryId, idx) {
+  const entry=entries.find(e=>String(e.id)===String(entryId));
+  if(!entry||!entry.drawings)return;
+  const src=entry.drawings[parseInt(idx)];
+  if(!src)return;
+  document.getElementById('viewerImg').src=src;
+  document.getElementById('viewerOverlay').classList.add('open');
+}
+function closeViewer() { document.getElementById('viewerOverlay').classList.remove('open'); }
+
 function onSearch(v) { searchQuery=v; document.getElementById('searchClear').style.display=v?'block':'none'; render(); }
 function clearSearch() { document.getElementById('searchInput').value=''; onSearch(''); }
-function setTag(btn, tag) { activeTag=tag; document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); render(); }
+function setTag(t) { activeTag=t; render(); }
 
-// ── Book Suggest ───────────────────────────────────
 function onBookInput(val) {
-  const list = document.getElementById('suggestList');
-  if (!val.trim()) { list.style.display='none'; return; }
-  const q = val.toLowerCase();
-  const groups = bookGroups();
-  const matches = [...groups.entries()]
-    .filter(([key]) => key.toLowerCase().includes(q) && key.toLowerCase() !== q)
-    .slice(0, 5);
-  if (!matches.length) { list.style.display='none'; return; }
-  list.innerHTML = matches.map(([key, g]) =>
-    `<div class="suggest-item" onclick="selectBook('${esc(g.book)}','${esc(g.author)}')">
-      <div class="suggest-title">${esc(g.book)}</div>
-      ${g.author ? `<div class="suggest-author">${esc(g.author)}</div>` : ''}
-    </div>`
-  ).join('');
+  const list=document.getElementById('suggestList');
+  if(!val.trim()){list.style.display='none';currentFixedTags=[];renderFixedTagChips();return;}
+  const q=bookKey(val);
+  const allGroups=[...bookGroups().values()];
+  const exact=allGroups.find(g=>bookKey(g.book)===q);
+  const newTags=getBookFixedTags(exact ? exact.book : val);
+  if(JSON.stringify(newTags)!==JSON.stringify(currentFixedTags)){
+    currentFixedTags=newTags;
+    renderFixedTagChips();
+  }
+  const matches=allGroups.filter(g=>bookKey(g.book).includes(q)&&bookKey(g.book)!==q).slice(0,5);
+  if(!matches.length){list.style.display='none';return;}
+  list._matches = matches;
+  list.innerHTML=matches.map((g,i)=>`<div class="suggest-item" onclick="selectSuggestion(${i})"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
   list.style.display='block';
+}
+
+function selectSuggestion(index) {
+  const list=document.getElementById('suggestList');
+  const g=(list._matches||[])[index];
+  if(g) selectBook(g.book, g.author);
+}
+
+// ── 記録ごとの自由タグのサジェスト ──────────────────
+function onTagsInput(val) {
+  const list = document.getElementById('tagSuggestList');
+  const parts = val.split(',');
+  const query = parts[parts.length-1].trim();
+  if (!query) { list.style.display='none'; return; }
+
+  const used = new Set(parts.slice(0,-1).map(t=>t.trim().toLocaleLowerCase('ja-JP')).filter(Boolean));
+  currentFixedTags.forEach(t => used.add(t.toLocaleLowerCase('ja-JP')));
+
+  const q = query.toLocaleLowerCase('ja-JP');
+  const matches = allTags().filter(function(t) {
+    const lower = t.toLocaleLowerCase('ja-JP');
+    return lower.includes(q) && lower !== q && !used.has(lower);
+  }).slice(0,8);
+
+  if (!matches.length) { list.style.display='none'; return; }
+  list._matches = matches;
+  list.innerHTML = matches.map((t,i)=>`<div class="suggest-item" onclick="selectTagSuggestion(${i})"><div class="suggest-title">${esc(t)}</div></div>`).join('');
+  list.style.display='block';
+}
+
+function selectTagSuggestion(index) {
+  const list = document.getElementById('tagSuggestList');
+  const tag = (list._matches||[])[index];
+  if (!tag) return;
+  const input = document.getElementById('fTags');
+  const parts = input.value.split(',').map(t=>t.trim()).filter(Boolean);
+  parts[parts.length-1] = tag;
+  input.value = parts.join(', ') + ', ';
+  list.style.display = 'none';
+  input.focus();
 }
 
 function selectBook(book, author) {
   document.getElementById('fBook').value = book;
   document.getElementById('fAuthor').value = author;
   document.getElementById('suggestList').style.display = 'none';
+  // BUGFIX: その本専用の固定タグをbook_metaから読み込む
+  currentFixedTags = getBookFixedTags(book);
+  renderFixedTagChips();
 }
 
-// ── Bookshelf Modal ────────────────────────────────
 function openBookshelf() {
-  const groups = bookGroups();
-  const list = document.getElementById('bookshelfList');
-  if (!groups.size) {
-    list.innerHTML = '<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
-  } else {
-    list.innerHTML = [...groups.entries()].map(([key, g]) =>
-      `<div class="bookshelf-item" onclick="selectBookFromShelf('${esc(g.book)}','${esc(g.author)}')">
+  const groups=bookGroups(),list=document.getElementById('bookshelfList');
+  const groupList = [...groups.values()];
+  list.innerHTML=groupList.length?groupList.map((g, idx)=>{
+    // BUGFIX: 本棚表示も book_meta から固定タグを取得
+    const dTags = getBookFixedTags(g.book);
+    const tagChips = dTags.map(t=>`<span class="bookshelf-tag-chip">${esc(t)}</span>`).join('');
+    return `<div class="bookshelf-item" style="flex-direction:column;align-items:stretch;gap:0.4rem" data-book-idx="${idx}">
+      <div style="display:flex;align-items:center;gap:0.75rem;cursor:pointer" onclick="selectBookFromShelf(${idx})">
         <span class="bookshelf-item-icon">📖</span>
         <div class="bookshelf-item-info">
-          <div class="bookshelf-item-title">${esc(g.book||'（タイトル未入力）')}</div>
-          ${g.author ? `<div class="bookshelf-item-meta">${esc(g.author)}</div>` : ''}
+          <div class="bookshelf-item-title">${esc(g.book)}</div>
+          ${g.author?`<div class="bookshelf-item-meta">${esc(g.author)}</div>`:''}
         </div>
         <span class="bookshelf-item-count">${g.entries.length}件</span>
-      </div>`
-    ).join('');
-  }
+      </div>
+      <div style="padding-left:2.5rem">
+        <div class="bookshelf-item-tags">${tagChips||'<span style="font-size:0.68rem;color:var(--stone-300)">固定タグなし</span>'}</div>
+        <button class="btn-sub" style="margin-top:0.35rem;font-size:0.68rem;padding:0.2rem 0.6rem" onclick="editBookTags(${idx})">🏷 固定タグを編集</button>
+      </div>
+    </div>`;
+  }).join(''):'<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
   document.getElementById('bookshelfOverlay').classList.add('open');
 }
-
 function closeBookshelf() { document.getElementById('bookshelfOverlay').classList.remove('open'); }
 
-function selectBookFromShelf(book, author) {
-  closeBookshelf();
-  openModal();
-  document.getElementById('fBook').value = book;
-  document.getElementById('fAuthor').value = author;
+// BUGFIX: book名をインデックス経由で安全に取得する
+function getBookByIdx(idx) {
+  const groups = bookGroups();
+  return [...groups.values()][idx] || null;
 }
 
-// ── Modal ──────────────────────────────────────────
-function openModal(entry) {
-  editingId = entry?.id ?? null;
-  document.getElementById('modalTitle').textContent = entry ? '記録を編集' : '新しい読書記録';
-  document.getElementById('btnSave').textContent = entry ? '更新する' : '保存する';
-  document.getElementById('fBook').value = entry?.book||'';
-  document.getElementById('fAuthor').value = entry?.author||'';
-  document.getElementById('fPage').value = entry?.page||'';
-  document.getElementById('fContent').value = entry?.content||'';
-  document.getElementById('fLesson').value = entry?.lesson||'';
-  document.getElementById('fSupplement').value = entry?.supplement||'';
-  document.getElementById('fTags').value = (entry?.tags||[]).join(', ');
-  document.getElementById('suggestList').style.display = 'none';
-  document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(()=>document.getElementById('fBook').focus(),50);
+function selectBookFromShelf(idx) {
+  const g = getBookByIdx(idx);
+  if (!g) return;
+  closeBookshelf();
+  openModal(null, g.book, g.author);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
-function editEntry(id) { openModal(entries.find(e=>e.id===id)); }
-function deleteEntry(id) { if(!confirm('この記録を削除しますか？')) return; entries=entries.filter(e=>e.id!==id); persist(); render(); }
+
+function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
+  id = id || null;
+  presetBook = presetBook || '';
+  presetAuthor = presetAuthor || '';
+  editingId = id;
+  fixedTagEditOnly = !!fixedTagsOnly;
+  document.getElementById('modalTitle').textContent = fixedTagEditOnly ? '固定タグを編集' : (id ? '記録を編集' : '新しい読書記録');
+  document.getElementById('btnSave').textContent = fixedTagEditOnly ? '固定タグを保存' : (id ? '更新する' : '保存する');
+
+  // フォームをリセット
+  ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
+  currentFixedTags = [];
+  currentDrawings  = [];
+
+  if (id) {
+    var e = entries.find(function(x){ return x.id===id; });
+    if (e) {
+      document.getElementById('fBook').value       = e.book||'';
+      document.getElementById('fAuthor').value     = e.author||'';
+      document.getElementById('fPage').value       = e.page||'';
+      document.getElementById('fTitle').value      = e.title||'';
+      document.getElementById('fContent').value    = e.content||'';
+      document.getElementById('fLesson').value     = e.lesson||'';
+      document.getElementById('fSupplement').value = e.supplement||'';
+      document.getElementById('fTags').value       = (e.tags||[]).join(', ');
+      currentFixedTags = getBookFixedTags(e.book||'');
+      currentDrawings  = (e.drawings||[]).slice();
+    }
+  } else if (presetBook) {
+    document.getElementById('fBook').value   = presetBook;
+    document.getElementById('fAuthor').value = presetAuthor;
+    currentFixedTags = getBookFixedTags(presetBook);
+  }
+
+  renderFixedTagChips();
+  renderDrawingGallery();
+  document.getElementById('suggestList').style.display='none';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; document.getElementById('tagSuggestList').style.display='none'; fixedTagEditOnly=false; }
+function editEntry(id) { openModal(id); }
+
+function deleteEntry(id) {
+  if(!confirm('この記録を削除しますか？'))return;
+  addDeletedId(id);
+  entries = entries.map(e=>e.id===id?{...e,deleted:true}:e);
+  persist();
+  entries = entries.filter(e=>!e.deleted);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
+  render();
+  showToast('削除しました');
+}
 
 function saveEntry() {
+  const bookName = document.getElementById('fBook').value.trim();
+  if(!bookName){ alert('本タイトルを入力してください'); return; }
+  currentFixedTags = cleanTagList(currentFixedTags);
+
+  if (fixedTagEditOnly) {
+    setBookFixedTags(bookName, currentFixedTags);
+    persist();
+    closeModal();
+    render();
+    showToast('固定タグを保存しました');
+    return;
+  }
+
+  // BUGFIX: その本専用の固定タグとして保存（他の本には影響しない）
+  setBookFixedTags(bookName, currentFixedTags);
+
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const data = {
-    book: document.getElementById('fBook').value,
-    author: document.getElementById('fAuthor').value,
-    page: document.getElementById('fPage').value,
-    content: document.getElementById('fContent').value,
-    lesson: document.getElementById('fLesson').value,
+    book:       bookName,
+    author:     document.getElementById('fAuthor').value,
+    page:       document.getElementById('fPage').value,
+    title:      document.getElementById('fTitle').value,
+    content:    document.getElementById('fContent').value,
+    lesson:     document.getElementById('fLesson').value,
     supplement: document.getElementById('fSupplement').value,
-    tags
+    tags,
+    drawings:   currentDrawings,
+    fixedTags:  [...currentFixedTags],
   };
-  if (editingId) { entries = entries.map(e=>e.id===editingId?{...e,...data}:e); }
-  else { entries.unshift({...data, id:Date.now(), createdAt:new Date().toISOString().slice(0,10)}); }
-  persist(); closeModal(); render();
+
+  if(editingId){ entries=entries.map(e=>e.id===editingId?{...e,...data}:e); }
+  else { entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}); }
+
+  persist(); closeModal(); render(); showToast('保存しました');
 }
 
-// ── AI ─────────────────────────────────────────────
-async function handleAI(id, btn) {
-  const key = getApiKey();
-  if (!key) { pendingAiId=id; document.getElementById('apiKeyInput').value=''; document.getElementById('aiKeyOverlay').classList.add('open'); return; }
-  await runAI(id, btn, key);
+function renderFixedTagChips() {
+  const wrap = document.getElementById('fixedTagChips');
+  currentFixedTags = cleanTagList(currentFixedTags);
+  if(!currentFixedTags.length){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = currentFixedTags.map((tag,index)=>`
+    <span class="fixed-tag-chip">
+      ${esc(tag)}
+      <button type="button" onclick="removeFixedTag(${index})">✕</button>
+    </span>`).join('');
+}
+function removeFixedTag(index) { currentFixedTags.splice(index,1); renderFixedTagChips(); }
+function onFixedTagKeydown(event) {
+  if(event.isComposing || event.key!=='Enter') return;
+  event.preventDefault();
+  addFixedTagFromInput();
+}
+function addFixedTagFromInput() {
+  const input = document.getElementById('fFixedTagInput');
+  const value = input.value.trim();
+  if(!value) return;
+  currentFixedTags = cleanTagList([...currentFixedTags, value]);
+  input.value = '';
+  renderFixedTagChips();
+}
+
+function editBookTags(idx) {
+  const g = getBookByIdx(idx);
+  if (!g) return;
+  closeBookshelf();
+  openModal(null, g.book, g.author, true);
+  showToast('固定タグだけを保存できます');
+}
+
+function renderDrawingGallery() {
+  const gallery=document.getElementById('drawingGallery');
+  gallery.innerHTML=currentDrawings.map((src,i)=>`
+    <div class="drawing-thumb" title="クリックで編集">
+      <img src="${src}" alt="スケッチ${i+1}" onclick="openDrawingModal(${i})">
+      <div class="drawing-thumb-edit-badge">編集</div>
+      <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempDrawing(${i})">✕</button>
+    </div>`).join('');
+}
+function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
+
+function openDrawingModal(editIndex) {
+  editingDrawingIndex = (editIndex!==null&&editIndex!==undefined) ? editIndex : null;
+  const isEdit = editingDrawingIndex!==null;
+  document.getElementById('drawingModalTitle').textContent = isEdit ? '🎨 スケッチを編集' : '🎨 スケッチを描画';
+  document.getElementById('drawingOverlay').classList.add('open');
+  setTimeout(()=>{
+    const old=document.getElementById('drawingCanvas');
+    const neo=old.cloneNode(false);
+    old.parentNode.replaceChild(neo,old);
+    dCanvas=neo; dCtx=dCanvas.getContext('2d');
+    const cssW=dCanvas.offsetWidth||460, cssH=360;
+    dpiRatio=window.devicePixelRatio||1;
+    dCanvas.width=cssW*dpiRatio; dCanvas.height=cssH*dpiRatio;
+    dCanvas.style.width=cssW+'px'; dCanvas.style.height=cssH+'px';
+    dCtx.scale(dpiRatio,dpiRatio);
+    dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
+    if(isEdit&&currentDrawings[editingDrawingIndex]){
+      const img=new Image();
+      img.onload=()=>{ dCtx.drawImage(img,0,0,cssW,cssH); saveDrawState(); };
+      img.src=currentDrawings[editingDrawingIndex];
+    } else { drawHistory=[]; saveDrawState(); }
+    drawMode='draw';
+    document.getElementById('toolDraw').classList.add('active');
+    document.getElementById('toolErase').classList.remove('active');
+    dCanvas.addEventListener('pointerdown',onPtrDown);
+    dCanvas.addEventListener('pointermove',onPtrMove);
+    dCanvas.addEventListener('pointerup',onPtrUp);
+    dCanvas.addEventListener('pointercancel',onPtrUp);
+    dCanvas.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+    dCanvas.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  },50);
+}
+function closeDrawingModal() { document.getElementById('drawingOverlay').classList.remove('open'); isDrawing=false; }
+
+function setDrawingMode(mode,btn) {
+  drawMode=mode;
+  document.querySelectorAll('.drawing-tool-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function canvasPos(e) {
+  const rect=dCanvas.getBoundingClientRect();
+  const cx=e.clientX??e.touches?.[0]?.clientX??0;
+  const cy=e.clientY??e.touches?.[0]?.clientY??0;
+  return {x:cx-rect.left, y:cy-rect.top};
+}
+
+function onPtrDown(e) { e.preventDefault(); isDrawing=true; saveDrawState(); const p=canvasPos(e); lastX=p.x; lastY=p.y; }
+function onPtrMove(e) {
+  if(!isDrawing) return; e.preventDefault();
+  const p=canvasPos(e);
+  dCtx.lineCap='round'; dCtx.lineJoin='round';
+  if(drawMode==='erase'){
+    const sz=+document.getElementById('brushSize').value*4;
+    dCtx.clearRect(p.x-sz/2,p.y-sz/2,sz,sz);
+  } else {
+    dCtx.strokeStyle=document.getElementById('brushColor').value;
+    dCtx.lineWidth=+document.getElementById('brushSize').value;
+    dCtx.beginPath(); dCtx.moveTo(lastX,lastY); dCtx.lineTo(p.x,p.y); dCtx.stroke();
+  }
+  lastX=p.x; lastY=p.y;
+}
+function onPtrUp() { isDrawing=false; }
+
+function saveDrawState() {
+  const tmp=document.createElement('canvas');
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  tmp.width=cssW; tmp.height=cssH;
+  tmp.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+  drawHistory.push(tmp.toDataURL());
+  if(drawHistory.length>20) drawHistory.shift();
+}
+
+function undoDrawing() {
+  if(drawHistory.length<=1) return;
+  drawHistory.pop();
+  const img=new Image();
+  img.onload=()=>{
+    const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+    dCtx.clearRect(0,0,cssW,cssH);
+    dCtx.drawImage(img,0,0,cssW,cssH);
+  };
+  img.src=drawHistory[drawHistory.length-1];
+}
+
+function clearDrawing() {
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  dCtx.fillStyle='white'; dCtx.fillRect(0,0,cssW,cssH);
+  drawHistory=[]; saveDrawState();
+}
+
+function saveDrawing() {
+  const full=document.createElement('canvas');
+  const cssW=dCanvas.width/dpiRatio, cssH=dCanvas.height/dpiRatio;
+  full.width=cssW; full.height=cssH;
+  full.getContext('2d').drawImage(dCanvas,0,0,cssW,cssH);
+  const sync=document.createElement('canvas');
+  sync.width=250; sync.height=188;
+  sync.getContext('2d').drawImage(full,0,0,250,188);
+  const dataUrl=sync.toDataURL('image/jpeg',0.45);
+  if(editingDrawingIndex!==null){
+    currentDrawings[editingDrawingIndex]=dataUrl;
+    showToast('✏️ スケッチを更新しました');
+  } else {
+    currentDrawings.push(dataUrl);
+    showToast('🎨 スケッチを保存しました');
+  }
+  renderDrawingGallery();
+  closeDrawingModal();
+}
+
+async function handleAI(id,btn) {
+  const key=getApiKey();
+  if(!key){pendingAiId=id;document.getElementById('apiKeyInput').value='';document.getElementById('aiKeyOverlay').classList.add('open');return;}
+  await runAI(id,btn,key);
 }
 function closeAiModal() { document.getElementById('aiKeyOverlay').classList.remove('open'); }
 function confirmApiKey() {
-  const k = document.getElementById('apiKeyInput').value.trim();
-  if (!k) return;
+  const k=document.getElementById('apiKeyInput').value.trim(); if(!k)return;
   setApiKey(k); closeAiModal();
-  if (pendingAiId !== null) { const btn = document.querySelector(`#card-${pendingAiId} .btn-ai`); runAI(pendingAiId, btn, k); pendingAiId=null; }
+  if(pendingAiId!==null){const btn=document.querySelector(`#card-${pendingAiId} .btn-ai`);runAI(pendingAiId,btn,k);pendingAiId=null;}
 }
-async function runAI(id, btn, key) {
-  const e = entries.find(e=>e.id===id); if(!e) return;
-  const res = document.getElementById(`ai-${id}`);
+async function runAI(id,btn,key) {
+  const e=entries.find(e=>e.id===id); if(!e) return;
   btn.disabled=true; btn.textContent='要約中…';
-  res.textContent='生成中…'; res.classList.add('visible');
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages',{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」(${e.author}) ${e.page}\n内容:${e.content}\n教訓:${e.lesson}\n補足:${e.supplement}\n\n要点を箇条書きにせず、流れるような文章でまとめてください。`}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`}]})
     });
-    const d = await r.json();
-    res.textContent = d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
-  } catch { res.textContent='エラーが発生しました。'; }
-  finally { btn.disabled=false; btn.textContent='✨ AI要約'; }
+    const d=await r.json();
+    e.aiSummary=d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
+    persist(); render(); showToast('✨ AI要約完了');
+  } catch { showToast('エラーが発生しました。'); }
+  finally { btn.disabled=false; btn.textContent=e.aiSummary?'✨ 再要約':'✨ AI要約'; }
 }
 
-// ── Export / Import ────────────────────────────────
 function exportData() {
-  const json = JSON.stringify(entries, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `reading-log-${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(url);
+  syncEntryFixedTags();
+  const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`reading-log-${new Date().toISOString().slice(0,10)}.json`; a.click();
   showToast('📤 エクスポートしました');
 }
 function importData(ev) {
-  const file = ev.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
     try {
-      const imported = JSON.parse(e.target.result);
-      if (!Array.isArray(imported)) throw new Error();
-      const existingIds = new Set(entries.map(e=>e.id));
-      const newEntries = imported.filter(e=>!existingIds.has(e.id));
-      const newMap = Object.fromEntries(imported.map(e=>[e.id,e]));
-      entries = [...entries.map(e=>newMap[e.id]?{...e,...newMap[e.id]}:e), ...newEntries];
-      persist(); render();
-      showToast(`📥 ${imported.length}件をインポートしました`);
+      const imp=JSON.parse(e.target.result); if(!Array.isArray(imp))throw new Error();
+      const existIds=new Set(entries.map(e=>e.id));
+      const newMap=Object.fromEntries(imp.map(e=>[e.id,e]));
+      entries=[...entries.map(e=>newMap[e.id]?{...e,...newMap[e.id]}:e),...imp.filter(e=>!existIds.has(e.id))];
+      migrateOldFixedTags();
+      persist(); render(); showToast(`📥 ${imp.length}件をインポートしました`);
     } catch { showToast('❌ ファイルの形式が正しくありません'); }
     ev.target.value='';
   };
   reader.readAsText(file);
 }
 
-// ── Toast ──────────────────────────────────────────
 function showToast(msg) {
-  let t = document.getElementById('toast');
-  if (!t) { t=document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); }
+  const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// ── Keyboard / Click outside ───────────────────────
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();} });
-document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeModal(); });
-document.getElementById('aiKeyOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeAiModal(); });
-document.getElementById('bookshelfOverlay').addEventListener('click', e=>{ if(e.target===e.currentTarget)closeBookshelf(); });
-document.addEventListener('click', e=>{ if(!e.target.closest('.suggest-wrap')) document.getElementById('suggestList').style.display='none'; });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();closeViewer();}});
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
+document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
+document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
+  if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
+});
 
-// ── Service Worker ─────────────────────────────────
+// 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
+// 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
+// そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
+// その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v5';
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
+  (async () => {
+    try {
+      if (!localStorage.getItem(SW_CLEANUP_FLAG)) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        let hadOld = false;
+        for (const reg of regs) { await reg.unregister(); hadOld = true; }
+        if (window.caches) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        localStorage.setItem(SW_CLEANUP_FLAG, '1');
+        if (hadOld) { location.reload(); return; }
+      }
+      // updateViaCache:'none' により、sw.js自体はブラウザ/CDNのHTTPキャッシュを
+      // 経由せず毎回取得され、新しいバージョンへの切り替えが確実に行われる。
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    } catch (err) {
+      console.warn('Service worker cleanup failed:', err);
+    }
+  })();
 }
 
-// ── Install Banner ─────────────────────────────────
-let deferredPrompt = null;
-const banner = document.getElementById('installBanner');
-window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; banner.style.display='flex'; });
-document.getElementById('btnInstall')?.addEventListener('click', async ()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; banner.style.display='none'; });
-document.getElementById('btnDismiss')?.addEventListener('click', ()=>{ banner.style.display='none'; });
-window.addEventListener('appinstalled', ()=>{ banner.style.display='none'; deferredPrompt=null; });
+let deferredPrompt=null;
+const banner=document.getElementById('installBanner');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;banner.style.display='flex';});
+document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;banner.style.display='none';});
+document.getElementById('btnDismiss')?.addEventListener('click',()=>{banner.style.display='none';});
+window.addEventListener('appinstalled',()=>{banner.style.display='none';deferredPrompt=null;});
 
-load(); render(); loadFromCloud();
+load(); migrateOldFixedTags(); render(); loadFromCloud();
 </script>
 </body>
 </html>
