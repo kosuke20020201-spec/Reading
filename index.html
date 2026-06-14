@@ -402,6 +402,42 @@ function getBookMeta() {
   } catch(e) { return {}; }
 }
 
+// ── 固定タグ(book_meta)をクラウドに同期するための特殊エントリ ──
+// 既存のスプレッドシート側のスキーマを変更せずに済むよう、
+// 通常のエントリと同じ形（idとcontent列）に乗せて book_meta 全体を運ぶ。
+const BOOK_META_SYNC_ID = '__book_meta__';
+
+function buildBookMetaSyncEntry() {
+  return {
+    id: BOOK_META_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getBookMeta()),
+    tags: [],
+    drawings: [],
+    createdAt: '1970-01-01',
+    isBookMeta: true
+  };
+}
+
+// クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
+// （クラウド側の値を優先しつつ、ローカルにしかないキーは保持する）
+function mergeBookMetaFromCloud(cloudMetaEntry) {
+  if (!cloudMetaEntry) return;
+  let cloudMeta;
+  try {
+    cloudMeta = JSON.parse(cloudMetaEntry.content || '{}');
+  } catch(e) { return; }
+  if (!cloudMeta || typeof cloudMeta !== 'object' || Array.isArray(cloudMeta)) return;
+
+  const localMeta = getBookMeta();
+  const merged = {...localMeta};
+  Object.keys(cloudMeta).forEach(function(key) {
+    merged[key] = cleanTagList(cloudMeta[key]);
+  });
+  localStorage.setItem(BOOK_META_KEY, JSON.stringify(merged));
+}
+
 function getBookFixedTags(book) {
   const key = bookKey(book);
   if (!key) return [];
@@ -513,7 +549,8 @@ function persist() {
 // ── Cloud Sync ─────────────────────────────────────
 async function syncToCloud() {
   try {
-    await fetch(CLOUD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(entries)});
+    const payload = [...entries, buildBookMetaSyncEntry()];
+    await fetch(CLOUD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
   } catch(e) { console.warn('Cloud sync failed:',e); }
 }
 
@@ -521,8 +558,14 @@ async function loadFromCloud() {
   try {
     showSyncStatus('☁️ クラウドから同期中…');
     const r = await fetch(CLOUD_URL+'?t='+Date.now());
-    const cloud = await r.json();
-    if (!Array.isArray(cloud)||cloud.length===0) { hideSyncStatus(); return; }
+    const cloudRaw = await r.json();
+    if (!Array.isArray(cloudRaw)||cloudRaw.length===0) { hideSyncStatus(); return; }
+
+    // 固定タグ(book_meta)の同期用エントリを取り出してローカルへ統合
+    const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
+    mergeBookMetaFromCloud(cloudMetaEntry);
+    const cloud = cloudRaw.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
+
     const deletedIds = getDeletedIds();
     const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&String(e.deleted)!=='TRUE');
     const localMap = Object.fromEntries(entries.map(e=>[String(e.id),e]));
