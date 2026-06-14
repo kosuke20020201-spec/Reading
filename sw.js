@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260614-1';
+const CACHE_NAME = 'reading-note-pwa-20260614-2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,10 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL))
+      .then(cache => Promise.all(
+        // HTTP/CDNキャッシュを経由せず、必ず最新のファイルを取得してキャッシュする
+        APP_SHELL.map(url => fetch(url, { cache: 'reload' }).then(res => cache.put(url, res)))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -28,13 +31,12 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-store' })
         .then(response => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
