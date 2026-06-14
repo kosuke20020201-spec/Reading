@@ -10,11 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="読書ノート">
 <meta name="theme-color" content="#f59e0b">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -56,18 +54,25 @@
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
-  .book-group { margin-bottom: 1.5rem; }
-  .book-group-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; cursor: pointer; transition: box-shadow 0.2s; }
-  .book-group-header:hover { box-shadow: 0 3px 12px #00000010; }
-  .book-group-icon { font-size: 1.4rem; flex-shrink: 0; }
-  .book-group-info { flex: 1; min-width: 0; }
-  .book-group-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 0.95rem; }
-  .book-group-author { font-size: 0.72rem; color: var(--stone-400); margin-top: 0.15rem; }
-  .book-group-count { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
-  .book-group-toggle { color: var(--stone-300); font-size: 0.85rem; transition: transform 0.2s; flex-shrink: 0; }
-  .book-group.collapsed .book-group-toggle { transform: rotate(-90deg); }
-  .book-group-cards { display: flex; flex-direction: column; gap: 0.75rem; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); margin-left: 0.5rem; }
-  .book-group.collapsed .book-group-cards { display: none; }
+  .bookshelf-main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 0.55rem; padding: 0.6rem 0 1.4rem; border-bottom: 8px solid #d6a34c; }
+  .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
+  .book-group.open { width: 100%; order: -1; }
+  .book-spine { width: var(--spine-width, 4.6rem); height: 15.5rem; padding: 0.65rem 0.45rem; border-radius: 0.5rem 0.5rem 0.25rem 0.25rem; border: 1px solid #d97706; background: linear-gradient(180deg, #f59e0b 0%, #f97316 100%); color: white; box-shadow: inset -4px 0 8px #7c2d1225, 0 5px 12px #00000014; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; overflow: hidden; }
+  .book-spine:hover { filter: brightness(1.04); transform: translateY(-2px); box-shadow: inset -4px 0 8px #7c2d1225, 0 8px 16px #00000018; }
+  .book-group.open .book-spine { height: 18rem; }
+  .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Serif JP', serif; font-weight: 900; font-size: var(--title-size, 0.84rem); line-height: 1.15; color: white; writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; }
+  .book-spine-author { display: block; width: min(var(--title-width, 2.7rem), 2.7rem); height: 2.4rem; font-size: 0.62rem; opacity: 0.86; line-height: 1.1; color: white; writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: hidden; }
+  .spine-word-latin { white-space: nowrap; }
+  .book-spine-meta { margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 0.25rem; width: 100%; }
+  .book-group-count { font-size: 0.68rem; font-weight: 700; padding: 0.12rem 0.45rem; border-radius: 999px; background: rgba(255,255,255,0.22); color: white; white-space: nowrap; }
+  .book-group-toggle { font-size: 0.78rem; transition: transform 0.2s; flex-shrink: 0; }
+  .book-group.open .book-group-toggle { transform: rotate(90deg); }
+  .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: min(540px, calc(100vw - 6.6rem)); max-width: 540px; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); }
+  .book-group.open .book-group-cards { display: flex; }
+  .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
+  .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
+  .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
   .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
@@ -186,6 +191,12 @@
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
     .card-actions { opacity: 1; }
+    .bookshelf-main { gap: 0.55rem 0.4rem; }
+    .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
+    .book-group.open .book-spine { height: 16.5rem; }
+    .book-spine-title { font-size: var(--title-size, 0.78rem); height: 10rem; width: var(--title-width-mobile, var(--title-width, 2.4rem)); }
+    .book-spine-author { font-size: 0.58rem; height: 2.2rem; width: min(var(--title-width-mobile, var(--title-width, 2.4rem)), 2.4rem); }
+    .book-group-cards { width: calc(100vw - 5.7rem); padding-left: 0.55rem; }
   }
 </style>
 </head>
@@ -263,6 +274,7 @@
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
         <div style="display:flex;gap:0.5rem">
           <input type="text" id="fFixedTagInput" placeholder="固定タグを追加してEnter" style="flex:1" onkeydown="onFixedTagKeydown(event)">
+          <button type="button" class="btn-sub" onclick="addFixedTagFromInput()">追加</button>
         </div>
         <p class="fixed-tag-hint">💡 保存するとこの本の全記録に反映されます</p>
       </div>
@@ -351,6 +363,10 @@ const BOOK_META_KEY = 'reading_log_book_meta';
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
 let currentDrawings = [], editingDrawingIndex = null;
 let currentFixedTags = [];
+let fixedTagEditOnly = false;
+let openBookKey = null;
+let expandedRecordSort = 'new';
+let expandedRecordScope = 'all';
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 
@@ -359,6 +375,22 @@ function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(
 function addDeletedId(id) { const ids=getDeletedIds(); ids.add(String(id)); localStorage.setItem(DELETED_KEY,JSON.stringify([...ids])); }
 
 // ── Book Meta (固定タグ) ──────────────────────────
+function bookKey(book) {
+  return (book || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ja-JP');
+}
+
+function cleanTagList(tags) {
+  const seen = new Set();
+  const clean = [];
+  (Array.isArray(tags) ? tags : []).forEach(function(tag) {
+    const value = String(tag || '').trim();
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    clean.push(value);
+  });
+  return clean;
+}
+
 function getBookMeta() {
   try {
     const stored = localStorage.getItem(BOOK_META_KEY);
@@ -371,46 +403,91 @@ function getBookMeta() {
 }
 
 function getBookFixedTags(book) {
-  if (!book || !book.trim()) return [];
-  const key = book.trim();
+  const key = bookKey(book);
+  if (!key) return [];
   const meta = getBookMeta();
-  const tags = meta[key];
-  const result = Array.isArray(tags) ? tags.filter(Boolean) : [];
-  console.log('[FixedTags GET] "' + key + '" =>', JSON.stringify(result), '| meta =>', JSON.stringify(meta));
-  return [...result];
+  const storedTags = cleanTagList(meta[key]);
+  if (storedTags.length) return storedTags;
+
+  // v3-FIXED以前は本タイトルそのものをキーにしていたため、旧キーも拾う。
+  const legacyKey = (book || '').trim();
+  const legacyTags = cleanTagList(meta[legacyKey]);
+  if (legacyTags.length) return legacyTags;
+
+  const fromEntries = [];
+  entries.forEach(function(entry) {
+    if (bookKey(entry.book) === key) fromEntries.push(...cleanTagList(entry.fixedTags));
+  });
+  return cleanTagList(fromEntries);
 }
 
 function setBookFixedTags(book, tags) {
-  if (!book || !book.trim()) return;
-  const key = book.trim();
+  const key = bookKey(book);
+  if (!key) return;
   const meta = getBookMeta();
-  const cleanTags = Array.isArray(tags) ? tags.filter(function(t){ return t && typeof t === 'string'; }) : [];
+  const cleanTags = cleanTagList(tags);
   meta[key] = cleanTags;
+  const legacyKey = (book || '').trim();
+  if (legacyKey && legacyKey !== key) delete meta[legacyKey];
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
-  console.log('[FixedTags SET] "' + key + '" =>', JSON.stringify(cleanTags), '| Full meta =>', JSON.stringify(meta));
+  applyFixedTagsToEntries(book, cleanTags);
+}
+
+function applyFixedTagsToEntries(book, tags) {
+  const key = bookKey(book);
+  const cleanTags = cleanTagList(tags);
+  if (!key) return;
+  entries = entries.map(function(entry) {
+    if (bookKey(entry.book) !== key) return entry;
+    if (!cleanTags.length) {
+      const clone = {...entry};
+      delete clone.fixedTags;
+      return clone;
+    }
+    return {...entry, fixedTags: [...cleanTags]};
+  });
+}
+
+function syncEntryFixedTags() {
+  entries = entries.map(function(entry) {
+    const fixedTags = getBookFixedTags(entry.book);
+    if (!fixedTags.length) {
+      const clone = {...entry};
+      delete clone.fixedTags;
+      return clone;
+    }
+    return {...entry, fixedTags};
+  });
 }
 
 // 旧形式（e.fixedTags）→ BOOK_META_KEY へ自動マイグレーション
 function migrateOldFixedTags() {
   const meta = getBookMeta();
   let changed = false;
+
+  Object.keys(meta).forEach(function(rawKey) {
+    const normalizedKey = bookKey(rawKey);
+    if (!normalizedKey || normalizedKey === rawKey) return;
+    meta[normalizedKey] = cleanTagList([...(meta[normalizedKey] || []), ...(meta[rawKey] || [])]);
+    delete meta[rawKey];
+    changed = true;
+  });
+
   entries.forEach(function(e) {
     const book = (e.book || '').trim();
     if (!book) return;
-    if (Array.isArray(e.fixedTags) && e.fixedTags.length > 0) {
-      // BOOK_META_KEYにまだ無い場合だけ移行（既存データを上書きしない）
-      if (!Array.isArray(meta[book]) || meta[book].length === 0) {
-        meta[book] = e.fixedTags.filter(Boolean);
-        changed = true;
-        console.log('[FixedTags MIGRATE] "' + book + '" =>', JSON.stringify(meta[book]));
-      }
+    const key = bookKey(book);
+    const mergedTags = cleanTagList([...(meta[key] || []), ...(e.fixedTags || [])]);
+    if (mergedTags.length && JSON.stringify(meta[key] || []) !== JSON.stringify(mergedTags)) {
+      meta[key] = mergedTags;
+      changed = true;
     }
   });
   if (changed) {
     localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
-    console.log('[FixedTags MIGRATE] 完了。全メタ =>', JSON.stringify(meta));
-    render(); // マイグレーション後に再描画
   }
+  syncEntryFixedTags();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
 const SAMPLE = [
@@ -428,6 +505,7 @@ const SAMPLE = [
 function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSON.parse(r):SAMPLE; if(!Array.isArray(entries))entries=SAMPLE; } catch { entries=SAMPLE; } }
 
 function persist() {
+  syncEntryFixedTags();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   syncToCloud();
 }
@@ -457,9 +535,8 @@ async function loadFromCloud() {
       return {...c, drawings};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
-    render();
     migrateOldFixedTags();
+    render();
     showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
   } catch(e) { console.warn('Cloud load failed:',e); hideSyncStatus(); }
 }
@@ -491,7 +568,7 @@ function allTags() {
 function bookGroups() {
   const map = new Map();
   entries.forEach(e => {
-    const k=(e.book||'').trim();
+    const k=bookKey(e.book);
     if(!map.has(k)) map.set(k,{book:e.book||'',author:e.author||'',entries:[]});
     map.get(k).entries.push(e);
   });
@@ -501,13 +578,46 @@ function bookGroups() {
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
   return entries.filter(e=>{
-    // BUGFIX: フィルタにも book_meta の固定タグを使う
-    const fixedTags = getBookFixedTags(e.book);
-    if(activeTag && !(e.tags||[]).includes(activeTag) && !fixedTags.includes(activeTag)) return false;
-    if(!q) return true;
-    return [e.title,e.book,e.author,e.content,e.lesson,e.supplement,...(e.tags||[]),...fixedTags]
-      .some(s=>(s||'').toLowerCase().includes(q));
+    if(activeTag && !entryHasTag(e, activeTag)) return false;
+    return entryMatchesSearch(e, q);
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
+}
+
+function entryHasTag(entry, tag) {
+  if (!tag) return true;
+  return (entry.tags||[]).includes(tag) || getBookFixedTags(entry.book).includes(tag);
+}
+
+function entryMatchesSearch(entry, query) {
+  if (!query) return true;
+  const fixedTags = getBookFixedTags(entry.book);
+  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,...(entry.tags||[]),...fixedTags]
+    .some(s=>(s||'').toLowerCase().includes(query));
+}
+
+function entryPageValue(entry) {
+  const match = String(entry.page || '').match(/\d+/);
+  return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
+}
+
+function sortExpandedRecords(list) {
+  return list.slice().sort(function(a,b) {
+    const pageDiff = entryPageValue(a) - entryPageValue(b);
+    if (pageDiff !== 0) return expandedRecordSort === 'old' ? pageDiff : -pageDiff;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function expandedRecordsForGroup(group) {
+  const key = bookKey(group.book);
+  const q = searchQuery.toLowerCase();
+  let list = entries.filter(function(entry) {
+    return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
+  });
+  if (expandedRecordScope === 'activeTag' && activeTag) {
+    list = list.filter(function(entry) { return entryHasTag(entry, activeTag); });
+  }
+  return sortExpandedRecords(list);
 }
 
 // ── Render ─────────────────────────────────────────
@@ -525,21 +635,99 @@ function render() {
   empty.style.display='none';
 
   const grouped=new Map();
-  list.forEach(e=>{const k=(e.book||'').trim()||'（タイトル未入力）';if(!grouped.has(k))grouped.set(k,{book:e.book||'',author:e.author||'',entries:[]});grouped.get(k).entries.push(e);});
+  list.forEach(e=>{const k=bookKey(e.book)||'（タイトル未入力）';if(!grouped.has(k))grouped.set(k,{book:e.book||'',author:e.author||'',entries:[]});grouped.get(k).entries.push(e);});
 
-  container.innerHTML=[...grouped.entries()].map(([k,g],gi)=>`
-<div class="book-group" id="grp-${gi}">
-  <div class="book-group-header" onclick="document.getElementById('grp-${gi}').classList.toggle('collapsed')">
-    <span class="book-group-icon">📖</span>
-    <div class="book-group-info">
-      <div class="book-group-title">${esc(g.book||'（タイトル未入力）')}</div>
-      ${g.author?`<div class="book-group-author">${esc(g.author)}</div>`:''}
+  container.innerHTML=`<div class="bookshelf-main">${[...grouped.entries()].map(([k,g],gi)=>{
+    const spineVars = spineStyle(g.book || 'タイトル未入力');
+    const isOpen = openBookKey === k;
+    return `
+<div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
+  <button type="button" class="book-spine" style="${spineVars}" onclick="toggleBookGroup(${gi})" data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
+    <span class="book-spine-title">${formatSpineText(g.book||'タイトル未入力')}</span>
+    ${g.author?`<span class="book-spine-author">${formatSpineText(g.author)}</span>`:''}
+    <span class="book-spine-meta">
+      <span class="book-group-count">${g.entries.length}件</span>
+      <span class="book-group-toggle">▶</span>
+    </span>
+  </button>
+  <div class="book-group-cards" id="grp-${gi}-cards">${expandedRecordsHTML(g)}</div>
+</div>`;
+  }).join('')}</div>`;
+}
+
+function expandedRecordsHTML(group) {
+  const records = expandedRecordsForGroup(group);
+  const scopeValue = activeTag ? expandedRecordScope : 'all';
+  const activeTagLabel = activeTag ? `選択タグ「${esc(activeTag)}」のみ` : '選択タグのみ';
+  return `
+    <div class="record-view-controls">
+      <select class="record-view-select" onchange="setExpandedRecordSort(this.value)">
+        <option value="new"${expandedRecordSort==='new'?' selected':''}>新しい順（ページ大）</option>
+        <option value="old"${expandedRecordSort==='old'?' selected':''}>古い順（ページ小）</option>
+      </select>
+      <select class="record-view-select" onchange="setExpandedRecordScope(this.value)" ${activeTag?'':'disabled'}>
+        <option value="all"${scopeValue==='all'?' selected':''}>すべての記録</option>
+        <option value="activeTag"${scopeValue==='activeTag'?' selected':''}>${activeTagLabel}</option>
+      </select>
     </div>
-    <span class="book-group-count">${g.entries.length}件</span>
-    <span class="book-group-toggle">▼</span>
-  </div>
-  <div class="book-group-cards">${g.entries.map(e=>cardHTML(e)).join('')}</div>
-</div>`).join('');
+    ${records.length ? records.map(e=>cardHTML(e)).join('') : '<div class="record-empty">該当する記録がありません</div>'}`;
+}
+
+function setExpandedRecordSort(value) {
+  expandedRecordSort = value === 'old' ? 'old' : 'new';
+  render();
+}
+
+function setExpandedRecordScope(value) {
+  expandedRecordScope = value === 'activeTag' ? 'activeTag' : 'all';
+  render();
+}
+
+function spineStyle(title) {
+  const len = [...String(title || '')].length;
+  const columns = Math.max(2, Math.ceil(len / 13));
+  const titleWidth = Math.max(2.7, columns * 1.18);
+  const spineWidth = titleWidth + 1.65;
+  const titleWidthMobile = Math.max(2.35, columns * 1.02);
+  const spineWidthMobile = titleWidthMobile + 1.3;
+  const titleSize = len > 42 ? 0.74 : (len > 30 ? 0.78 : 0.84);
+  return [
+    `--title-width:${titleWidth.toFixed(2)}rem`,
+    `--spine-width:${spineWidth.toFixed(2)}rem`,
+    `--title-width-mobile:${titleWidthMobile.toFixed(2)}rem`,
+    `--spine-width-mobile:${spineWidthMobile.toFixed(2)}rem`,
+    `--title-size:${titleSize}rem`
+  ].join(';');
+}
+
+function formatSpineText(text) {
+  return String(text || '').split(/([A-Za-z0-9][A-Za-z0-9'’&.+-]*)/g).map(function(part) {
+    if (!part) return '';
+    if (/^[A-Za-z0-9]/.test(part)) return `<span class="spine-word-latin">${esc(part)}</span>`;
+    return esc(part);
+  }).join('');
+}
+
+function toggleBookGroup(index) {
+  const group = document.getElementById(`grp-${index}`);
+  if (!group) return;
+  const shouldOpen = !group.classList.contains('open');
+  const nextOpenKey = shouldOpen ? (group.dataset.bookKey || null) : null;
+  document.querySelectorAll('.book-group.open').forEach(function(openGroup) {
+    openGroup.classList.remove('open');
+    const openButton = openGroup.querySelector('.book-spine');
+    if (openButton) {
+      openButton.setAttribute('aria-expanded', 'false');
+      openButton.setAttribute('aria-label', openButton.dataset.bookTitle + 'の記録を開く');
+    }
+  });
+  openBookKey = nextOpenKey;
+  if (shouldOpen) group.classList.add('open');
+  const button = group.querySelector('.book-spine');
+  if (button) {
+    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    button.setAttribute('aria-label', button.dataset.bookTitle + 'の記録を' + (shouldOpen ? '閉じる' : '開く'));
+  }
 }
 
 function cardHTML(e) {
@@ -605,21 +793,26 @@ function setTag(t) { activeTag=t; render(); }
 
 function onBookInput(val) {
   const list=document.getElementById('suggestList');
-  if(!val.trim()){list.style.display='none';return;}
-  const q=val.toLowerCase();
+  if(!val.trim()){list.style.display='none';currentFixedTags=[];renderFixedTagChips();return;}
+  const q=bookKey(val);
   const allGroups=[...bookGroups().values()];
-  // 完全一致する本があれば固定タグを自動ロード
-  const exact=allGroups.find(g=>g.book.toLowerCase()===q);
-  if(exact){
-    const newTags=getBookFixedTags(exact.book);
-    if(JSON.stringify(newTags)!==JSON.stringify(currentFixedTags)){
-      currentFixedTags=newTags; renderFixedTagChips();
-    }
+  const exact=allGroups.find(g=>bookKey(g.book)===q);
+  const newTags=getBookFixedTags(exact ? exact.book : val);
+  if(JSON.stringify(newTags)!==JSON.stringify(currentFixedTags)){
+    currentFixedTags=newTags;
+    renderFixedTagChips();
   }
-  const matches=allGroups.filter(g=>g.book.toLowerCase().includes(q)&&g.book.toLowerCase()!==q).slice(0,5);
+  const matches=allGroups.filter(g=>bookKey(g.book).includes(q)&&bookKey(g.book)!==q).slice(0,5);
   if(!matches.length){list.style.display='none';return;}
-  list.innerHTML=matches.map(g=>`<div class="suggest-item" onclick="selectBook('${esc(g.book)}','${esc(g.author)}')"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
+  list._matches = matches;
+  list.innerHTML=matches.map((g,i)=>`<div class="suggest-item" onclick="selectSuggestion(${i})"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
   list.style.display='block';
+}
+
+function selectSuggestion(index) {
+  const list=document.getElementById('suggestList');
+  const g=(list._matches||[])[index];
+  if(g) selectBook(g.book, g.author);
 }
 
 function selectBook(book, author) {
@@ -633,12 +826,11 @@ function selectBook(book, author) {
 
 function openBookshelf() {
   const groups=bookGroups(),list=document.getElementById('bookshelfList');
-  list.innerHTML=groups.size?[...groups.values()].map(g=>{
+  const groupList = [...groups.values()];
+  list.innerHTML=groupList.length?groupList.map((g, idx)=>{
     // BUGFIX: 本棚表示も book_meta から固定タグを取得
     const dTags = getBookFixedTags(g.book);
     const tagChips = dTags.map(t=>`<span class="bookshelf-tag-chip">${esc(t)}</span>`).join('');
-    // BUGFIX: onclick 内の文字列は data属性経由でエスケープ問題を回避
-    const idx = [...groups.keys()].indexOf(g.book);
     return `<div class="bookshelf-item" style="flex-direction:column;align-items:stretch;gap:0.4rem" data-book-idx="${idx}">
       <div style="display:flex;align-items:center;gap:0.75rem;cursor:pointer" onclick="selectBookFromShelf(${idx})">
         <span class="bookshelf-item-icon">📖</span>
@@ -671,13 +863,14 @@ function selectBookFromShelf(idx) {
   openModal(null, g.book, g.author);
 }
 
-function openModal(id, presetBook, presetAuthor) {
+function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
   id = id || null;
   presetBook = presetBook || '';
   presetAuthor = presetAuthor || '';
   editingId = id;
-  document.getElementById('modalTitle').textContent = id ? '記録を編集' : '新しい読書記録';
-  document.getElementById('btnSave').textContent = id ? '更新する' : '保存する';
+  fixedTagEditOnly = !!fixedTagsOnly;
+  document.getElementById('modalTitle').textContent = fixedTagEditOnly ? '固定タグを編集' : (id ? '記録を編集' : '新しい読書記録');
+  document.getElementById('btnSave').textContent = fixedTagEditOnly ? '固定タグを保存' : (id ? '更新する' : '保存する');
 
   // フォームをリセット
   ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
@@ -704,14 +897,13 @@ function openModal(id, presetBook, presetAuthor) {
     currentFixedTags = getBookFixedTags(presetBook);
   }
 
-  console.log('[Modal OPEN] id=' + id + ' presetBook="' + presetBook + '" -> currentFixedTags=', JSON.stringify(currentFixedTags));
   renderFixedTagChips();
   renderDrawingGallery();
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; fixedTagEditOnly=false; }
 function editEntry(id) { openModal(id); }
 
 function deleteEntry(id) {
@@ -728,6 +920,16 @@ function deleteEntry(id) {
 function saveEntry() {
   const bookName = document.getElementById('fBook').value.trim();
   if(!bookName){ alert('本タイトルを入力してください'); return; }
+  currentFixedTags = cleanTagList(currentFixedTags);
+
+  if (fixedTagEditOnly) {
+    setBookFixedTags(bookName, currentFixedTags);
+    persist();
+    closeModal();
+    render();
+    showToast('固定タグを保存しました');
+    return;
+  }
 
   // BUGFIX: その本専用の固定タグとして保存（他の本には影響しない）
   setBookFixedTags(bookName, currentFixedTags);
@@ -743,7 +945,7 @@ function saveEntry() {
     supplement: document.getElementById('fSupplement').value,
     tags,
     drawings:   currentDrawings,
-    // 記録自体には固定タグを持たせない（book_metaで一元管理）
+    fixedTags:  [...currentFixedTags],
   };
 
   if(editingId){ entries=entries.map(e=>e.id===editingId?{...e,...data}:e); }
@@ -754,6 +956,7 @@ function saveEntry() {
 
 function renderFixedTagChips() {
   const wrap = document.getElementById('fixedTagChips');
+  currentFixedTags = cleanTagList(currentFixedTags);
   if(!currentFixedTags.length){ wrap.innerHTML=''; return; }
   wrap.innerHTML = currentFixedTags.map((tag,index)=>`
     <span class="fixed-tag-chip">
@@ -763,12 +966,15 @@ function renderFixedTagChips() {
 }
 function removeFixedTag(index) { currentFixedTags.splice(index,1); renderFixedTagChips(); }
 function onFixedTagKeydown(event) {
-  if(event.key!=='Enter') return;
+  if(event.isComposing || event.key!=='Enter') return;
   event.preventDefault();
+  addFixedTagFromInput();
+}
+function addFixedTagFromInput() {
   const input = document.getElementById('fFixedTagInput');
   const value = input.value.trim();
   if(!value) return;
-  if(!currentFixedTags.includes(value)) currentFixedTags.push(value);
+  currentFixedTags = cleanTagList([...currentFixedTags, value]);
   input.value = '';
   renderFixedTagChips();
 }
@@ -777,9 +983,8 @@ function editBookTags(idx) {
   const g = getBookByIdx(idx);
   if (!g) return;
   closeBookshelf();
-  // openModal に本情報を渡すことで、リセット後に正しく固定タグがセットされる
-  openModal(null, g.book, g.author);
-  showToast('固定タグを編集して「保存する」を押してください');
+  openModal(null, g.book, g.author, true);
+  showToast('固定タグだけを保存できます');
 }
 
 function renderDrawingGallery() {
@@ -932,6 +1137,7 @@ async function runAI(id,btn,key) {
 }
 
 function exportData() {
+  syncEntryFixedTags();
   const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`reading-log-${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -946,6 +1152,7 @@ function importData(ev) {
       const existIds=new Set(entries.map(e=>e.id));
       const newMap=Object.fromEntries(imp.map(e=>[e.id,e]));
       entries=[...entries.map(e=>newMap[e.id]?{...e,...newMap[e.id]}:e),...imp.filter(e=>!existIds.has(e.id))];
+      migrateOldFixedTags();
       persist(); render(); showToast(`📥 ${imp.length}件をインポートしました`);
     } catch { showToast('❌ ファイルの形式が正しくありません'); }
     ev.target.value='';
@@ -966,14 +1173,12 @@ document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.ta
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
 document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
 
-// Service Worker・キャッシュを完全クリア（古いキャッシュによる不具合防止）
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(regs=>{
-    regs.forEach(r=>r.unregister());
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('Service worker registration failed:', err);
+    });
   });
-}
-if('caches' in window){
-  caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
 }
 
 let deferredPrompt=null;
