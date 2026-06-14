@@ -1216,12 +1216,27 @@ document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.ta
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
 document.addEventListener('click',e=>{if(!e.target.closest('.suggest-wrap'))document.getElementById('suggestList').style.display='none';});
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.warn('Service worker registration failed:', err);
-    });
-  });
+// 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
+// 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあるため、
+// 既存のService Workerとキャッシュをすべて解除し、常に最新のindex.htmlを読み込むようにする。
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    if (!regs.length) return;
+    let unregistered = false;
+    regs.forEach(reg => { reg.unregister(); unregistered = true; });
+    if (unregistered && !sessionStorage.getItem('sw_cleanup_reloaded')) {
+      sessionStorage.setItem('sw_cleanup_reloaded', '1');
+      if (window.caches) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => location.reload());
+      } else {
+        location.reload();
+      }
+    }
+  }).catch(err => { console.warn('Service worker cleanup failed:', err); });
+
+  if (window.caches) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(()=>{});
+  }
 }
 
 let deferredPrompt=null;
