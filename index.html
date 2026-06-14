@@ -538,7 +538,7 @@ const SAMPLE = [
 ];
 
 // ── Persistence ────────────────────────────────────
-function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSON.parse(r):SAMPLE; if(!Array.isArray(entries))entries=SAMPLE; } catch { entries=SAMPLE; } }
+function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSON.parse(r):SAMPLE; if(!Array.isArray(entries))entries=SAMPLE; } catch { entries=SAMPLE; } entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID); }
 
 function persist() {
   syncEntryFixedTags();
@@ -568,7 +568,9 @@ async function loadFromCloud() {
 
     const deletedIds = getDeletedIds();
     const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&String(e.deleted)!=='TRUE');
-    const localMap = Object.fromEntries(entries.map(e=>[String(e.id),e]));
+    const localEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
+    const hadStraySentinel = localEntries.length !== entries.length;
+    const localMap = Object.fromEntries(localEntries.map(e=>[String(e.id),e]));
     const cloudMap = Object.fromEntries(filtered.map(e=>[String(e.id),e]));
     const allIds = new Set([...Object.keys(localMap),...Object.keys(cloudMap)]);
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
@@ -580,6 +582,8 @@ async function loadFromCloud() {
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     migrateOldFixedTags();
     render();
+    // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
+    if (hadStraySentinel) { persist(); }
     showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
   } catch(e) { console.warn('Cloud load failed:',e); hideSyncStatus(); }
 }
