@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260618-1';
+const CACHE_NAME = 'reading-note-pwa-20260618-3';
 const APP_SHELL = [
   './',
   './index.html',
