@@ -374,6 +374,8 @@ const STORAGE_KEY   = 'reading_log_v1';
 const DELETED_KEY   = 'reading_log_deleted';
 const API_KEY_KEY   = 'reading_log_api_key';
 const CLOUD_URL     = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
+const SYNC_PENDING_KEY = 'reading_log_sync_pending';
+const SYNC_RETRY_MS = 15000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
@@ -411,6 +413,7 @@ let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
 if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
+let syncInFlight = false, syncRetryTimer = null;
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
@@ -458,13 +461,14 @@ function buildBookMetaSyncEntry() {
     tags: [],
     drawings: [],
     createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
     isBookMeta: true
   };
 }
 
 // クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
 // （クラウド側の値を優先しつつ、ローカルにしかないキーは保持する）
-function mergeBookMetaFromCloud(cloudMetaEntry) {
+function mergeBookMetaFromCloud(cloudMetaEntry, preferLocal) {
   if (!cloudMetaEntry) return;
   let cloudMeta;
   try {
@@ -473,9 +477,14 @@ function mergeBookMetaFromCloud(cloudMetaEntry) {
   if (!cloudMeta || typeof cloudMeta !== 'object' || Array.isArray(cloudMeta)) return;
 
   const localMeta = getBookMeta();
-  const merged = {...localMeta};
+  const merged = {};
   Object.keys(cloudMeta).forEach(function(key) {
     merged[key] = cleanTagList(cloudMeta[key]);
+  });
+  Object.keys(localMeta).forEach(function(key) {
+    if (preferLocal || !Object.prototype.hasOwnProperty.call(merged, key)) {
+      merged[key] = cleanTagList(localMeta[key]);
+    }
   });
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(merged));
 }
@@ -585,27 +594,109 @@ function load() { try { const r=localStorage.getItem(STORAGE_KEY); entries=r?JSO
 function persist() {
   syncEntryFixedTags();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  syncToCloud();
+  markSyncPending(true);
+  scheduleCloudSync(0);
 }
 
 // ── Cloud Sync ─────────────────────────────────────
-async function syncToCloud() {
+function hasPendingSync() {
+  return localStorage.getItem(SYNC_PENDING_KEY) === '1';
+}
+
+function markSyncPending(pending) {
+  if (pending) localStorage.setItem(SYNC_PENDING_KEY, '1');
+  else localStorage.removeItem(SYNC_PENDING_KEY);
+}
+
+function buildCloudPayloadBody() {
+  return JSON.stringify([...entries, buildBookMetaSyncEntry()]);
+}
+
+function scheduleCloudSync(delay) {
+  if (syncRetryTimer) clearTimeout(syncRetryTimer);
+  syncRetryTimer = setTimeout(function() { syncToCloud({manual:false}); }, delay);
+}
+
+function entryTime(entry) {
+  if (!entry) return 0;
+  return Date.parse(entry.updatedAt || entry.modifiedAt || entry.createdAt || '') || 0;
+}
+
+function chooseEntryVersion(cloudEntry, localEntry, preferLocal) {
+  if (!cloudEntry) return localEntry;
+  if (!localEntry) return cloudEntry;
+  const cloudTime = entryTime(cloudEntry);
+  const localTime = entryTime(localEntry);
+  if (cloudTime && localTime && cloudTime !== localTime) {
+    return cloudTime > localTime ? cloudEntry : localEntry;
+  }
+  return preferLocal ? localEntry : cloudEntry;
+}
+
+async function postCloudPayload(body, mode) {
+  const response = await fetch(CLOUD_URL, {
+    method: 'POST',
+    mode,
+    headers: {'Content-Type': 'text/plain'},
+    body
+  });
+  if (response.type !== 'opaque' && !response.ok) {
+    throw new Error('Cloud sync returned HTTP ' + response.status);
+  }
+  return response;
+}
+
+async function syncToCloud(options) {
+  const manual = !options || options.manual !== false;
+  if (syncInFlight) return false;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    markSyncPending(true);
+    if (manual || hasPendingSync()) showSyncStatus('Sync waiting for connection');
+    scheduleCloudSync(SYNC_RETRY_MS);
+    return false;
+  }
+
+  syncInFlight = true;
+  const body = buildCloudPayloadBody();
+  if (manual || hasPendingSync()) showSyncStatus('Syncing...');
+
   try {
-    const payload = [...entries, buildBookMetaSyncEntry()];
-    await fetch(CLOUD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
-  } catch(e) { console.warn('Cloud sync failed:',e); }
+    await postCloudPayload(body, 'cors');
+    markSyncPending(false);
+    showSyncStatus('Synced');
+    setTimeout(hideSyncStatus, 1800);
+    return true;
+  } catch (corsError) {
+    try {
+      await postCloudPayload(body, 'no-cors');
+      markSyncPending(false);
+      showSyncStatus('Sync sent');
+      setTimeout(hideSyncStatus, 2200);
+      return true;
+    } catch(e) {
+      markSyncPending(true);
+      console.warn('Cloud sync failed:', e);
+      showSyncStatus('Sync failed - will retry');
+      scheduleCloudSync(SYNC_RETRY_MS);
+      return false;
+    }
+  } finally {
+    syncInFlight = false;
+  }
 }
 
 async function loadFromCloud() {
   try {
     showSyncStatus('☁️ クラウドから同期中…');
     const r = await fetch(CLOUD_URL+'?t='+Date.now());
+    if (!r.ok) throw new Error('Cloud load returned HTTP ' + r.status);
     const cloudRaw = await r.json();
     if (!Array.isArray(cloudRaw)||cloudRaw.length===0) { hideSyncStatus(); return; }
 
     // 固定タグ(book_meta)の同期用エントリを取り出してローカルへ統合
+    const preferLocal = hasPendingSync();
     const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
-    mergeBookMetaFromCloud(cloudMetaEntry);
+    mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
     const cloud = cloudRaw.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
 
     const deletedIds = getDeletedIds();
@@ -617,17 +708,21 @@ async function loadFromCloud() {
     const allIds = new Set([...Object.keys(localMap),...Object.keys(cloudMap)]);
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
-      if(!c) return l;
-      const drawings = (c.drawings&&c.drawings.length) ? c.drawings : ((l&&l.drawings)||[]);
-      return {...c, drawings};
+      const chosen = chooseEntryVersion(c, l, preferLocal);
+      const drawings = (chosen&&chosen.drawings&&chosen.drawings.length) ? chosen.drawings : ((l&&l.drawings)||[]);
+      return {...chosen, drawings};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     migrateOldFixedTags();
     render();
     // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
-    if (hadStraySentinel) { persist(); }
+    if (hadStraySentinel || preferLocal) { persist(); }
     showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
-  } catch(e) { console.warn('Cloud load failed:',e); hideSyncStatus(); }
+  } catch(e) {
+    console.warn('Cloud load failed:',e);
+    showSyncStatus('Cloud load failed');
+    setTimeout(hideSyncStatus,3000);
+  }
 }
 
 function showSyncStatus(msg) {
@@ -1066,7 +1161,7 @@ function editEntry(id) { openModal(id); }
 function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？'))return;
   addDeletedId(id);
-  entries = entries.map(e=>e.id===id?{...e,deleted:true}:e);
+  entries = entries.map(e=>e.id===id?{...e,deleted:true,updatedAt:new Date().toISOString()}:e);
   persist();
   entries = entries.filter(e=>!e.deleted);
   localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
@@ -1103,6 +1198,7 @@ function saveEntry() {
     tags,
     drawings:   currentDrawings,
     fixedTags:  [...currentFixedTags],
+    updatedAt:  new Date().toISOString(),
   };
 
   if(editingId){ entries=entries.map(e=>e.id===editingId?{...e,...data}:e); }
@@ -1337,7 +1433,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v5';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v6';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -1369,6 +1465,9 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPro
 document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;banner.style.display='none';});
 document.getElementById('btnDismiss')?.addEventListener('click',()=>{banner.style.display='none';});
 window.addEventListener('appinstalled',()=>{banner.style.display='none';deferredPrompt=null;});
+window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
+window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
+document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 
 load(); migrateOldFixedTags(); render(); loadFromCloud();
 </script>
