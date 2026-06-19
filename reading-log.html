@@ -246,9 +246,9 @@
       <div class="sync-strip">
         <button class="sync-pill" id="btnManualSync" onclick="manualSync()" type="button">
           <span class="sync-dot" id="syncDot"></span>
-          <span id="syncPanelText">Sync</span>
+          <span id="syncPanelText">Sync now</span>
         </button>
-        <button class="sync-info-btn" onclick="showSyncDiagnostics()" type="button" title="Sync diagnostics">i</button>
+        <button class="sync-info-btn" onclick="showSyncDiagnostics()" type="button" title="Sync help">?</button>
       </div>
     </div>
   </header>
@@ -731,9 +731,9 @@ function syncTimeLabel(iso) {
   const time = Date.parse(iso);
   if (!time) return '';
   const diff = Date.now() - time;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  if (diff < 60000) return 'now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + ' min ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + ' hr ago';
   return new Date(time).toLocaleDateString();
 }
 
@@ -771,10 +771,10 @@ function updateSyncPanel(forceState) {
   let state = forceState || (lastError ? 'error' : (pending ? 'pending' : (lastOk ? 'ok' : 'idle')));
   dot.className = 'sync-dot ' + (state === 'idle' ? '' : state);
   if (state === 'busy') text.textContent = 'Syncing...';
-  else if (state === 'error') text.textContent = 'Sync error';
-  else if (pending) text.textContent = 'Pending sync';
-  else if (lastOk) text.textContent = 'Synced ' + syncTimeLabel(lastOk);
-  else text.textContent = 'Sync';
+  else if (state === 'error') text.textContent = 'Sync problem';
+  else if (pending) text.textContent = 'Not synced yet';
+  else if (lastOk) text.textContent = 'Saved to cloud';
+  else text.textContent = 'Sync now';
 }
 
 async function manualSync() {
@@ -793,25 +793,43 @@ async function showSyncDiagnostics() {
   const lastOk = localStorage.getItem(SYNC_LAST_OK_KEY);
   const lastAttempt = localStorage.getItem(SYNC_LAST_ATTEMPT_KEY);
   const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
-  let cloudLine = 'Cloud: unavailable';
+  let cloudLine = '';
   try {
     showSyncStatus('Checking cloud...');
     const cloud = await fetchCloudEntries();
     const active = cloud.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !isDeletedEntry(e)).length;
     const deleted = cloud.filter(isDeletedEntry).length;
-    cloudLine = 'Cloud: ' + active + ' active / ' + deleted + ' deleted';
+    cloudLine = 'Cloud has ' + active + ' notes. Deleted notes remembered: ' + deleted + '.';
   } catch(e) {
-    cloudLine = 'Cloud: ' + (e && e.message ? e.message : 'check failed');
+    cloudLine = 'Could not check the cloud right now.';
   }
   hideSyncStatus();
+  const pending = hasPendingSync();
+  let statusLine = 'Status: saved on this device only.';
+  let nextStep = 'Tap "Sync now" while online.';
+  if (lastError) {
+    statusLine = 'Status: sync has a problem.';
+    nextStep = 'Tap "Sync now". If it still fails, export a backup before editing more.';
+  } else if (pending) {
+    statusLine = 'Status: not uploaded yet.';
+    nextStep = 'Tap "Sync now", then open the app on your other device.';
+  } else if (lastOk) {
+    statusLine = 'Status: saved to cloud.';
+    nextStep = 'Open or refresh the app on your other device.';
+  }
   alert([
-    'Sync diagnostics',
-    'Local: ' + entries.length + ' active / ' + localDeleted.length + ' deleted',
+    'Sync help',
+    statusLine,
+    nextStep,
+    '',
+    'Last saved to cloud: ' + (lastOk ? syncTimeLabel(lastOk) : 'not yet'),
     cloudLine,
-    'Pending: ' + (hasPendingSync() ? 'yes' : 'no'),
-    'Last attempt: ' + (lastAttempt || '-'),
-    'Last confirmed: ' + (lastOk || '-'),
-    'Last error: ' + (lastError || '-')
+    '',
+    'Details:',
+    'This device: ' + entries.length + ' notes',
+    'Deleted notes remembered: ' + localDeleted.length,
+    'Last try: ' + (lastAttempt ? syncTimeLabel(lastAttempt) : 'not yet'),
+    'Problem: ' + (lastError || 'none')
   ].join('\n'));
   updateSyncPanel();
 }
@@ -915,7 +933,7 @@ async function syncToCloud(options) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     markSyncPending(true);
     recordSyncError(new Error('Offline'));
-    if (manual || hasPendingSync()) showSyncStatus('Sync waiting for connection');
+    if (manual || hasPendingSync()) showSyncStatus('Offline - saved here only');
     scheduleCloudSync(SYNC_RETRY_MS);
     return false;
   }
@@ -928,7 +946,7 @@ async function syncToCloud(options) {
     await refreshDeletesFromCloud();
     const deletedIds = getDeletedIds();
     const body = buildCloudPayloadBody();
-    if (manual || hasPendingSync()) showSyncStatus('Syncing...');
+    if (manual || hasPendingSync()) showSyncStatus('Saving to cloud...');
     try {
       await postCloudPayload(body, 'cors');
     } catch (corsError) {
@@ -938,14 +956,14 @@ async function syncToCloud(options) {
     markSyncPending(false);
     markDeletedIdsSynced(deletedIds);
     recordSyncSuccess();
-    showSyncStatus('Synced');
+    showSyncStatus('Saved to cloud');
     setTimeout(hideSyncStatus, 1800);
     return true;
   } catch(e) {
     markSyncPending(true);
     recordSyncError(e);
     console.warn('Cloud sync failed:', e);
-    showSyncStatus('Sync failed - will retry');
+    showSyncStatus('Sync problem - will retry');
     scheduleCloudSync(SYNC_RETRY_MS);
     return false;
   } finally {
@@ -1708,7 +1726,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v10';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v11';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
