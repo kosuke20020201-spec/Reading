@@ -373,6 +373,7 @@
 const STORAGE_KEY   = 'reading_log_v1';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
+const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const API_KEY_KEY   = 'reading_log_api_key';
 const CLOUD_URL     = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 const SYNC_PENDING_KEY = 'reading_log_sync_pending';
@@ -443,6 +444,56 @@ function isDeletedEntry(entry) {
   const value = entry.deleted;
   return value === true || value === 1 || String(value).toLowerCase() === 'true' || String(value) === '1' || !!entry.deletedAt;
 }
+function normalizeTombstone(entry) {
+  const now = new Date().toISOString();
+  const clone = {...(entry || {})};
+  clone.id = String(clone.id || Date.now());
+  clone.book = clone.book || '';
+  clone.author = clone.author || '';
+  clone.page = clone.page || '';
+  clone.content = clone.content || '';
+  clone.lesson = clone.lesson || '';
+  clone.supplement = clone.supplement || '';
+  clone.title = clone.title || '';
+  clone.tags = Array.isArray(clone.tags) ? clone.tags : [];
+  clone.drawings = Array.isArray(clone.drawings) ? clone.drawings : [];
+  clone.createdAt = clone.createdAt || now.slice(0, 10);
+  clone.deleted = true;
+  return clone;
+}
+function getTombstones() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TOMBSTONES_KEY) || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(e => e && e.id != null).map(normalizeTombstone);
+  } catch {
+    return [];
+  }
+}
+function setTombstones(tombstones) {
+  const byId = new Map();
+  (Array.isArray(tombstones) ? tombstones : []).forEach(function(entry) {
+    if (!entry || entry.id == null) return;
+    byId.set(String(entry.id), normalizeTombstone(entry));
+  });
+  const deletedIds = getDeletedIds();
+  const clean = [...byId.values()].filter(entry => deletedIds.has(String(entry.id)));
+  clean.sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  localStorage.setItem(TOMBSTONES_KEY, JSON.stringify(clean));
+}
+function addTombstone(entry) {
+  const tombstones = getTombstones();
+  tombstones.push(normalizeTombstone(entry));
+  setTombstones(tombstones);
+}
+function getSyncTombstones() {
+  const tombstones = getTombstones();
+  const known = new Set(tombstones.map(entry => String(entry.id)));
+  sortedDeletedIds(getDeletedIds()).forEach(function(id) {
+    if (!known.has(id)) tombstones.push(normalizeTombstone({id}));
+  });
+  return tombstones;
+}
 
 // ── Book Meta (固定タグ) ──────────────────────────
 function bookKey(book) {
@@ -476,7 +527,6 @@ function getBookMeta() {
 // 既存のスプレッドシート側のスキーマを変更せずに済むよう、
 // 通常のエントリと同じ形（idとcontent列）に乗せて book_meta 全体を運ぶ。
 const BOOK_META_SYNC_ID = '__book_meta__';
-const DELETED_SYNC_ID = '__deleted_ids__';
 
 function buildBookMetaSyncEntry() {
   return {
@@ -490,53 +540,6 @@ function buildBookMetaSyncEntry() {
     updatedAt: new Date().toISOString(),
     isBookMeta: true
   };
-}
-
-function buildDeletedIdsSyncEntry(ids) {
-  const deletedIds = sortedDeletedIds(ids || getDeletedIds());
-  return {
-    id: DELETED_SYNC_ID,
-    book: '',
-    title: '',
-    content: JSON.stringify(deletedIds),
-    tags: [],
-    drawings: [],
-    createdAt: '1970-01-01',
-    updatedAt: new Date().toISOString(),
-    isDeletedIndex: true
-  };
-}
-
-function buildDeletedTombstoneEntries(ids) {
-  const now = new Date().toISOString();
-  return sortedDeletedIds(ids || getDeletedIds()).map(function(id) {
-    return {
-      id: String(id),
-      book: '',
-      title: '',
-      content: '',
-      tags: [],
-      drawings: [],
-      deleted: true,
-      deletedAt: now,
-      updatedAt: now
-    };
-  });
-}
-
-function mergeDeletedIdsFromCloud(cloudDeletedEntry, cloudEntries) {
-  const deletedIds = getDeletedIds();
-  if (cloudDeletedEntry) {
-    try {
-      const parsed = JSON.parse(cloudDeletedEntry.content || '[]');
-      if (Array.isArray(parsed)) parsed.forEach(id => deletedIds.add(String(id)));
-    } catch(e) {}
-  }
-  (Array.isArray(cloudEntries) ? cloudEntries : []).forEach(function(entry) {
-    if (isDeletedEntry(entry)) deletedIds.add(String(entry.id));
-  });
-  setDeletedIds(deletedIds);
-  return deletedIds;
 }
 
 // クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
@@ -671,11 +674,16 @@ function load() {
     entries=SAMPLE;
   }
   const deletedIds = getDeletedIds();
+  const tombstoneCandidates = [];
   entries.forEach(function(entry) {
-    if (isDeletedEntry(entry)) deletedIds.add(String(entry.id));
+    if (isDeletedEntry(entry)) {
+      deletedIds.add(String(entry.id));
+      tombstoneCandidates.push(entry);
+    }
   });
   setDeletedIds(deletedIds);
-  entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && String(e.id) !== DELETED_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  setTombstones([...getTombstones(), ...tombstoneCandidates]);
+  entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
 }
 
 function persist() {
@@ -697,8 +705,8 @@ function markSyncPending(pending) {
 
 function buildCloudPayloadBody() {
   const deletedIds = getDeletedIds();
-  const activeEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && String(e.id) !== DELETED_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
-  return JSON.stringify([...activeEntries, ...buildDeletedTombstoneEntries(deletedIds), buildDeletedIdsSyncEntry(deletedIds), buildBookMetaSyncEntry()]);
+  const activeEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -720,6 +728,59 @@ function chooseEntryVersion(cloudEntry, localEntry, preferLocal) {
     return cloudTime > localTime ? cloudEntry : localEntry;
   }
   return preferLocal ? localEntry : cloudEntry;
+}
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchCloudEntries() {
+  const r = await fetch(CLOUD_URL+'?t='+Date.now(), {cache:'no-store'});
+  if (!r.ok) throw new Error('Cloud load returned HTTP ' + r.status);
+  const cloudRaw = await r.json();
+  return Array.isArray(cloudRaw) ? cloudRaw : [];
+}
+
+function mergeCloudDeletedEntries(cloudEntries) {
+  const deletedIds = getDeletedIds();
+  const cloudDeletedIds = new Set();
+  const tombstones = [];
+  (Array.isArray(cloudEntries) ? cloudEntries : []).forEach(function(entry) {
+    if (!isDeletedEntry(entry)) return;
+    deletedIds.add(String(entry.id));
+    cloudDeletedIds.add(String(entry.id));
+    tombstones.push(entry);
+  });
+  entries.forEach(function(entry) {
+    if (!isDeletedEntry(entry)) return;
+    deletedIds.add(String(entry.id));
+    tombstones.push(entry);
+  });
+  setDeletedIds(deletedIds);
+  setTombstones([...getTombstones(), ...tombstones]);
+  entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return {deletedIds, cloudDeletedIds};
+}
+
+async function refreshDeletesFromCloud() {
+  const cloudRaw = await fetchCloudEntries();
+  return {cloudRaw, ...mergeCloudDeletedEntries(cloudRaw)};
+}
+
+async function verifyCloudDeletedIds(expectedIds) {
+  const ids = sortedDeletedIds(expectedIds || getDeletedIds());
+  if (!ids.length) return true;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cloudRaw = await fetchCloudEntries();
+    const cloudDeletedIds = new Set();
+    cloudRaw.forEach(function(entry) {
+      if (isDeletedEntry(entry)) cloudDeletedIds.add(String(entry.id));
+    });
+    if (ids.every(id => cloudDeletedIds.has(id))) return true;
+    await delay(1200);
+  }
+  throw new Error('Cloud did not confirm deleted rows');
 }
 
 async function postCloudPayload(body, mode) {
@@ -746,31 +807,30 @@ async function syncToCloud(options) {
   }
 
   syncInFlight = true;
-  const body = buildCloudPayloadBody();
-  if (manual || hasPendingSync()) showSyncStatus('Syncing...');
+  if (manual || hasPendingSync()) showSyncStatus('Checking cloud...');
 
   try {
-    await postCloudPayload(body, 'cors');
+    await refreshDeletesFromCloud();
+    const deletedIds = getDeletedIds();
+    const body = buildCloudPayloadBody();
+    if (manual || hasPendingSync()) showSyncStatus('Syncing...');
+    try {
+      await postCloudPayload(body, 'cors');
+    } catch (corsError) {
+      await postCloudPayload(body, 'no-cors');
+    }
+    await verifyCloudDeletedIds(deletedIds);
     markSyncPending(false);
-    markDeletedIdsSynced();
+    markDeletedIdsSynced(deletedIds);
     showSyncStatus('Synced');
     setTimeout(hideSyncStatus, 1800);
     return true;
-  } catch (corsError) {
-    try {
-      await postCloudPayload(body, 'no-cors');
-      markSyncPending(false);
-      markDeletedIdsSynced();
-      showSyncStatus('Sync sent');
-      setTimeout(hideSyncStatus, 2200);
-      return true;
-    } catch(e) {
-      markSyncPending(true);
-      console.warn('Cloud sync failed:', e);
-      showSyncStatus('Sync failed - will retry');
-      scheduleCloudSync(SYNC_RETRY_MS);
-      return false;
-    }
+  } catch(e) {
+    markSyncPending(true);
+    console.warn('Cloud sync failed:', e);
+    showSyncStatus('Sync failed - will retry');
+    scheduleCloudSync(SYNC_RETRY_MS);
+    return false;
   } finally {
     syncInFlight = false;
   }
@@ -779,25 +839,18 @@ async function syncToCloud(options) {
 async function loadFromCloud() {
   try {
     showSyncStatus('☁️ クラウドから同期中…');
-    const r = await fetch(CLOUD_URL+'?t='+Date.now());
-    if (!r.ok) throw new Error('Cloud load returned HTTP ' + r.status);
-    const cloudRaw = await r.json();
+    const cloudRaw = await fetchCloudEntries();
     if (!Array.isArray(cloudRaw)||cloudRaw.length===0) { hideSyncStatus(); return; }
 
     // 固定タグ(book_meta)の同期用エントリを取り出してローカルへ統合
     const preferLocal = hasPendingSync();
     const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
-    const cloudDeletedEntry = cloudRaw.find(e => e && String(e.id) === DELETED_SYNC_ID);
-    const cloud = cloudRaw.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && String(e.id) !== DELETED_SYNC_ID);
+    const cloud = cloudRaw.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
 
-    const deletedIds = mergeDeletedIdsFromCloud(cloudDeletedEntry, cloud);
-    entries.forEach(function(entry) {
-      if (isDeletedEntry(entry)) deletedIds.add(String(entry.id));
-    });
-    setDeletedIds(deletedIds);
+    const {deletedIds, cloudDeletedIds} = mergeCloudDeletedEntries(cloud);
     const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&!isDeletedEntry(e));
-    const localEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && String(e.id) !== DELETED_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+    const localEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
     const hadStraySentinel = localEntries.length !== entries.length;
     const localMap = Object.fromEntries(localEntries.map(e=>[String(e.id),e]));
     const cloudMap = Object.fromEntries(filtered.map(e=>[String(e.id),e]));
@@ -813,11 +866,11 @@ async function loadFromCloud() {
     render();
     // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
     if (hadStraySentinel || preferLocal) { persist(); }
-    else if (deletedIds.size && hasUnsyncedDeletedIds(deletedIds)) {
+    const cloudHasAllDeletedIds = sortedDeletedIds(deletedIds).every(id => cloudDeletedIds.has(id));
+    if (cloudHasAllDeletedIds) markDeletedIdsSynced(deletedIds);
+    if (!cloudHasAllDeletedIds || (deletedIds.size && hasUnsyncedDeletedIds(deletedIds))) {
       markSyncPending(true);
       scheduleCloudSync(0);
-    } else {
-      markDeletedIdsSynced(deletedIds);
     }
     showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
   } catch(e) {
@@ -1262,11 +1315,11 @@ function editEntry(id) { openModal(id); }
 
 function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？'))return;
+  const target = entries.find(e=>e.id===id || String(e.id)===String(id));
   addDeletedId(id);
-  const deletedAt = new Date().toISOString();
-  entries = entries.map(e=>e.id===id?{...e,deleted:true,deletedAt,updatedAt:deletedAt}:e);
+  if (target) addTombstone({...target, deleted:true});
+  entries = entries.filter(e=>String(e.id)!==String(id));
   persist();
-  entries = entries.filter(e=>!isDeletedEntry(e));
   localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
   render();
   showToast('削除しました');
@@ -1536,7 +1589,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v8';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v9';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
