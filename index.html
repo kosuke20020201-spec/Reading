@@ -687,6 +687,28 @@ const SAMPLE = [
 ];
 
 // ── Persistence ────────────────────────────────────
+// 過去の不具合により id が空のまま保存された記録があると、
+// カード上の編集/削除ボタン（onclick="deleteEntry(${e.id})" 等）が
+// 引数なしの呼び出しになってしまい、削除も編集も効かなくなる。
+// そのため id が無い・重複している記録には、毎回新しいユニークなidを割り当て直す。
+function repairMissingIds(list) {
+  const seen = new Set();
+  let changed = false;
+  const repaired = (Array.isArray(list) ? list : []).map(function(entry, idx) {
+    if (!entry) return entry;
+    const idStr = (entry.id === undefined || entry.id === null) ? '' : String(entry.id);
+    if (!idStr || seen.has(idStr)) {
+      changed = true;
+      const newId = Date.now() + idx;
+      seen.add(String(newId));
+      return {...entry, id: newId};
+    }
+    seen.add(idStr);
+    return entry;
+  });
+  return {list: repaired, changed: changed};
+}
+
 function load() {
   try {
     const r=localStorage.getItem(STORAGE_KEY);
@@ -706,6 +728,9 @@ function load() {
   setDeletedIds(deletedIds);
   setTombstones([...getTombstones(), ...tombstoneCandidates]);
   entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  const idRepair = repairMissingIds(entries);
+  entries = idRepair.list;
+  if (idRepair.changed) persist();
 }
 
 function persist() {
@@ -998,10 +1023,12 @@ async function loadFromCloud(options) {
       return {...chosen, drawings};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    const idRepair = repairMissingIds(entries);
+    entries = idRepair.list;
     migrateOldFixedTags();
     render();
     // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
-    if (hadStraySentinel || preferLocal) { persist(); }
+    if (hadStraySentinel || preferLocal || idRepair.changed) { persist(); }
     const cloudHasAllDeletedIds = sortedDeletedIds(deletedIds).every(id => cloudDeletedIds.has(id));
     if (cloudHasAllDeletedIds) markDeletedIdsSynced(deletedIds);
     if (!cloudHasAllDeletedIds || (deletedIds.size && hasUnsyncedDeletedIds(deletedIds))) {
@@ -1268,8 +1295,8 @@ function cardHTML(e) {
         ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
       </div>
       <div class="card-actions">
-        <button class="card-action-btn" onclick="editEntry(${e.id})">✏️</button>
-        <button class="card-action-btn delete" onclick="deleteEntry(${e.id})">🗑</button>
+        <button class="card-action-btn" onclick="editEntry(${esc(JSON.stringify(e.id))})">✏️</button>
+        <button class="card-action-btn delete" onclick="deleteEntry(${esc(JSON.stringify(e.id))})">🗑</button>
       </div>
     </div>
     ${pills?`<div class="card-tags">${pills}</div>`:''}
@@ -1280,7 +1307,7 @@ function cardHTML(e) {
       ${sketchHTML}
     </div>
     <div class="ai-area">
-      <button class="btn-ai" onclick="handleAI(${e.id},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
+      <button class="btn-ai" onclick="handleAI(${esc(JSON.stringify(e.id))},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
       ${aiHTML}
     </div>
   </div>
