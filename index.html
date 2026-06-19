@@ -39,6 +39,18 @@
   .btn-add:hover { filter: brightness(1.08); } .btn-add:active { transform: scale(0.97); }
   .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.77rem; transition: all 0.1s; font-family: inherit; white-space: nowrap; }
   .btn-sub:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  .sync-strip { align-self: stretch; display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .sync-pill { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2rem; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); font: inherit; font-size: 0.72rem; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
+  .sync-pill:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  .sync-pill:disabled { opacity: 0.65; cursor: wait; }
+  .sync-dot { width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--stone-300); flex-shrink: 0; }
+  .sync-dot.ok { background: #22c55e; }
+  .sync-dot.pending { background: #f59e0b; }
+  .sync-dot.error { background: #ef4444; }
+  .sync-dot.busy { background: #0ea5e9; animation: syncPulse 0.9s ease-in-out infinite alternate; }
+  .sync-info-btn { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-500); font: inherit; font-size: 0.76rem; font-weight: 800; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
+  .sync-info-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  @keyframes syncPulse { from { opacity: 0.45; } to { opacity: 1; } }
 
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
   .search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
@@ -231,6 +243,13 @@
         <button class="btn-sub" onclick="exportData()">📤 エクスポート</button>
         <label class="btn-sub" style="cursor:pointer">📥 インポート<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
       </div>
+      <div class="sync-strip">
+        <button class="sync-pill" id="btnManualSync" onclick="manualSync()" type="button">
+          <span class="sync-dot" id="syncDot"></span>
+          <span id="syncPanelText">Sync</span>
+        </button>
+        <button class="sync-info-btn" onclick="showSyncDiagnostics()" type="button" title="Sync diagnostics">i</button>
+      </div>
     </div>
   </header>
 
@@ -377,6 +396,9 @@ const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const API_KEY_KEY   = 'reading_log_api_key';
 const CLOUD_URL     = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 const SYNC_PENDING_KEY = 'reading_log_sync_pending';
+const SYNC_LAST_OK_KEY = 'reading_log_sync_last_ok';
+const SYNC_LAST_ATTEMPT_KEY = 'reading_log_sync_last_attempt';
+const SYNC_LAST_ERROR_KEY = 'reading_log_sync_last_error';
 const SYNC_RETRY_MS = 15000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
@@ -701,6 +723,97 @@ function hasPendingSync() {
 function markSyncPending(pending) {
   if (pending) localStorage.setItem(SYNC_PENDING_KEY, '1');
   else localStorage.removeItem(SYNC_PENDING_KEY);
+  updateSyncPanel();
+}
+
+function syncTimeLabel(iso) {
+  if (!iso) return '';
+  const time = Date.parse(iso);
+  if (!time) return '';
+  const diff = Date.now() - time;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return new Date(time).toLocaleDateString();
+}
+
+function setSyncUiBusy(busy) {
+  const btn = document.getElementById('btnManualSync');
+  if (btn) btn.disabled = !!busy;
+  updateSyncPanel(busy ? 'busy' : null);
+}
+
+function recordSyncAttempt() {
+  localStorage.setItem(SYNC_LAST_ATTEMPT_KEY, new Date().toISOString());
+  localStorage.removeItem(SYNC_LAST_ERROR_KEY);
+  updateSyncPanel('busy');
+}
+
+function recordSyncSuccess() {
+  localStorage.setItem(SYNC_LAST_OK_KEY, new Date().toISOString());
+  localStorage.removeItem(SYNC_LAST_ERROR_KEY);
+  updateSyncPanel();
+}
+
+function recordSyncError(error) {
+  const message = error && error.message ? error.message : String(error || 'Sync failed');
+  localStorage.setItem(SYNC_LAST_ERROR_KEY, message);
+  updateSyncPanel('error');
+}
+
+function updateSyncPanel(forceState) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncPanelText');
+  if (!dot || !text) return;
+  const pending = hasPendingSync();
+  const lastOk = localStorage.getItem(SYNC_LAST_OK_KEY);
+  const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
+  let state = forceState || (lastError ? 'error' : (pending ? 'pending' : (lastOk ? 'ok' : 'idle')));
+  dot.className = 'sync-dot ' + (state === 'idle' ? '' : state);
+  if (state === 'busy') text.textContent = 'Syncing...';
+  else if (state === 'error') text.textContent = 'Sync error';
+  else if (pending) text.textContent = 'Pending sync';
+  else if (lastOk) text.textContent = 'Synced ' + syncTimeLabel(lastOk);
+  else text.textContent = 'Sync';
+}
+
+async function manualSync() {
+  setSyncUiBusy(true);
+  try {
+    await loadFromCloud({quiet:true});
+    await syncToCloud({manual:true});
+    await loadFromCloud({quiet:true});
+  } finally {
+    setSyncUiBusy(false);
+  }
+}
+
+async function showSyncDiagnostics() {
+  const localDeleted = sortedDeletedIds(getDeletedIds());
+  const lastOk = localStorage.getItem(SYNC_LAST_OK_KEY);
+  const lastAttempt = localStorage.getItem(SYNC_LAST_ATTEMPT_KEY);
+  const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
+  let cloudLine = 'Cloud: unavailable';
+  try {
+    showSyncStatus('Checking cloud...');
+    const cloud = await fetchCloudEntries();
+    const active = cloud.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !isDeletedEntry(e)).length;
+    const deleted = cloud.filter(isDeletedEntry).length;
+    cloudLine = 'Cloud: ' + active + ' active / ' + deleted + ' deleted';
+  } catch(e) {
+    cloudLine = 'Cloud: ' + (e && e.message ? e.message : 'check failed');
+  }
+  hideSyncStatus();
+  alert([
+    'Sync diagnostics',
+    'Local: ' + entries.length + ' active / ' + localDeleted.length + ' deleted',
+    cloudLine,
+    'Pending: ' + (hasPendingSync() ? 'yes' : 'no'),
+    'Last attempt: ' + (lastAttempt || '-'),
+    'Last confirmed: ' + (lastOk || '-'),
+    'Last error: ' + (lastError || '-')
+  ].join('\n'));
+  updateSyncPanel();
 }
 
 function buildCloudPayloadBody() {
@@ -801,12 +914,14 @@ async function syncToCloud(options) {
   if (syncInFlight) return false;
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     markSyncPending(true);
+    recordSyncError(new Error('Offline'));
     if (manual || hasPendingSync()) showSyncStatus('Sync waiting for connection');
     scheduleCloudSync(SYNC_RETRY_MS);
     return false;
   }
 
   syncInFlight = true;
+  recordSyncAttempt();
   if (manual || hasPendingSync()) showSyncStatus('Checking cloud...');
 
   try {
@@ -822,11 +937,13 @@ async function syncToCloud(options) {
     await verifyCloudDeletedIds(deletedIds);
     markSyncPending(false);
     markDeletedIdsSynced(deletedIds);
+    recordSyncSuccess();
     showSyncStatus('Synced');
     setTimeout(hideSyncStatus, 1800);
     return true;
   } catch(e) {
     markSyncPending(true);
+    recordSyncError(e);
     console.warn('Cloud sync failed:', e);
     showSyncStatus('Sync failed - will retry');
     scheduleCloudSync(SYNC_RETRY_MS);
@@ -836,7 +953,8 @@ async function syncToCloud(options) {
   }
 }
 
-async function loadFromCloud() {
+async function loadFromCloud(options) {
+  const quiet = options && options.quiet;
   try {
     showSyncStatus('☁️ クラウドから同期中…');
     const cloudRaw = await fetchCloudEntries();
@@ -875,6 +993,7 @@ async function loadFromCloud() {
     showSyncStatus('✅ 同期完了'); setTimeout(hideSyncStatus,2000);
   } catch(e) {
     console.warn('Cloud load failed:',e);
+    recordSyncError(e);
     showSyncStatus('Cloud load failed');
     setTimeout(hideSyncStatus,3000);
   }
@@ -1589,7 +1708,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v9';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v10';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -1625,7 +1744,7 @@ window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 
-load(); migrateOldFixedTags(); render(); loadFromCloud();
+load(); migrateOldFixedTags(); render(); updateSyncPanel(); loadFromCloud();
 </script>
 </body>
 </html>
