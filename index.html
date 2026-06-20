@@ -133,6 +133,8 @@
   .drawing-thumb-delete { position: absolute; top: 2px; right: 2px; background: rgba(244,63,94,0.9); border: none; border-radius: 4px; color: white; font-size: 0.7rem; padding: 1px 5px; cursor: pointer; display: none; line-height: 1.4; }
   .drawing-thumb:hover .drawing-thumb-delete { display: block; }
   .drawing-thumb-edit-badge { position: absolute; bottom: 2px; left: 2px; background: rgba(245,158,11,0.9); border-radius: 3px; color: white; font-size: 0.6rem; padding: 1px 4px; pointer-events: none; }
+  .media-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+  .media-actions .btn-sub { width: 100%; justify-content: center; }
 
   .empty { text-align: center; padding: 4rem 0; color: var(--stone-300); }
   .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
@@ -315,9 +317,12 @@
         <div class="suggest-list" id="tagSuggestList" style="display:none"></div>
       </div>
       <div class="field">
-        <label>🎨 スケッチ・図解</label>
+        <label>🎨 スケッチ・画像</label>
         <div class="drawing-gallery" id="drawingGallery"></div>
-        <button type="button" class="btn-sub" onclick="openDrawingModal(null)" style="margin-top:0.5rem;width:100%;justify-content:center">📐 スケッチを追加</button>
+        <div class="media-actions">
+          <button type="button" class="btn-sub" onclick="openDrawingModal(null)">📐 スケッチを追加</button>
+          <label class="btn-sub" style="cursor:pointer">🖼 画像を追加<input type="file" accept="image/*" onchange="addImageAttachment(event)" style="display:none"></label>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -427,7 +432,7 @@ const SPINE_THEMES = {
 };
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
-let currentDrawings = [], editingDrawingIndex = null;
+let currentDrawings = [], currentImages = [], editingDrawingIndex = null;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
@@ -479,6 +484,7 @@ function normalizeTombstone(entry) {
   clone.title = clone.title || '';
   clone.tags = Array.isArray(clone.tags) ? clone.tags : [];
   clone.drawings = Array.isArray(clone.drawings) ? clone.drawings : [];
+  clone.images = Array.isArray(clone.images) ? clone.images : [];
   clone.createdAt = clone.createdAt || now.slice(0, 10);
   clone.deleted = true;
   return clone;
@@ -558,6 +564,7 @@ function buildBookMetaSyncEntry() {
     content: JSON.stringify(getBookMeta()),
     tags: [],
     drawings: [],
+    images: [],
     createdAt: '1970-01-01',
     updatedAt: new Date().toISOString(),
     isBookMeta: true
@@ -885,6 +892,12 @@ function chooseEntryVersion(cloudEntry, localEntry, preferLocal) {
   }
   return preferLocal ? localEntry : cloudEntry;
 }
+function mergedMediaList(chosen, localEntry, key) {
+  if (chosen && Object.prototype.hasOwnProperty.call(chosen, key)) {
+    return Array.isArray(chosen[key]) ? chosen[key] : [];
+  }
+  return localEntry && Array.isArray(localEntry[key]) ? localEntry[key] : [];
+}
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -1019,8 +1032,9 @@ async function loadFromCloud(options) {
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
       const chosen = chooseEntryVersion(c, l, preferLocal);
-      const drawings = (chosen&&chosen.drawings&&chosen.drawings.length) ? chosen.drawings : ((l&&l.drawings)||[]);
-      return {...chosen, drawings};
+      const drawings = mergedMediaList(chosen, l, 'drawings');
+      const images = mergedMediaList(chosen, l, 'images');
+      return {...chosen, drawings, images};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -1293,7 +1307,12 @@ function cardHTML(e) {
   const sketchHTML=(e.drawings&&e.drawings.length)?`
     <div class="section-block" style="background:var(--stone-50)">
       <div class="section-label">🎨 スケッチ</div>
-      <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}')">`).join('')}</div>
+      <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}','drawings')">`).join('')}</div>
+    </div>`:'';
+  const imageHTML=(e.images&&e.images.length)?`
+    <div class="section-block" style="background:var(--stone-50)">
+      <div class="section-label">🖼 画像</div>
+      <div class="sketch-grid">${e.images.map((d,i)=>`<img src="${d}" alt="画像${i+1}" onclick="openViewer('${e.id}','${i}','images')">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
@@ -1316,6 +1335,7 @@ function cardHTML(e) {
       ${sec('lesson-bg','💡','教訓',e.lesson)}
       ${sec('supplement-bg','🔍','補足',e.supplement)}
       ${sketchHTML}
+      ${imageHTML}
     </div>
     <div class="ai-area">
       <button class="btn-ai" onclick="handleAI(${esc(JSON.stringify(e.id))},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
@@ -1325,10 +1345,12 @@ function cardHTML(e) {
 </div>`;
 }
 
-function openViewer(entryId, idx) {
+function openViewer(entryId, idx, kind) {
   const entry=entries.find(e=>String(e.id)===String(entryId));
-  if(!entry||!entry.drawings)return;
-  const src=entry.drawings[parseInt(idx)];
+  if(!entry)return;
+  const list = kind === 'images' ? entry.images : entry.drawings;
+  if(!list)return;
+  const src=list[parseInt(idx)];
   if(!src)return;
   document.getElementById('viewerImg').src=src;
   document.getElementById('viewerOverlay').classList.add('open');
@@ -1458,6 +1480,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
   ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
   currentFixedTags = [];
   currentDrawings  = [];
+  currentImages    = [];
 
   if (id) {
     var e = entries.find(function(x){ return x.id===id; });
@@ -1472,6 +1495,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
       document.getElementById('fTags').value       = (e.tags||[]).join(', ');
       currentFixedTags = getBookFixedTags(e.book||'');
       currentDrawings  = (e.drawings||[]).slice();
+      currentImages    = (e.images||[]).slice();
     }
   } else if (presetBook) {
     document.getElementById('fBook').value   = presetBook;
@@ -1528,6 +1552,7 @@ function saveEntry() {
     supplement: document.getElementById('fSupplement').value,
     tags,
     drawings:   currentDrawings,
+    images:     currentImages,
     fixedTags:  [...currentFixedTags],
     updatedAt:  new Date().toISOString(),
   };
@@ -1573,14 +1598,73 @@ function editBookTags(idx) {
 
 function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
-  gallery.innerHTML=currentDrawings.map((src,i)=>`
+  const drawingHTML=currentDrawings.map((src,i)=>`
     <div class="drawing-thumb" title="クリックで編集">
       <img src="${src}" alt="スケッチ${i+1}" onclick="openDrawingModal(${i})">
       <div class="drawing-thumb-edit-badge">編集</div>
       <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempDrawing(${i})">✕</button>
     </div>`).join('');
+  const imageHTML=currentImages.map((src,i)=>`
+    <div class="drawing-thumb" title="クリックで表示">
+      <img src="${src}" alt="画像${i+1}" onclick="openTempViewer('images',${i})">
+      <div class="drawing-thumb-edit-badge">画像</div>
+      <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempImage(${i})">✕</button>
+    </div>`).join('');
+  gallery.innerHTML=drawingHTML+imageHTML;
 }
 function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
+function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery(); }
+function openTempViewer(kind, idx) {
+  const list = kind === 'images' ? currentImages : currentDrawings;
+  const src = list && list[parseInt(idx)];
+  if(!src)return;
+  document.getElementById('viewerImg').src=src;
+  document.getElementById('viewerOverlay').classList.add('open');
+}
+
+function compressImageFile(file) {
+  return new Promise(function(resolve,reject) {
+    if(!file||!file.type||!file.type.startsWith('image/')) { reject(new Error('Not an image')); return; }
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Image read failed'));
+    reader.onload=function() {
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Image load failed'));
+      img.onload=function() {
+        const maxSide=900;
+        const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        if(!w||!h) { reject(new Error('Invalid image')); return; }
+        const scale=Math.min(1,maxSide/Math.max(w,h));
+        const cw=Math.max(1,Math.round(w*scale));
+        const ch=Math.max(1,Math.round(h*scale));
+        const canvas=document.createElement('canvas');
+        canvas.width=cw; canvas.height=ch;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='white'; ctx.fillRect(0,0,cw,ch);
+        ctx.drawImage(img,0,0,cw,ch);
+        resolve(canvas.toDataURL('image/jpeg',0.65));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addImageAttachment(ev) {
+  const input=ev.target;
+  const file=input.files&&input.files[0];
+  input.value='';
+  if(!file)return;
+  try {
+    const dataUrl=await compressImageFile(file);
+    currentImages.push(dataUrl);
+    renderDrawingGallery();
+    showToast('🖼 画像を保存しました');
+  } catch(e) {
+    console.warn('Image attachment failed:',e);
+    showToast('画像を追加できませんでした');
+  }
+}
 
 function openDrawingModal(editIndex) {
   editingDrawingIndex = (editIndex!==null&&editIndex!==undefined) ? editIndex : null;
@@ -1766,7 +1850,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v13';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v14';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
