@@ -347,9 +347,9 @@
       <button class="modal-close" onclick="closeAiModal()">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:0.82rem;color:var(--stone-600);line-height:1.7">AI要約にはAnthropic APIキーが必要です。<br>キーはこのブラウザにのみ保存されます。</p>
-      <div class="field"><label>APIキー</label><input type="password" id="apiKeyInput" placeholder="sk-ant-..."></div>
-      <p class="ai-key-note">※ <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> で取得できます。</p>
+      <p style="font-size:0.82rem;color:var(--stone-600);line-height:1.7">AI要約にはGemini APIキーが必要です。<br>キーはこのブラウザにのみ保存されます。</p>
+      <div class="field"><label>APIキー</label><input type="password" id="apiKeyInput" placeholder="AIza..."></div>
+      <p class="ai-key-note">※ <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> で取得できます。</p>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAiModal()">キャンセル</button>
@@ -393,7 +393,7 @@ const STORAGE_KEY   = 'reading_log_v1';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
-const API_KEY_KEY   = 'reading_log_api_key';
+const API_KEY_KEY   = 'reading_log_gemini_api_key';
 const CLOUD_URL     = 'https://script.google.com/macros/s/AKfycbw2irGnfMzmM6ibvG6V1pKF_nb2TG_djO8KI_g_OwrKnKm5Ur-X4-avuixIxgUZf_H5NQ/exec';
 const SYNC_PENDING_KEY = 'reading_log_sync_pending';
 const SYNC_LAST_OK_KEY = 'reading_log_sync_last_ok';
@@ -1697,13 +1697,15 @@ async function runAI(id,btn,key) {
   const e=entries.find(e=>e.id===id); if(!e) return;
   btn.disabled=true; btn.textContent='要約中…';
   try {
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
+    const prompt=`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`;
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`}]})
+      headers:{'Content-Type':'application/json','x-goog-api-key':key},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
     });
     const d=await r.json();
-    e.aiSummary=d.content?.map(b=>b.text||'').join('')||'要約を取得できませんでした。';
+    if(!r.ok) throw new Error(d.error?.message||'Gemini API error');
+    e.aiSummary=d.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('').trim()||'要約を取得できませんでした。';
     persist(); render(); showToast('✨ AI要約完了');
   } catch { showToast('エラーが発生しました。'); }
   finally { btn.disabled=false; btn.textContent=e.aiSummary?'✨ 再要約':'✨ AI要約'; }
@@ -1753,7 +1755,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v11';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v12';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
