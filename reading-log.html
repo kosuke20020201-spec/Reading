@@ -405,9 +405,9 @@ const SYNC_LAST_OK_KEY = 'reading_log_sync_last_ok';
 const SYNC_LAST_ATTEMPT_KEY = 'reading_log_sync_last_attempt';
 const SYNC_LAST_ERROR_KEY = 'reading_log_sync_last_error';
 const SYNC_RETRY_MS = 15000;
-const MEDIA_IMAGE_MAX_SIDE = 520;
-const MEDIA_IMAGE_QUALITY = 0.55;
-const MEDIA_IMAGE_MAX_CHARS = 30000;
+const MEDIA_IMAGE_MAX_SIDE = 720;
+const MEDIA_IMAGE_QUALITY = 0.72;
+const MEDIA_IMAGE_MAX_CHARS = 42000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
@@ -435,7 +435,7 @@ const SPINE_THEMES = {
 };
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
-let currentDrawings = [], currentImages = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null;
+let currentDrawings = [], currentImages = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
@@ -913,6 +913,25 @@ function entryMedia(entry) {
   return merged;
 }
 
+function mediaTime(entry) {
+  return Date.parse((entry&&entry.mediaUpdatedAt)||'') || 0;
+}
+
+function mergeEntryMedia(cloudEntry, localEntry) {
+  const cloudMedia = entryMedia(cloudEntry);
+  const localMedia = entryMedia(localEntry);
+  if (!cloudMedia.length) return localMedia;
+  if (!localMedia.length) return cloudMedia;
+  const cloudMediaTime = mediaTime(cloudEntry);
+  const localMediaTime = mediaTime(localEntry);
+  if (cloudMediaTime || localMediaTime) {
+    if (cloudMediaTime !== localMediaTime) return cloudMediaTime > localMediaTime ? cloudMedia : localMedia;
+  }
+  const merged = localMedia.slice();
+  cloudMedia.forEach(src=>{ if(!merged.includes(src)) merged.push(src); });
+  return merged;
+}
+
 function migrateImagesIntoDrawings() {
   let changed = false;
   entries = entries.map(function(entry) {
@@ -921,7 +940,7 @@ function migrateImagesIntoDrawings() {
     const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
     if (!images.length && merged.length === (Array.isArray(entry.drawings) ? entry.drawings.length : 0)) return entry;
     changed = true;
-    return {...entry, drawings: merged, images: []};
+    return {...entry, drawings: merged, images: [], mediaUpdatedAt: entry.mediaUpdatedAt || entry.updatedAt || new Date().toISOString()};
   });
   if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   return changed;
@@ -1143,8 +1162,9 @@ async function loadFromCloud(options) {
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
       const chosen = chooseEntryVersion(c, l, preferLocal);
-      const drawings = entryMedia(chosen || l);
-      return {...chosen, drawings, images: []};
+      const drawings = mergeEntryMedia(c, l);
+      const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
+      return {...chosen, drawings, images: [], mediaUpdatedAt};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -1586,6 +1606,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
   currentFixedTags = [];
   currentDrawings  = [];
   currentImages    = [];
+  mediaDirty = false;
 
   if (id) {
     var e = entries.find(function(x){ return x.id===id; });
@@ -1647,6 +1668,8 @@ function saveEntry() {
   setBookFixedTags(bookName, currentFixedTags);
 
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const existingEntry = editingId ? entries.find(e=>String(e.id)===String(editingId)) : null;
+  const nowIso = new Date().toISOString();
   const data = {
     book:       bookName,
     author:     document.getElementById('fAuthor').value,
@@ -1659,7 +1682,8 @@ function saveEntry() {
     drawings:   currentDrawings,
     images:     [],
     fixedTags:  [...currentFixedTags],
-    updatedAt:  new Date().toISOString(),
+    mediaUpdatedAt: mediaDirty ? nowIso : ((existingEntry&&existingEntry.mediaUpdatedAt)||''),
+    updatedAt:  nowIso,
   };
 
   if(editingId){ entries=entries.map(e=>e.id===editingId?{...e,...data}:e); }
@@ -1711,7 +1735,7 @@ function renderDrawingGallery() {
     </div>`).join('');
   gallery.innerHTML=drawingHTML;
 }
-function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
+function deleteTempDrawing(i) { currentDrawings.splice(i,1); mediaDirty=true; renderDrawingGallery(); }
 function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery(); }
 function openTempViewer(kind, idx) {
   const list = kind === 'images' ? currentImages : currentDrawings;
@@ -1767,6 +1791,7 @@ async function addImageAttachment(ev) {
   try {
     const dataUrl=await compressImageFile(file);
     currentDrawings.push(dataUrl);
+    mediaDirty=true;
     renderDrawingGallery();
     showToast('🖼 画像を保存しました');
   } catch(e) {
@@ -1929,6 +1954,8 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
 function saveDrawing() {
   const isImage = editingMediaKind === 'images';
   const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,250,0.45);
+  const nowIso = new Date().toISOString();
+  mediaDirty=true;
   if(isImage){
     if(editingDrawingIndex!==null) currentDrawings[editingDrawingIndex]=dataUrl;
     else currentDrawings.push(dataUrl);
@@ -1941,7 +1968,7 @@ function saveDrawing() {
     showToast('🎨 スケッチを保存しました');
   }
   if(editingId!==null&&editingId!==undefined){
-    entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],updatedAt:new Date().toISOString()}:e);
+    entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
     persist();
     render();
   }
@@ -2022,7 +2049,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v16';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v17';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
