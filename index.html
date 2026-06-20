@@ -405,6 +405,9 @@ const SYNC_LAST_OK_KEY = 'reading_log_sync_last_ok';
 const SYNC_LAST_ATTEMPT_KEY = 'reading_log_sync_last_attempt';
 const SYNC_LAST_ERROR_KEY = 'reading_log_sync_last_error';
 const SYNC_RETRY_MS = 15000;
+const MEDIA_IMAGE_MAX_SIDE = 520;
+const MEDIA_IMAGE_QUALITY = 0.55;
+const MEDIA_IMAGE_MAX_CHARS = 30000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
@@ -484,7 +487,7 @@ function normalizeTombstone(entry) {
   clone.title = clone.title || '';
   clone.tags = Array.isArray(clone.tags) ? clone.tags : [];
   clone.drawings = Array.isArray(clone.drawings) ? clone.drawings : [];
-  clone.images = Array.isArray(clone.images) ? clone.images : [];
+  clone.images = [];
   clone.createdAt = clone.createdAt || now.slice(0, 10);
   clone.deleted = true;
   return clone;
@@ -737,10 +740,12 @@ function load() {
   entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
   const idRepair = repairMissingIds(entries);
   entries = idRepair.list;
-  if (idRepair.changed) persist();
+  const mediaMigrated = migrateImagesIntoDrawings();
+  if (idRepair.changed || mediaMigrated) persist();
 }
 
 function persist() {
+  migrateImagesIntoDrawings();
   syncEntryFixedTags();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   markSyncPending(true);
@@ -867,6 +872,7 @@ async function showSyncDiagnostics() {
 }
 
 function buildCloudPayloadBody() {
+  migrateImagesIntoDrawings();
   const deletedIds = getDeletedIds();
   const activeEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
   return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry()]);
@@ -897,6 +903,85 @@ function mergedMediaList(chosen, localEntry, key) {
     return Array.isArray(chosen[key]) ? chosen[key] : [];
   }
   return localEntry && Array.isArray(localEntry[key]) ? localEntry[key] : [];
+}
+
+function entryMedia(entry) {
+  const drawings = Array.isArray(entry&&entry.drawings) ? entry.drawings.filter(Boolean) : [];
+  const images = Array.isArray(entry&&entry.images) ? entry.images.filter(Boolean) : [];
+  const merged = drawings.slice();
+  images.forEach(src=>{ if(!merged.includes(src)) merged.push(src); });
+  return merged;
+}
+
+function migrateImagesIntoDrawings() {
+  let changed = false;
+  entries = entries.map(function(entry) {
+    if (!entry) return entry;
+    const merged = entryMedia(entry);
+    const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
+    if (!images.length && merged.length === (Array.isArray(entry.drawings) ? entry.drawings.length : 0)) return entry;
+    changed = true;
+    return {...entry, drawings: merged, images: []};
+  });
+  if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return changed;
+}
+
+function imageToCompressedDataUrl(img, maxSide, quality, maxChars) {
+  const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h) throw new Error('Invalid image');
+  let side=maxSide, q=quality, dataUrl='';
+  for(let attempt=0; attempt<7; attempt++) {
+    const scale=Math.min(1,side/Math.max(w,h));
+    const cw=Math.max(1,Math.round(w*scale));
+    const ch=Math.max(1,Math.round(h*scale));
+    const canvas=document.createElement('canvas');
+    canvas.width=cw; canvas.height=ch;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='white'; ctx.fillRect(0,0,cw,ch);
+    ctx.drawImage(img,0,0,cw,ch);
+    dataUrl=canvas.toDataURL('image/jpeg',q);
+    if(!maxChars || dataUrl.length<=maxChars) return dataUrl;
+    side=Math.max(240,Math.floor(side*0.78));
+    q=Math.max(0.42,q-0.05);
+  }
+  return dataUrl;
+}
+
+function recompressDataUrl(src) {
+  return new Promise(function(resolve,reject) {
+    const img=new Image();
+    img.onerror=()=>reject(new Error('Image load failed'));
+    img.onload=()=>{
+      try { resolve(imageToCompressedDataUrl(img, MEDIA_IMAGE_MAX_SIDE, MEDIA_IMAGE_QUALITY, MEDIA_IMAGE_MAX_CHARS)); }
+      catch(e) { reject(e); }
+    };
+    img.src=src;
+  });
+}
+
+async function shrinkOversizedMedia() {
+  let changed = migrateImagesIntoDrawings();
+  for (const entry of entries) {
+    if (!entry || !Array.isArray(entry.drawings)) continue;
+    const next = [];
+    for (const src of entry.drawings) {
+      if (typeof src === 'string' && src.startsWith('data:image/') && src.length > MEDIA_IMAGE_MAX_CHARS) {
+        try {
+          next.push(await recompressDataUrl(src));
+          changed = true;
+        } catch {
+          next.push(src);
+        }
+      } else {
+        next.push(src);
+      }
+    }
+    entry.drawings = next;
+    entry.images = [];
+  }
+  if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return changed;
 }
 
 function delay(ms) {
@@ -952,6 +1037,29 @@ async function verifyCloudDeletedIds(expectedIds) {
   throw new Error('Cloud did not confirm deleted rows');
 }
 
+function mediaArraysEqual(a,b) {
+  const left = Array.isArray(a) ? a : [];
+  const right = Array.isArray(b) ? b : [];
+  if (left.length !== right.length) return false;
+  return left.every((item,idx)=>item===right[idx]);
+}
+
+async function verifyCloudMedia(expectedEntries) {
+  const expected = (Array.isArray(expectedEntries) ? expectedEntries : []).filter(entry=>entryMedia(entry).length);
+  if (!expected.length) return true;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cloudRaw = await fetchCloudEntries();
+    const cloudMap = Object.fromEntries(cloudRaw.filter(e=>e&&e.id!=null).map(e=>[String(e.id),e]));
+    const ok = expected.every(function(entry) {
+      const cloudEntry = cloudMap[String(entry.id)];
+      return cloudEntry && mediaArraysEqual(entryMedia(entry), entryMedia(cloudEntry));
+    });
+    if (ok) return true;
+    await delay(1200);
+  }
+  throw new Error('Cloud did not save images');
+}
+
 async function postCloudPayload(body, mode) {
   const response = await fetch(CLOUD_URL, {
     method: 'POST',
@@ -982,14 +1090,17 @@ async function syncToCloud(options) {
 
   try {
     await refreshDeletesFromCloud();
+    if (await shrinkOversizedMedia()) render();
     const deletedIds = getDeletedIds();
     const body = buildCloudPayloadBody();
+    const expectedEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
     if (manual || hasPendingSync()) showSyncStatus('Saving to cloud...');
     try {
       await postCloudPayload(body, 'cors');
     } catch (corsError) {
       await postCloudPayload(body, 'no-cors');
     }
+    await verifyCloudMedia(expectedEntries);
     await verifyCloudDeletedIds(deletedIds);
     markSyncPending(false);
     markDeletedIdsSynced(deletedIds);
@@ -1032,9 +1143,8 @@ async function loadFromCloud(options) {
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
       const chosen = chooseEntryVersion(c, l, preferLocal);
-      const drawings = mergedMediaList(chosen, l, 'drawings');
-      const images = mergedMediaList(chosen, l, 'images');
-      return {...chosen, drawings, images};
+      const drawings = entryMedia(chosen || l);
+      return {...chosen, drawings, images: []};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -1304,15 +1414,11 @@ function cardHTML(e) {
   const pills = fixedPills + freePills;
 
   const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${esc(txt)}</div></div>`:'';
-  const sketchHTML=(e.drawings&&e.drawings.length)?`
+  const media = entryMedia(e);
+  const sketchHTML=media.length?`
     <div class="section-block" style="background:var(--stone-50)">
-      <div class="section-label">🎨 スケッチ</div>
-      <div class="sketch-grid">${e.drawings.map((d,i)=>`<img src="${d}" alt="スケッチ${i+1}" onclick="openViewer('${e.id}','${i}','drawings')">`).join('')}</div>
-    </div>`:'';
-  const imageHTML=(e.images&&e.images.length)?`
-    <div class="section-block" style="background:var(--stone-50)">
-      <div class="section-label">🖼 画像</div>
-      <div class="sketch-grid">${e.images.map((d,i)=>`<img src="${d}" alt="画像${i+1}" onclick="openViewer('${e.id}','${i}','images')">`).join('')}</div>
+      <div class="section-label">🎨 スケッチ・画像</div>
+      <div class="sketch-grid">${media.map((d,i)=>`<img src="${d}" alt="スケッチ・画像${i+1}" onclick="annotateEntryMedia('${e.id}','${i}')">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
@@ -1335,7 +1441,6 @@ function cardHTML(e) {
       ${sec('lesson-bg','💡','教訓',e.lesson)}
       ${sec('supplement-bg','🔍','補足',e.supplement)}
       ${sketchHTML}
-      ${imageHTML}
     </div>
     <div class="ai-area">
       <button class="btn-ai" onclick="handleAI(${esc(JSON.stringify(e.id))},this)">✨ ${e.aiSummary?'再要約':'AI要約'}</button>
@@ -1494,8 +1599,8 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
       document.getElementById('fSupplement').value = e.supplement||'';
       document.getElementById('fTags').value       = (e.tags||[]).join(', ');
       currentFixedTags = getBookFixedTags(e.book||'');
-      currentDrawings  = (e.drawings||[]).slice();
-      currentImages    = (e.images||[]).slice();
+      currentDrawings  = entryMedia(e).slice();
+      currentImages    = [];
     }
   } else if (presetBook) {
     document.getElementById('fBook').value   = presetBook;
@@ -1552,7 +1657,7 @@ function saveEntry() {
     supplement: document.getElementById('fSupplement').value,
     tags,
     drawings:   currentDrawings,
-    images:     currentImages,
+    images:     [],
     fixedTags:  [...currentFixedTags],
     updatedAt:  new Date().toISOString(),
   };
@@ -1600,17 +1705,11 @@ function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
   const drawingHTML=currentDrawings.map((src,i)=>`
     <div class="drawing-thumb" title="クリックで編集">
-      <img src="${src}" alt="スケッチ${i+1}" onclick="openDrawingModal(${i})">
+      <img src="${src}" alt="スケッチ・画像${i+1}" onclick="openDrawingModal(${i},'images')">
       <div class="drawing-thumb-edit-badge">編集</div>
       <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempDrawing(${i})">✕</button>
     </div>`).join('');
-  const imageHTML=currentImages.map((src,i)=>`
-    <div class="drawing-thumb" title="クリックで表示">
-      <img src="${src}" alt="画像${i+1}" onclick="openDrawingModal(${i},'images')">
-      <div class="drawing-thumb-edit-badge">書込</div>
-      <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempImage(${i})">✕</button>
-    </div>`).join('');
-  gallery.innerHTML=drawingHTML+imageHTML;
+  gallery.innerHTML=drawingHTML;
 }
 function deleteTempDrawing(i) { currentDrawings.splice(i,1); renderDrawingGallery(); }
 function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery(); }
@@ -1622,6 +1721,16 @@ function openTempViewer(kind, idx) {
   document.getElementById('viewerOverlay').classList.add('open');
 }
 
+function annotateEntryMedia(entryId, idx) {
+  const entry=entries.find(e=>String(e.id)===String(entryId));
+  if(!entry)return;
+  editingId=entry.id;
+  currentDrawings=entryMedia(entry).slice();
+  currentImages=[];
+  currentFixedTags=getBookFixedTags(entry.book||'');
+  openDrawingModal(parseInt(idx),'images');
+}
+
 function compressImageFile(file) {
   return new Promise(function(resolve,reject) {
     if(!file||!file.type||!file.type.startsWith('image/')) { reject(new Error('Not an image')); return; }
@@ -1631,7 +1740,7 @@ function compressImageFile(file) {
       const img=new Image();
       img.onerror=()=>reject(new Error('Image load failed'));
       img.onload=function() {
-        const maxSide=900;
+        const maxSide=MEDIA_IMAGE_MAX_SIDE;
         const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
         if(!w||!h) { reject(new Error('Invalid image')); return; }
         const scale=Math.min(1,maxSide/Math.max(w,h));
@@ -1642,7 +1751,7 @@ function compressImageFile(file) {
         const ctx=canvas.getContext('2d');
         ctx.fillStyle='white'; ctx.fillRect(0,0,cw,ch);
         ctx.drawImage(img,0,0,cw,ch);
-        resolve(canvas.toDataURL('image/jpeg',0.65));
+        resolve(canvasToJpeg(canvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS));
       };
       img.src=reader.result;
     };
@@ -1657,7 +1766,7 @@ async function addImageAttachment(ev) {
   if(!file)return;
   try {
     const dataUrl=await compressImageFile(file);
-    currentImages.push(dataUrl);
+    currentDrawings.push(dataUrl);
     renderDrawingGallery();
     showToast('🖼 画像を保存しました');
   } catch(e) {
@@ -1680,7 +1789,7 @@ function openDrawingModal(editIndex, mediaKind) {
     const neo=old.cloneNode(false);
     old.parentNode.replaceChild(neo,old);
     dCanvas=neo; dCtx=dCanvas.getContext('2d');
-    const sourceList = isImage ? currentImages : currentDrawings;
+    const sourceList = currentDrawings;
     const source = isEdit ? sourceList[editingDrawingIndex] : '';
     if(source){
       drawingBaseImageUrl = source;
@@ -1799,23 +1908,30 @@ function clearDrawing() {
   drawHistory=[]; saveDrawState();
 }
 
-function canvasToJpeg(sourceCanvas, maxSide, quality) {
-  const scale=Math.min(1,maxSide/Math.max(sourceCanvas.width,sourceCanvas.height));
-  const out=document.createElement('canvas');
-  out.width=Math.max(1,Math.round(sourceCanvas.width*scale));
-  out.height=Math.max(1,Math.round(sourceCanvas.height*scale));
-  const ctx=out.getContext('2d');
-  ctx.fillStyle='white'; ctx.fillRect(0,0,out.width,out.height);
-  ctx.drawImage(sourceCanvas,0,0,out.width,out.height);
-  return out.toDataURL('image/jpeg',quality);
+function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
+  let side=maxSide, q=quality, dataUrl='';
+  for(let attempt=0; attempt<7; attempt++) {
+    const scale=Math.min(1,side/Math.max(sourceCanvas.width,sourceCanvas.height));
+    const out=document.createElement('canvas');
+    out.width=Math.max(1,Math.round(sourceCanvas.width*scale));
+    out.height=Math.max(1,Math.round(sourceCanvas.height*scale));
+    const ctx=out.getContext('2d');
+    ctx.fillStyle='white'; ctx.fillRect(0,0,out.width,out.height);
+    ctx.drawImage(sourceCanvas,0,0,out.width,out.height);
+    dataUrl=out.toDataURL('image/jpeg',q);
+    if(!maxChars || dataUrl.length<=maxChars) return dataUrl;
+    side=Math.max(240,Math.floor(side*0.78));
+    q=Math.max(0.42,q-0.05);
+  }
+  return dataUrl;
 }
 
 function saveDrawing() {
   const isImage = editingMediaKind === 'images';
-  const dataUrl=isImage ? canvasToJpeg(dCanvas,900,0.65) : canvasToJpeg(dCanvas,250,0.45);
+  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,250,0.45);
   if(isImage){
-    if(editingDrawingIndex!==null) currentImages[editingDrawingIndex]=dataUrl;
-    else currentImages.push(dataUrl);
+    if(editingDrawingIndex!==null) currentDrawings[editingDrawingIndex]=dataUrl;
+    else currentDrawings.push(dataUrl);
     showToast('🖼 画像を更新しました');
   } else if(editingDrawingIndex!==null){
     currentDrawings[editingDrawingIndex]=dataUrl;
@@ -1823,6 +1939,11 @@ function saveDrawing() {
   } else {
     currentDrawings.push(dataUrl);
     showToast('🎨 スケッチを保存しました');
+  }
+  if(editingId!==null&&editingId!==undefined){
+    entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],updatedAt:new Date().toISOString()}:e);
+    persist();
+    render();
   }
   renderDrawingGallery();
   closeDrawingModal();
@@ -1901,7 +2022,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v15';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v16';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
