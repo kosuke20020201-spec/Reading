@@ -1098,15 +1098,26 @@ function entryMatchesSearch(entry, query) {
     .some(s=>(s||'').toLowerCase().includes(query));
 }
 
-function entryPageValue(entry) {
-  const match = String(entry.page || '').match(/\d+/);
-  return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
+function entryPageRange(entry) {
+  const nums = String(entry.page || '').match(/\d+/g) || [];
+  if (!nums.length) return null;
+  const start = Number(nums[0]);
+  const end = Number(nums[nums.length - 1]);
+  return { start, end: Number.isFinite(end) ? end : start };
 }
 
 function sortExpandedRecords(list) {
   return list.slice().sort(function(a,b) {
-    const pageDiff = entryPageValue(a) - entryPageValue(b);
-    if (pageDiff !== 0) return expandedRecordSort === 'old' ? pageDiff : -pageDiff;
+    const pageA = entryPageRange(a);
+    const pageB = entryPageRange(b);
+    if (!pageA && pageB) return 1;
+    if (pageA && !pageB) return -1;
+    if (pageA && pageB) {
+      const startDiff = pageA.start - pageB.start;
+      if (startDiff !== 0) return expandedRecordSort === 'old' ? startDiff : -startDiff;
+      const endDiff = pageA.end - pageB.end;
+      if (endDiff !== 0) return expandedRecordSort === 'old' ? endDiff : -endDiff;
+    }
     return Number(a.id || 0) - Number(b.id || 0);
   });
 }
@@ -1755,7 +1766,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v12';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v13';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

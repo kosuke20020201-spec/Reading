@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260619-gemini-1';
+const CACHE_NAME = 'reading-note-pwa-20260620-page-range-1';
 const APP_SHELL = [
   './',
   './index.html',
