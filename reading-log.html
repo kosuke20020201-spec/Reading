@@ -63,6 +63,10 @@
   .tag-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
+  .tag-folder-group { display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; padding: 0.16rem 0.28rem; border-radius: 999px; background: #fff7ed; border: 1px solid #fed7aa; }
+  .tag-folder-btn { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; border: 1px solid #fdba74; background: white; color: #9a3412; cursor: pointer; font-family: inherit; }
+  .tag-folder-btn.active { background: #9a3412; border-color: #9a3412; color: white; }
+  .tag-folder-inner-tags { display: inline-flex; flex-wrap: wrap; gap: 0.28rem; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
@@ -180,7 +184,9 @@
   .bookshelf-item-count { font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--amber-light); color: #92400e; white-space: nowrap; }
 
   /* 描画モーダル */
-  .drawing-tools { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  #drawingOverlay .modal { max-height: calc(100vh - 1rem); }
+  #drawingOverlay .modal-body { padding-top: 0; }
+  .drawing-tools { position: sticky; top: 0; z-index: 10; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0 -1.5rem 0.75rem; padding: 0.75rem 1.5rem 0.65rem; background: rgba(255,255,255,0.96); border-bottom: 1px solid var(--stone-100); box-shadow: 0 4px 12px rgba(41,37,36,0.06); }
   .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; font-family: inherit; transition: all 0.1s; }
   .drawing-tool-btn:hover { border-color: var(--amber); }
   .drawing-tool-btn.active { background: var(--amber); color: white; border-color: var(--amber); }
@@ -203,6 +209,17 @@
   .tag-pill-free { }
   .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
   .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
+  .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; }
+  .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
+  .tag-folder-add-line { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
+  .tag-folder-create input, .tag-folder-create select, .tag-folder-add-line select { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
+  .tag-folder-card { border:1px solid var(--stone-200); border-radius:0.75rem; background:white; padding:0.75rem; }
+  .tag-folder-card-header { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-bottom:0.55rem; }
+  .tag-folder-card-title { font-size:0.84rem; font-weight:800; color:var(--stone-800); }
+  .tag-folder-chip-row { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.65rem; min-height:1.65rem; }
+  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.25rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.18rem 0.55rem; font-size:0.7rem; font-weight:600; }
+  .tag-folder-chip button { border:0; background:none; cursor:pointer; color:var(--stone-400); font:inherit; line-height:1; padding:0; }
+  .tag-folder-empty { font-size:0.78rem; color:var(--stone-400); padding:0.8rem; border:1px dashed var(--stone-200); border-radius:0.75rem; }
 
   .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
   .tc-2{background:#d1fae5;color:#065f46} .tc-3{background:#ffe4e6;color:#9f1239}
@@ -211,6 +228,7 @@
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
+    .tag-folder-create, .tag-folder-add-line { grid-template-columns: 1fr; }
     .card-actions { opacity: 1; }
     .bookshelf-main { gap: 0.55rem 0.4rem; }
     .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
@@ -273,6 +291,7 @@
         <option value="date">新しい順</option>
         <option value="book">書名順</option>
       </select>
+      <button class="btn-sub" onclick="openTagFolders()" type="button">🏷 タグ整理</button>
     </div>
   </div>
 
@@ -345,6 +364,23 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="tagFolderOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">🏷 タグ整理</h2>
+      <button class="modal-close" onclick="closeTagFolders()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tag-folder-create">
+        <input type="text" id="tagFolderName" placeholder="フォルダ名">
+        <select id="tagFolderTagSelect"></select>
+        <button type="button" class="btn-sub" onclick="addTagFolderFromForm()">追加</button>
+      </div>
+      <div class="tag-folder-list" id="tagFolderList"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="aiKeyOverlay">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -395,7 +431,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v23';
+const APP_VERSION   = 'media-autosave-sync v24';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -410,6 +446,7 @@ const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
 const MEDIA_IMAGE_MAX_CHARS = 42000;
 const BOOK_META_KEY = 'reading_log_book_meta';
+const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
   classic: [
@@ -435,7 +472,7 @@ const SPINE_THEMES = {
   ]
 };
 
-let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
+let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', editingId = null, pendingAiId = null;
 let currentDrawings = [], currentImages = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
@@ -559,6 +596,12 @@ function getBookMeta() {
 // 既存のスプレッドシート側のスキーマを変更せずに済むよう、
 // 通常のエントリと同じ形（idとcontent列）に乗せて book_meta 全体を運ぶ。
 const BOOK_META_SYNC_ID = '__book_meta__';
+const TAG_FOLDER_SYNC_ID = '__tag_folders__';
+
+function isSyncMetaEntry(entry) {
+  const id = String(entry && entry.id || '');
+  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID;
+}
 
 function buildBookMetaSyncEntry() {
   return {
@@ -573,6 +616,70 @@ function buildBookMetaSyncEntry() {
     updatedAt: new Date().toISOString(),
     isBookMeta: true
   };
+}
+
+function getTagFolders() {
+  try {
+    const stored = localStorage.getItem(TAG_FOLDERS_KEY);
+    if (!stored) return {};
+    return cleanTagFolders(JSON.parse(stored));
+  } catch(e) { return {}; }
+}
+
+function setTagFolders(folders, options) {
+  localStorage.setItem(TAG_FOLDERS_KEY, JSON.stringify(cleanTagFolders(folders)));
+  if (!options || options.sync !== false) {
+    markSyncPending(true);
+    scheduleCloudSync(0);
+  }
+}
+
+function cleanTagFolders(folders) {
+  const clean = {};
+  if (!folders || typeof folders !== 'object' || Array.isArray(folders)) return clean;
+  Object.keys(folders).forEach(function(name) {
+    const folderName = String(name || '').trim();
+    const tags = cleanTagList(folders[name]);
+    if (folderName && tags.length) clean[folderName] = tags;
+  });
+  return clean;
+}
+
+function buildTagFolderSyncEntry() {
+  return {
+    id: TAG_FOLDER_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getTagFolders()),
+    tags: [],
+    drawings: [],
+    images: [],
+    createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
+    isTagFolders: true
+  };
+}
+
+function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
+  if (!cloudEntry) return;
+  let cloudFolders;
+  try {
+    cloudFolders = JSON.parse(cloudEntry.content || '{}');
+  } catch(e) { return; }
+  const cloud = cleanTagFolders(cloudFolders);
+  const local = getTagFolders();
+  const merged = {};
+  Object.keys(cloud).forEach(function(name) {
+    merged[name] = cleanTagList(cloud[name]);
+  });
+  Object.keys(local).forEach(function(name) {
+    if (preferLocal || !Object.prototype.hasOwnProperty.call(merged, name)) {
+      merged[name] = cleanTagList(local[name]);
+    } else {
+      merged[name] = cleanTagList([...(merged[name] || []), ...(local[name] || [])]);
+    }
+  });
+  setTagFolders(merged, {sync:false});
 }
 
 // クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
@@ -738,7 +845,7 @@ function load() {
   });
   setDeletedIds(deletedIds);
   setTombstones([...getTombstones(), ...tombstoneCandidates]);
-  entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  entries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
   const idRepair = repairMissingIds(entries);
   entries = idRepair.list;
   const mediaMigrated = migrateImagesIntoDrawings();
@@ -839,7 +946,7 @@ async function showSyncDiagnostics() {
   try {
     showSyncStatus('Checking cloud...');
     const cloud = await fetchCloudEntries();
-    const active = cloud.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !isDeletedEntry(e)).length;
+    const active = cloud.filter(e => e && !isSyncMetaEntry(e) && !isDeletedEntry(e)).length;
     const deleted = cloud.filter(isDeletedEntry).length;
     const cloudMedia = mediaSummary(cloud);
     cloudLine = 'Cloud has ' + active + ' notes. Deleted notes remembered: ' + deleted + '.';
@@ -889,8 +996,8 @@ async function showSyncDiagnostics() {
 function buildCloudPayloadBody() {
   migrateImagesIntoDrawings();
   const deletedIds = getDeletedIds();
-  const activeEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
-  return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry()]);
+  const activeEntries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry(), buildTagFolderSyncEntry()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -945,7 +1052,7 @@ function entryMedia(entry) {
 function mediaSummary(list) {
   const summary = {entriesWithMedia:0, mediaItems:0, maxMediaChars:0};
   (Array.isArray(list) ? list : []).forEach(function(entry) {
-    if (!entry || String(entry.id) === BOOK_META_SYNC_ID || isDeletedEntry(entry)) return;
+    if (!entry || isSyncMetaEntry(entry) || isDeletedEntry(entry)) return;
     const media = entryMedia(entry);
     if (!media.length) return;
     summary.entriesWithMedia += 1;
@@ -1081,7 +1188,7 @@ function mergeCloudDeletedEntries(cloudEntries) {
   });
   setDeletedIds(deletedIds);
   setTombstones([...getTombstones(), ...tombstones]);
-  entries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+  entries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   return {deletedIds, cloudDeletedIds};
 }
@@ -1162,7 +1269,7 @@ async function syncToCloud(options) {
     if (await shrinkOversizedMedia()) render();
     const deletedIds = getDeletedIds();
     const body = buildCloudPayloadBody();
-    const expectedEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+    const expectedEntries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
     if (manual || hasPendingSync()) showSyncStatus('Saving to cloud...');
     try {
       await postCloudPayload(body, 'cors');
@@ -1199,12 +1306,14 @@ async function loadFromCloud(options) {
     // 固定タグ(book_meta)の同期用エントリを取り出してローカルへ統合
     const preferLocal = hasPendingSync();
     const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
+    const cloudTagFolderEntry = cloudRaw.find(e => e && String(e.id) === TAG_FOLDER_SYNC_ID);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
-    const cloud = cloudRaw.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID);
+    mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
+    const cloud = cloudRaw.filter(e => e && !isSyncMetaEntry(e));
 
     const {deletedIds, cloudDeletedIds} = mergeCloudDeletedEntries(cloud);
     const filtered = cloud.filter(e=>!deletedIds.has(String(e.id))&&!isDeletedEntry(e));
-    const localEntries = entries.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
+    const localEntries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
     const hadStraySentinel = localEntries.length !== entries.length;
     const localMap = Object.fromEntries(localEntries.map(e=>[String(e.id),e]));
     const cloudMap = Object.fromEntries(filtered.map(e=>[String(e.id),e]));
@@ -1262,6 +1371,40 @@ function allTags() {
   return [...s];
 }
 
+function allTagSet() {
+  return new Set(allTags());
+}
+
+function tagFolderNames() {
+  return Object.keys(getTagFolders()).sort((a,b)=>a.localeCompare(b,'ja'));
+}
+
+function assignedFolderTags() {
+  const s = new Set();
+  const folders = getTagFolders();
+  Object.keys(folders).forEach(name => folders[name].forEach(tag => s.add(tag)));
+  return s;
+}
+
+function activeFolderTags() {
+  if (!activeTagFolder) return [];
+  const tags = allTagSet();
+  return cleanTagList(getTagFolders()[activeTagFolder]).filter(tag => tags.has(tag));
+}
+
+function entryMatchesActiveTagFilter(entry) {
+  if (activeTag) return entryHasTag(entry, activeTag);
+  const folderTags = activeFolderTags();
+  if (folderTags.length) return folderTags.some(tag => entryHasTag(entry, tag));
+  return true;
+}
+
+function activeTagFilterLabel() {
+  if (activeTag) return `選択タグ「${esc(activeTag)}」のみ`;
+  if (activeTagFolder) return `フォルダ「${esc(activeTagFolder)}」のみ`;
+  return '選択タグのみ';
+}
+
 function bookGroups() {
   const map = new Map();
   entries.forEach(e => {
@@ -1275,7 +1418,7 @@ function bookGroups() {
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
   return entries.filter(e=>{
-    if(activeTag && !entryHasTag(e, activeTag)) return false;
+    if(!entryMatchesActiveTagFilter(e)) return false;
     return entryMatchesSearch(e, q);
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
@@ -1322,8 +1465,8 @@ function expandedRecordsForGroup(group) {
   let list = entries.filter(function(entry) {
     return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
   });
-  if (expandedRecordScope === 'activeTag' && activeTag) {
-    list = list.filter(function(entry) { return entryHasTag(entry, activeTag); });
+  if (expandedRecordScope === 'activeTag' && (activeTag || activeTagFolder)) {
+    list = list.filter(entryMatchesActiveTagFilter);
   }
   return sortExpandedRecords(list);
 }
@@ -1331,16 +1474,48 @@ function expandedRecordsForGroup(group) {
 // ── Render ─────────────────────────────────────────
 function render() {
   const tags=allTags(),groups=bookGroups();
-  document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ`;
+  const folders = getTagFolders();
+  if (activeTag && !tags.includes(activeTag)) activeTag = '';
+  if (activeTagFolder && !cleanTagList(folders[activeTagFolder]).some(tag => tags.includes(tag))) activeTagFolder = '';
+  const folderCount = tagFolderNames().length;
+  document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
   const themeSelect = document.getElementById('shelfThemeSelect');
   if (themeSelect) themeSelect.value = shelfTheme;
 
   const wrap=document.getElementById('tagFilters');
-  wrap.innerHTML=`<button class="tag-btn${activeTag===''?' active':''}" onclick="setTag('')">すべて</button>`;
-  tags.forEach(t=>{const b=document.createElement('button');b.className=`tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;b.textContent=t;b.onclick=()=>setTag(t);wrap.appendChild(b);});
+  wrap.innerHTML=`<button class="tag-btn${activeTag===''&&activeTagFolder===''?' active':''}" onclick="setTag('')">すべて</button>`;
+  const assigned = assignedFolderTags();
+  const tagSet = new Set(tags);
+  tagFolderNames().forEach(function(name) {
+    const folderTags = cleanTagList(folders[name]).filter(tag => tagSet.has(tag));
+    if (!folderTags.length) return;
+    const group = document.createElement('span');
+    group.className = 'tag-folder-group';
+    const folderBtn = document.createElement('button');
+    folderBtn.className = 'tag-folder-btn' + (activeTagFolder===name ? ' active' : '');
+    folderBtn.type = 'button';
+    folderBtn.textContent = '📁 ' + name + ' ' + folderTags.length;
+    folderBtn.onclick = () => setTagFolder(name);
+    group.appendChild(folderBtn);
+    if (activeTagFolder === name) {
+      const inner = document.createElement('span');
+      inner.className = 'tag-folder-inner-tags';
+      folderTags.forEach(function(tag) {
+        const b = document.createElement('button');
+        b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
+        b.type = 'button';
+        b.textContent = tag;
+        b.onclick = () => setTag(tag);
+        inner.appendChild(b);
+      });
+      group.appendChild(inner);
+    }
+    wrap.appendChild(group);
+  });
+  tags.filter(tag => !assigned.has(tag)).forEach(t=>{const b=document.createElement('button');b.className=`tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;b.textContent=t;b.onclick=()=>setTag(t);wrap.appendChild(b);});
 
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
-  if(searchQuery||activeTag){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
+  if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
   if(!list.length){container.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
 
@@ -1367,15 +1542,16 @@ function render() {
 
 function expandedRecordsHTML(group) {
   const records = expandedRecordsForGroup(group);
-  const scopeValue = activeTag ? expandedRecordScope : 'all';
-  const activeTagLabel = activeTag ? `選択タグ「${esc(activeTag)}」のみ` : '選択タグのみ';
+  const hasTagFilter = !!(activeTag || activeTagFolder);
+  const scopeValue = hasTagFilter ? expandedRecordScope : 'all';
+  const activeTagLabel = activeTagFilterLabel();
   return `
     <div class="record-view-controls">
       <select class="record-view-select" onchange="setExpandedRecordSort(this.value)">
         <option value="new"${expandedRecordSort==='new'?' selected':''}>新しい順（ページ大）</option>
         <option value="old"${expandedRecordSort==='old'?' selected':''}>古い順（ページ小）</option>
       </select>
-      <select class="record-view-select" onchange="setExpandedRecordScope(this.value)" ${activeTag?'':'disabled'}>
+      <select class="record-view-select" onchange="setExpandedRecordScope(this.value)" ${hasTagFilter?'':'disabled'}>
         <option value="all"${scopeValue==='all'?' selected':''}>すべての記録</option>
         <option value="activeTag"${scopeValue==='activeTag'?' selected':''}>${activeTagLabel}</option>
       </select>
@@ -1534,7 +1710,117 @@ function closeViewer() { document.getElementById('viewerOverlay').classList.remo
 
 function onSearch(v) { searchQuery=v; document.getElementById('searchClear').style.display=v?'block':'none'; render(); }
 function clearSearch() { document.getElementById('searchInput').value=''; onSearch(''); }
-function setTag(t) { activeTag=t; render(); }
+function setTag(t) {
+  const keepFolder = t && activeFolderTags().includes(t);
+  activeTag=t;
+  if (!keepFolder) activeTagFolder='';
+  render();
+}
+
+function setTagFolder(name) {
+  activeTag = '';
+  activeTagFolder = activeTagFolder === name ? '' : name;
+  render();
+}
+
+function jsArg(value) {
+  return JSON.stringify(String(value || '')).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026').replace(/'/g,'\\u0027');
+}
+
+function tagFolderOptions(excludedTags) {
+  const excluded = new Set(excludedTags || []);
+  const tags = allTags().filter(tag => !excluded.has(tag)).sort((a,b)=>a.localeCompare(b,'ja'));
+  if (!tags.length) return '<option value="">タグなし</option>';
+  return '<option value="">タグを選択</option>' + tags.map(tag => `<option value="${esc(tag)}">${esc(tag)}</option>`).join('');
+}
+
+function openTagFolders() {
+  renderTagFolderManager();
+  document.getElementById('tagFolderOverlay').classList.add('open');
+}
+
+function closeTagFolders() {
+  document.getElementById('tagFolderOverlay').classList.remove('open');
+}
+
+function renderTagFolderManager() {
+  const mainSelect = document.getElementById('tagFolderTagSelect');
+  if (mainSelect) mainSelect.innerHTML = tagFolderOptions([]);
+  const list = document.getElementById('tagFolderList');
+  if (!list) return;
+  const folders = getTagFolders();
+  const names = tagFolderNames();
+  if (!names.length) {
+    list.innerHTML = '<div class="tag-folder-empty">フォルダはまだありません</div>';
+    return;
+  }
+  list.innerHTML = names.map(function(name, idx) {
+    const tags = cleanTagList(folders[name]);
+    const chips = tags.map(tag => `
+      <span class="tag-folder-chip">${esc(tag)}
+        <button type="button" onclick='removeTagFromFolder(${jsArg(name)},${jsArg(tag)})'>×</button>
+      </span>`).join('');
+    const addOptions = tagFolderOptions(tags);
+    return `
+      <div class="tag-folder-card">
+        <div class="tag-folder-card-header">
+          <div class="tag-folder-card-title">📁 ${esc(name)}</div>
+          <button type="button" class="btn-cancel" onclick='deleteTagFolder(${jsArg(name)})'>削除</button>
+        </div>
+        <div class="tag-folder-chip-row">${chips}</div>
+        <div class="tag-folder-add-line">
+          <select id="tagFolderAdd${idx}">${addOptions}</select>
+          <button type="button" class="btn-sub" onclick='addSelectedTagToFolder(${jsArg(name)},${idx})'>タグ追加</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addTagFolderFromForm() {
+  const nameInput = document.getElementById('tagFolderName');
+  const tagSelect = document.getElementById('tagFolderTagSelect');
+  const name = (nameInput.value || '').trim();
+  const tag = tagSelect.value;
+  if (!name || !tag) { showToast('フォルダ名とタグを選んでください'); return; }
+  const folders = getTagFolders();
+  folders[name] = cleanTagList([...(folders[name] || []), tag]);
+  setTagFolders(folders);
+  tagSelect.value = '';
+  renderTagFolderManager();
+  render();
+  showToast('タグフォルダを保存しました');
+}
+
+function addSelectedTagToFolder(name, idx) {
+  const select = document.getElementById('tagFolderAdd' + idx);
+  const tag = select && select.value;
+  if (!tag) return;
+  const folders = getTagFolders();
+  folders[name] = cleanTagList([...(folders[name] || []), tag]);
+  setTagFolders(folders);
+  renderTagFolderManager();
+  render();
+}
+
+function removeTagFromFolder(name, tag) {
+  const folders = getTagFolders();
+  folders[name] = cleanTagList(folders[name]).filter(item => item !== tag);
+  if (!folders[name].length) delete folders[name];
+  if (activeTagFolder === name && !folders[name]) activeTagFolder = '';
+  if (activeTag === tag) activeTag = '';
+  setTagFolders(folders);
+  renderTagFolderManager();
+  render();
+}
+
+function deleteTagFolder(name) {
+  const folders = getTagFolders();
+  delete folders[name];
+  if (activeTagFolder === name) activeTagFolder = '';
+  setTagFolders(folders);
+  renderTagFolderManager();
+  render();
+}
 
 function onBookInput(val) {
   const list=document.getElementById('suggestList');
@@ -2141,10 +2427,11 @@ function showToast(msg) {
   clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeDrawingModal();closeViewer();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeTagFolders();closeDrawingModal();closeViewer();}});
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
+document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
 document.addEventListener('click',e=>{
   if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
@@ -2155,7 +2442,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v23';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v24';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
