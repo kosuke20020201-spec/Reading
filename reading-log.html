@@ -450,7 +450,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v28';
+const APP_VERSION   = 'media-autosave-sync v29';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1612,6 +1612,16 @@ function render() {
         b.onclick = () => setTagFolder(path);
         inner.appendChild(b);
       });
+      if (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, name)) {
+        directFolderTags(activeTagFolder).filter(tag => tagSet.has(tag)).forEach(function(tag) {
+          const b = document.createElement('button');
+          b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
+          b.type = 'button';
+          b.textContent = tag;
+          b.onclick = () => setTag(tag);
+          inner.appendChild(b);
+        });
+      }
       group.appendChild(inner);
     }
     wrap.appendChild(group);
@@ -2642,7 +2652,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v28';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v29';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
