@@ -1750,8 +1750,22 @@ function renderDrawingGallery() {
     </div>`).join('');
   gallery.innerHTML=drawingHTML;
 }
-function deleteTempDrawing(i) { currentDrawings.splice(i,1); mediaDirty=true; renderDrawingGallery(); }
+function deleteTempDrawing(i) {
+  currentDrawings.splice(i,1);
+  mediaDirty=true;
+  renderDrawingGallery();
+  if(persistEditingMedia()) showToast('画像を削除しました');
+}
 function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery(); }
+function persistEditingMedia() {
+  if(editingId===null||editingId===undefined) return false;
+  const nowIso = new Date().toISOString();
+  entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
+  mediaDirty=false;
+  persist();
+  render();
+  return true;
+}
 function openTempViewer(kind, idx) {
   const list = kind === 'images' ? currentImages : currentDrawings;
   const src = list && list[parseInt(idx)];
@@ -1808,7 +1822,8 @@ async function addImageAttachment(ev) {
     currentDrawings.push(dataUrl);
     mediaDirty=true;
     renderDrawingGallery();
-    showToast('🖼 画像を保存しました');
+    if(persistEditingMedia()) showToast('🖼 画像を保存しました');
+    else showToast('🖼 画像を追加しました。最後に保存してください');
   } catch(e) {
     console.warn('Image attachment failed:',e);
     showToast('画像を追加できませんでした');
@@ -1969,7 +1984,6 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
 function saveDrawing() {
   const isImage = editingMediaKind === 'images';
   const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,250,0.45);
-  const nowIso = new Date().toISOString();
   mediaDirty=true;
   if(isImage){
     if(editingDrawingIndex!==null) currentDrawings[editingDrawingIndex]=dataUrl;
@@ -1982,11 +1996,7 @@ function saveDrawing() {
     currentDrawings.push(dataUrl);
     showToast('🎨 スケッチを保存しました');
   }
-  if(editingId!==null&&editingId!==undefined){
-    entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
-    persist();
-    render();
-  }
+  if(editingId!==null&&editingId!==undefined) persistEditingMedia();
   renderDrawingGallery();
   closeDrawingModal();
 }
@@ -2064,7 +2074,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v19';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v20';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
