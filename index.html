@@ -920,13 +920,13 @@ function mediaTime(entry) {
 function mergeEntryMedia(cloudEntry, localEntry) {
   const cloudMedia = entryMedia(cloudEntry);
   const localMedia = entryMedia(localEntry);
-  if (!cloudMedia.length) return localMedia;
-  if (!localMedia.length) return cloudMedia;
   const cloudMediaTime = mediaTime(cloudEntry);
   const localMediaTime = mediaTime(localEntry);
   if (cloudMediaTime || localMediaTime) {
     if (cloudMediaTime !== localMediaTime) return cloudMediaTime > localMediaTime ? cloudMedia : localMedia;
   }
+  if (!cloudMedia.length) return localMedia;
+  if (!localMedia.length) return cloudMedia;
   const merged = localMedia.slice();
   cloudMedia.forEach(src=>{ if(!merged.includes(src)) merged.push(src); });
   return merged;
@@ -1064,7 +1064,7 @@ function mediaArraysEqual(a,b) {
 }
 
 async function verifyCloudMedia(expectedEntries) {
-  const expected = (Array.isArray(expectedEntries) ? expectedEntries : []).filter(entry=>entryMedia(entry).length);
+  const expected = (Array.isArray(expectedEntries) ? expectedEntries : []).filter(entry=>entryMedia(entry).length || mediaTime(entry));
   if (!expected.length) return true;
   for (let attempt = 0; attempt < 3; attempt++) {
     const cloudRaw = await fetchCloudEntries();
@@ -2049,7 +2049,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v17';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v18';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
