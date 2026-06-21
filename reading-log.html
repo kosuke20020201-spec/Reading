@@ -234,7 +234,7 @@
 <div class="container">
   <header>
     <div class="header-left">
-      <p class="header-eyebrow">Reading Journal <span style="background:#ef4444;color:white;font-size:0.55rem;padding:0.1rem 0.4rem;border-radius:4px;letter-spacing:0;text-transform:none">v3-FIXED</span></p>
+      <p class="header-eyebrow">Reading Journal <span id="appVersionBadge" style="background:#ef4444;color:white;font-size:0.55rem;padding:0.1rem 0.4rem;border-radius:4px;letter-spacing:0;text-transform:none">loading</span></p>
       <h1 class="header-title">読書ノート</h1>
       <p class="header-meta" id="headerMeta"></p>
     </div>
@@ -395,6 +395,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
+const APP_VERSION   = 'media-autosave-sync v21';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -856,6 +857,7 @@ async function showSyncDiagnostics() {
   }
   alert([
     'Sync help',
+    'App version: ' + APP_VERSION,
     statusLine,
     nextStep,
     '',
@@ -2074,7 +2076,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v20';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v21';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -2110,6 +2112,7 @@ window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 
+document.getElementById('appVersionBadge').textContent = APP_VERSION;
 load(); migrateOldFixedTags(); render(); updateSyncPanel(); loadFromCloud();
 </script>
 </body>
