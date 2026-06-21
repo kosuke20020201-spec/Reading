@@ -408,12 +408,6 @@ const SYNC_RETRY_MS = 15000;
 const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
 const MEDIA_IMAGE_MAX_CHARS = 42000;
-// Google Sheetsの1セルは約50,000文字までしか保存できない。
-// drawings配列は1セルにまとめて書き込まれるため、1枚あたりの上限(MEDIA_IMAGE_MAX_CHARS)だけでなく
-// 記録1件あたりの合計サイズも制限しないと、画像2枚目以降でクラウド側の保存に失敗し、
-// 端末間で画像が同期されなくなる。
-const MEDIA_ENTRY_MAX_CHARS = 45000;
-const MEDIA_IMAGE_MIN_CHARS = 6000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
@@ -911,9 +905,23 @@ function mergedMediaList(chosen, localEntry, key) {
   return localEntry && Array.isArray(localEntry[key]) ? localEntry[key] : [];
 }
 
+function mediaList(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value !== 'string') return [];
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith('data:image/')) return [trimmed];
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    if (typeof parsed === 'string' && parsed.startsWith('data:image/')) return [parsed];
+  } catch {}
+  return [];
+}
+
 function entryMedia(entry) {
-  const drawings = Array.isArray(entry&&entry.drawings) ? entry.drawings.filter(Boolean) : [];
-  const images = Array.isArray(entry&&entry.images) ? entry.images.filter(Boolean) : [];
+  const drawings = mediaList(entry&&entry.drawings);
+  const images = mediaList(entry&&entry.images);
   const merged = drawings.slice();
   images.forEach(src=>{ if(!merged.includes(src)) merged.push(src); });
   return merged;
@@ -943,8 +951,8 @@ function migrateImagesIntoDrawings() {
   entries = entries.map(function(entry) {
     if (!entry) return entry;
     const merged = entryMedia(entry);
-    const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
-    if (!images.length && merged.length === (Array.isArray(entry.drawings) ? entry.drawings.length : 0)) return entry;
+    const images = mediaList(entry.images);
+    if (!images.length && merged.length === mediaList(entry.drawings).length && Array.isArray(entry.drawings)) return entry;
     changed = true;
     return {...entry, drawings: merged, images: [], mediaUpdatedAt: entry.mediaUpdatedAt || entry.updatedAt || new Date().toISOString()};
   });
@@ -973,71 +981,37 @@ function imageToCompressedDataUrl(img, maxSide, quality, maxChars) {
   return dataUrl;
 }
 
-function recompressDataUrl(src, maxChars) {
+function recompressDataUrl(src) {
   return new Promise(function(resolve,reject) {
     const img=new Image();
     img.onerror=()=>reject(new Error('Image load failed'));
     img.onload=()=>{
-      try { resolve(imageToCompressedDataUrl(img, MEDIA_IMAGE_MAX_SIDE, MEDIA_IMAGE_QUALITY, maxChars || MEDIA_IMAGE_MAX_CHARS)); }
+      try { resolve(imageToCompressedDataUrl(img, MEDIA_IMAGE_MAX_SIDE, MEDIA_IMAGE_QUALITY, MEDIA_IMAGE_MAX_CHARS)); }
       catch(e) { reject(e); }
     };
     img.src=src;
   });
 }
 
-// 編集中の記録(list)に新規/編集中の画像(excludeIndexは除外)を1枚追加・更新する際に
-// 残っている「記録1件あたりの合計サイズ」枠を返す。1枚上限とこの関数の戻り値の小さい方を使う。
-function remainingMediaBudget(list, excludeIndex) {
-  let used = 0;
-  (Array.isArray(list) ? list : []).forEach(function(src, i) {
-    if (excludeIndex !== null && excludeIndex !== undefined && i === excludeIndex) return;
-    if (typeof src === 'string') used += src.length;
-  });
-  return Math.max(MEDIA_IMAGE_MIN_CHARS, MEDIA_ENTRY_MAX_CHARS - used);
-}
-
 async function shrinkOversizedMedia() {
   let changed = migrateImagesIntoDrawings();
   for (const entry of entries) {
-    if (!entry || !Array.isArray(entry.drawings) || !entry.drawings.length) continue;
-    const list = entry.drawings.slice();
-
-    // 1枚あたりの上限を超えている画像をまず個別に圧縮
-    for (let i = 0; i < list.length; i++) {
-      const src = list[i];
+    if (!entry) continue;
+    const media = entryMedia(entry);
+    const next = [];
+    for (const src of media) {
       if (typeof src === 'string' && src.startsWith('data:image/') && src.length > MEDIA_IMAGE_MAX_CHARS) {
         try {
-          list[i] = await recompressDataUrl(src, MEDIA_IMAGE_MAX_CHARS);
+          next.push(await recompressDataUrl(src));
           changed = true;
-        } catch { /* このまま保持 */ }
+        } catch {
+          next.push(src);
+        }
+      } else {
+        next.push(src);
       }
     }
-
-    // 個別には上限内でも、合計でSheetsの1セル上限を超える場合は
-    // 一番大きい画像から順にさらに圧縮していく
-    let total = list.reduce((sum,s)=>sum+(typeof s==='string'?s.length:0),0);
-    let guard = 0;
-    while (total > MEDIA_ENTRY_MAX_CHARS && guard < 20) {
-      guard++;
-      let biggestIdx = -1, biggestLen = 0;
-      list.forEach(function(s,i){
-        const len = typeof s==='string' ? s.length : 0;
-        if (len > biggestLen) { biggestLen = len; biggestIdx = i; }
-      });
-      if (biggestIdx === -1 || biggestLen <= MEDIA_IMAGE_MIN_CHARS) break;
-      const over = total - MEDIA_ENTRY_MAX_CHARS;
-      const target = Math.max(MEDIA_IMAGE_MIN_CHARS, biggestLen - Math.ceil(over * 1.15));
-      try {
-        list[biggestIdx] = await recompressDataUrl(list[biggestIdx], target);
-        changed = true;
-      } catch { break; }
-      total = list.reduce((sum,s)=>sum+(typeof s==='string'?s.length:0),0);
-    }
-
-    if (list.some((s,i)=>s!==entry.drawings[i])) {
-      entry.drawings = list;
-      entry.mediaUpdatedAt = new Date().toISOString();
-    }
+    entry.drawings = next;
     entry.images = [];
   }
   if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -1796,7 +1770,7 @@ function annotateEntryMedia(entryId, idx) {
   openDrawingModal(parseInt(idx),'images');
 }
 
-function compressImageFile(file, maxChars) {
+function compressImageFile(file) {
   return new Promise(function(resolve,reject) {
     if(!file||!file.type||!file.type.startsWith('image/')) { reject(new Error('Not an image')); return; }
     const reader=new FileReader();
@@ -1816,7 +1790,7 @@ function compressImageFile(file, maxChars) {
         const ctx=canvas.getContext('2d');
         ctx.fillStyle='white'; ctx.fillRect(0,0,cw,ch);
         ctx.drawImage(img,0,0,cw,ch);
-        resolve(canvasToJpeg(canvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,maxChars||MEDIA_IMAGE_MAX_CHARS));
+        resolve(canvasToJpeg(canvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS));
       };
       img.src=reader.result;
     };
@@ -1830,8 +1804,7 @@ async function addImageAttachment(ev) {
   input.value='';
   if(!file)return;
   try {
-    const budget=Math.min(MEDIA_IMAGE_MAX_CHARS, remainingMediaBudget(currentDrawings, null));
-    const dataUrl=await compressImageFile(file, budget);
+    const dataUrl=await compressImageFile(file);
     currentDrawings.push(dataUrl);
     mediaDirty=true;
     renderDrawingGallery();
@@ -1995,8 +1968,7 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
 
 function saveDrawing() {
   const isImage = editingMediaKind === 'images';
-  const budget = Math.min(MEDIA_IMAGE_MAX_CHARS, remainingMediaBudget(currentDrawings, editingDrawingIndex));
-  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,budget) : canvasToJpeg(dCanvas,250,0.45,budget);
+  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,250,0.45);
   const nowIso = new Date().toISOString();
   mediaDirty=true;
   if(isImage){
@@ -2092,18 +2064,8 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v18';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v19';
 if ('serviceWorker' in navigator) {
-  // 新しいService Workerが有効化された瞬間に、今開いているページを1回だけ
-  // 自動リロードする。これがないと、古いキャッシュ/古いJSのまま動き続け、
-  // 「同期はクラウド側まで届いているのに画面には反映されない」状態になりうる。
-  let swReloaded = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (swReloaded) return;
-    swReloaded = true;
-    location.reload();
-  });
-
   (async () => {
     try {
       if (!localStorage.getItem(SW_CLEANUP_FLAG)) {
@@ -2119,15 +2081,11 @@ if ('serviceWorker' in navigator) {
       }
       // updateViaCache:'none' により、sw.js自体はブラウザ/CDNのHTTPキャッシュを
       // 経由せず毎回取得され、新しいバージョンへの切り替えが確実に行われる。
-      const reg = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
-      // アプリをバックグラウンドから復帰させたとき（ホーム画面アイコンの再起動など）にも
-      // 明示的に更新チェックを走らせる。これでWebAPKを開きっぱなしにしていても
-      // 新しいsw.js/アプリ本体に切り替わりやすくなる。
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) reg.update().catch(() => {});
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(err => {
+        console.warn('Service worker registration failed:', err);
       });
     } catch (err) {
-      console.warn('Service worker registration failed:', err);
+      console.warn('Service worker cleanup failed:', err);
     }
   })();
 }
