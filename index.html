@@ -211,11 +211,13 @@
   .tag-pill-free { }
   .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
   .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
-  .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; }
+  #tagFolderOverlay .modal { max-height: 96vh; }
+  #tagFolderOverlay .modal-body { min-height: 0; }
+  .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; flex:0 0 auto; }
   .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
   .tag-bulk-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:0.5rem; align-items:center; }
   .tag-bulk-toolbar input { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
-  .tag-bulk-list { display:flex; flex-wrap:wrap; align-content:flex-start; gap:0.4rem; height:clamp(22rem, 50vh, 34rem); overflow:auto; padding:0.65rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
+  .tag-bulk-list { display:flex; flex-wrap:wrap; align-content:flex-start; gap:0.4rem; flex:0 0 clamp(24rem, 58vh, 42rem); min-height:24rem; overflow:auto; padding:0.65rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
   .tag-bulk-chip { border:1px solid var(--stone-200); background:white; color:var(--stone-700); border-radius:999px; padding:0.28rem 0.68rem; font:inherit; font-size:0.72rem; font-weight:700; cursor:pointer; }
   .tag-bulk-chip.selected { background:var(--stone-800); border-color:var(--stone-800); color:white; }
   .tag-bulk-chip.assigned:not(.selected) { border-color:#fed7aa; color:#9a3412; background:#fff7ed; }
@@ -238,7 +240,7 @@
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
     .tag-folder-create, .tag-folder-add-line, .tag-bulk-toolbar { grid-template-columns: 1fr; }
-    .tag-bulk-list { height:52vh; min-height:18rem; }
+    .tag-bulk-list { flex-basis:58vh; min-height:22rem; }
     .card-actions { opacity: 1; }
     .bookshelf-main { gap: 0.55rem 0.4rem; }
     .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
@@ -448,7 +450,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v27';
+const APP_VERSION   = 'media-autosave-sync v28';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2640,7 +2642,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v27';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v28';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

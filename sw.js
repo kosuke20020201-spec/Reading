@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260621-tag-folders-unfiled-1';
+const CACHE_NAME = 'reading-note-pwa-20260621-tag-picker-height-1';
 const APP_SHELL = [
   './',
   './index.html',
