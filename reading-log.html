@@ -450,7 +450,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v29';
+const APP_VERSION   = 'media-autosave-sync v30';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -464,6 +464,9 @@ const SYNC_RETRY_MS = 15000;
 const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
 const MEDIA_IMAGE_MAX_CHARS = 42000;
+const MEDIA_SKETCH_MAX_SIDE = 560;
+const MEDIA_SKETCH_QUALITY = 0.78;
+const MEDIA_SKETCH_MAX_CHARS = 42000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
@@ -2557,7 +2560,7 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
 
 async function saveDrawing() {
   const isImage = editingMediaKind === 'images';
-  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,250,0.45);
+  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,MEDIA_SKETCH_MAX_SIDE,MEDIA_SKETCH_QUALITY,MEDIA_SKETCH_MAX_CHARS);
   mediaDirty=true;
   if(isImage){
     if(editingDrawingIndex!==null) currentDrawings[editingDrawingIndex]=dataUrl;
@@ -2652,7 +2655,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v29';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v30';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
