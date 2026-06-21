@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260621-version-display-1';
+const CACHE_NAME = 'reading-note-pwa-20260621-media-force-sync-1';
 const APP_SHELL = [
   './',
   './index.html',

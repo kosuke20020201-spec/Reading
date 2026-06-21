@@ -395,7 +395,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v21';
+const APP_VERSION   = 'media-autosave-sync v22';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -436,7 +436,7 @@ const SPINE_THEMES = {
 };
 
 let entries = [], searchQuery = '', activeTag = '', editingId = null, pendingAiId = null;
-let currentDrawings = [], currentImages = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false;
+let currentDrawings = [], currentImages = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
@@ -1668,6 +1668,7 @@ function deleteEntry(id) {
 }
 
 function saveEntry() {
+  if(mediaProcessingCount>0){ alert('画像を処理中です。数秒待ってから保存してください。'); return; }
   const bookName = document.getElementById('fBook').value.trim();
   if(!bookName){ alert('本タイトルを入力してください'); return; }
   currentFixedTags = cleanTagList(currentFixedTags);
@@ -1707,6 +1708,7 @@ function saveEntry() {
   else { entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}); }
 
   persist(); closeModal(); render(); showToast('保存しました');
+  if(currentDrawings.length) triggerImmediateSync();
 }
 
 function renderFixedTagChips() {
@@ -1766,7 +1768,22 @@ function persistEditingMedia() {
   mediaDirty=false;
   persist();
   render();
+  triggerImmediateSync();
   return true;
+}
+function triggerImmediateSync() {
+  if (syncRetryTimer) clearTimeout(syncRetryTimer);
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    markSyncPending(true);
+    scheduleCloudSync(SYNC_RETRY_MS);
+    return;
+  }
+  if (syncInFlight) {
+    markSyncPending(true);
+    scheduleCloudSync(1200);
+    return;
+  }
+  syncToCloud({manual:true});
 }
 function openTempViewer(kind, idx) {
   const list = kind === 'images' ? currentImages : currentDrawings;
@@ -1819,16 +1836,19 @@ async function addImageAttachment(ev) {
   const file=input.files&&input.files[0];
   input.value='';
   if(!file)return;
+  mediaProcessingCount++;
   try {
     const dataUrl=await compressImageFile(file);
     currentDrawings.push(dataUrl);
     mediaDirty=true;
     renderDrawingGallery();
-    if(persistEditingMedia()) showToast('🖼 画像を保存しました');
+    if(persistEditingMedia()) showToast('🖼 画像を保存して同期中です');
     else showToast('🖼 画像を追加しました。最後に保存してください');
   } catch(e) {
     console.warn('Image attachment failed:',e);
     showToast('画像を追加できませんでした');
+  } finally {
+    mediaProcessingCount=Math.max(0,mediaProcessingCount-1);
   }
 }
 
@@ -2076,7 +2096,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v21';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v22';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
