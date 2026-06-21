@@ -450,7 +450,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v32';
+const APP_VERSION   = 'media-autosave-sync v33';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -460,6 +460,7 @@ const SYNC_PENDING_KEY = 'reading_log_sync_pending';
 const SYNC_LAST_OK_KEY = 'reading_log_sync_last_ok';
 const SYNC_LAST_ATTEMPT_KEY = 'reading_log_sync_last_attempt';
 const SYNC_LAST_ERROR_KEY = 'reading_log_sync_last_error';
+const DRAWING_DRAFT_KEY = 'reading_log_drawing_draft_v1';
 const SYNC_RETRY_MS = 15000;
 const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
@@ -505,7 +506,7 @@ let tagFolderSelectedTags = new Set();
 let tagFolderSearchQuery = '';
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
 if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
-let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
+let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
 
@@ -2385,6 +2386,67 @@ function openTempViewer(kind, idx) {
   document.getElementById('viewerOverlay').classList.add('open');
 }
 
+function drawingDraftContext() {
+  return {
+    editingId: editingId===null||editingId===undefined ? '' : String(editingId),
+    index: editingDrawingIndex===null||editingDrawingIndex===undefined ? 'new' : String(editingDrawingIndex),
+    kind: editingMediaKind
+  };
+}
+
+function getDrawingDraft() {
+  try {
+    const raw = localStorage.getItem(DRAWING_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearDrawingDraft() {
+  if (drawingDraftTimer) clearTimeout(drawingDraftTimer);
+  drawingDraftTimer = null;
+  localStorage.removeItem(DRAWING_DRAFT_KEY);
+  drawingDirty = false;
+}
+
+function saveDrawingDraftNow() {
+  if (!dCanvas || !dCtx) return;
+  try {
+    const draft = {
+      ...drawingDraftContext(),
+      dataUrl: dCanvas.toDataURL('image/png'),
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(DRAWING_DRAFT_KEY, JSON.stringify(draft));
+  } catch (e) {
+    console.warn('Drawing draft save failed:', e);
+  }
+}
+
+function queueDrawingDraftSave() {
+  drawingDirty = true;
+  if (drawingDraftTimer) clearTimeout(drawingDraftTimer);
+  drawingDraftTimer = setTimeout(saveDrawingDraftNow, 300);
+}
+
+function maybeRestoreDrawingDraft() {
+  const draft = getDrawingDraft();
+  if (!draft || !draft.dataUrl) return false;
+  const ctx = drawingDraftContext();
+  if (draft.editingId !== ctx.editingId || draft.index !== ctx.index || draft.kind !== ctx.kind) return false;
+  const img = new Image();
+  img.onload = function() {
+    setupDrawingCanvas(img.naturalWidth||img.width||500, img.naturalHeight||img.height||375);
+    dCtx.drawImage(img,0,0,dCanvas.width,dCanvas.height);
+    drawHistory=[]; saveDrawState();
+    drawingDirty = true;
+    showToast('Unsaved drawing restored');
+  };
+  img.src = draft.dataUrl;
+  return true;
+}
+
 function annotateEntryMedia(entryId, idx) {
   const entry=entries.find(e=>String(e.id)===String(entryId));
   if(!entry)return;
@@ -2459,6 +2521,7 @@ function openDrawingModal(editIndex, mediaKind) {
   editingDrawingIndex = (editIndex!==null&&editIndex!==undefined) ? editIndex : null;
   const isEdit = editingDrawingIndex!==null;
   const isImage = editingMediaKind === 'images';
+  drawingDirty = false;
   drawingBaseImageUrl = '';
   drawingBaseImage = null;
   document.getElementById('drawingModalTitle').textContent = isImage ? '🖼 画像に書き込み' : (isEdit ? '🎨 スケッチを編集' : '🎨 スケッチを描画');
@@ -2472,10 +2535,11 @@ function openDrawingModal(editIndex, mediaKind) {
     const source = isEdit ? sourceList[editingDrawingIndex] : '';
     if(source){
       drawingBaseImageUrl = source;
-      loadCanvasImage(source, isImage);
+      loadCanvasImage(source, isImage, maybeRestoreDrawingDraft);
     } else {
       setupDrawingCanvas(500,375);
       drawHistory=[]; saveDrawState();
+      maybeRestoreDrawingDraft();
     }
     drawMode='draw';
     document.getElementById('toolDraw').classList.add('active');
@@ -2488,7 +2552,13 @@ function openDrawingModal(editIndex, mediaKind) {
     dCanvas.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
   },50);
 }
-function closeDrawingModal() { document.getElementById('drawingOverlay').classList.remove('open'); isDrawing=false; }
+function closeDrawingModal(force) {
+  if (!force && drawingDirty && !confirm('保存していない描画があります。閉じますか？')) return false;
+  clearDrawingDraft();
+  document.getElementById('drawingOverlay').classList.remove('open');
+  isDrawing=false;
+  return true;
+}
 
 function setupDrawingCanvas(w,h) {
   const maxSide = editingMediaKind === 'images' ? 900 : 500;
@@ -2503,7 +2573,7 @@ function setupDrawingCanvas(w,h) {
   dCtx.fillStyle='white'; dCtx.fillRect(0,0,cw,ch);
 }
 
-function loadCanvasImage(src, keepAsBase) {
+function loadCanvasImage(src, keepAsBase, afterLoad) {
   const img=new Image();
   img.onload=()=>{
     const w=img.naturalWidth||img.width||500;
@@ -2512,6 +2582,7 @@ function loadCanvasImage(src, keepAsBase) {
     if(keepAsBase) drawingBaseImage = img;
     dCtx.drawImage(img,0,0,dCanvas.width,dCanvas.height);
     drawHistory=[]; saveDrawState();
+    if (typeof afterLoad === 'function') afterLoad();
   };
   img.src=src;
 }
@@ -2532,7 +2603,15 @@ function canvasPos(e) {
   };
 }
 
-function onPtrDown(e) { e.preventDefault(); isDrawing=true; saveDrawState(); const p=canvasPos(e); lastX=p.x; lastY=p.y; }
+function onPtrDown(e) {
+  e.preventDefault();
+  isDrawing=true;
+  if (dCanvas.setPointerCapture && e.pointerId!==undefined) {
+    try { dCanvas.setPointerCapture(e.pointerId); } catch {}
+  }
+  saveDrawState();
+  const p=canvasPos(e); lastX=p.x; lastY=p.y;
+}
 function onPtrMove(e) {
   if(!isDrawing) return; e.preventDefault();
   const p=canvasPos(e);
@@ -2557,8 +2636,13 @@ function onPtrMove(e) {
     dCtx.beginPath(); dCtx.moveTo(lastX,lastY); dCtx.lineTo(p.x,p.y); dCtx.stroke();
   }
   lastX=p.x; lastY=p.y;
+  queueDrawingDraftSave();
 }
-function onPtrUp() { isDrawing=false; }
+function onPtrUp() {
+  if (!isDrawing) return;
+  isDrawing=false;
+  queueDrawingDraftSave();
+}
 
 function saveDrawState() {
   drawHistory.push(dCanvas.toDataURL('image/png'));
@@ -2574,13 +2658,14 @@ function undoDrawing() {
     dCtx.clearRect(0,0,dCanvas.width,dCanvas.height);
     dCtx.fillStyle='white'; dCtx.fillRect(0,0,dCanvas.width,dCanvas.height);
     dCtx.drawImage(img,0,0,dCanvas.width,dCanvas.height);
+    queueDrawingDraftSave();
   };
   img.src=drawHistory[drawHistory.length-1];
 }
 
 function clearDrawing() {
   if(editingMediaKind==='images' && drawingBaseImageUrl){
-    loadCanvasImage(drawingBaseImageUrl,true);
+    loadCanvasImage(drawingBaseImageUrl,true,queueDrawingDraftSave);
     return;
   }
   resetDrawingToBlank();
@@ -2589,6 +2674,7 @@ function clearDrawing() {
 function resetDrawingToBlank() {
   dCtx.fillStyle='white'; dCtx.fillRect(0,0,dCanvas.width,dCanvas.height);
   drawHistory=[]; saveDrawState();
+  queueDrawingDraftSave();
 }
 
 function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
@@ -2636,7 +2722,7 @@ async function saveDrawing() {
     showToast(synced ? 'Image saved to cloud' : 'Image saved here. Sync pending.');
   }
   renderDrawingGallery();
-  closeDrawingModal();
+  closeDrawingModal(true);
 }
 
 async function handleAI(id,btn) {
@@ -2698,12 +2784,20 @@ function showToast(msg) {
   clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeAiModal();closeBookshelf();closeTagFolders();closeDrawingModal();closeViewer();}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('drawingOverlay').classList.contains('open')) {
+      closeDrawingModal();
+      return;
+    }
+    closeModal();closeAiModal();closeBookshelf();closeTagFolders();closeViewer();
+  }
+});
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
-document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeDrawingModal();});
+document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.addEventListener('click',e=>{
   if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
   if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
@@ -2713,7 +2807,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v32';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v33';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -2745,6 +2839,11 @@ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPro
 document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;banner.style.display='none';});
 document.getElementById('btnDismiss')?.addEventListener('click',()=>{banner.style.display='none';});
 window.addEventListener('appinstalled',()=>{banner.style.display='none';deferredPrompt=null;});
+window.addEventListener('beforeunload',e=>{
+  if(!drawingDirty) return;
+  e.preventDefault();
+  e.returnValue='';
+});
 window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });

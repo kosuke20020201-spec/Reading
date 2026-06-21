@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260621-sketch-edit-kinds-1';
+const CACHE_NAME = 'reading-note-pwa-20260621-drawing-draft-guard-1';
 const APP_SHELL = [
   './',
   './index.html',
