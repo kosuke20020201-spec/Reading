@@ -451,7 +451,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v34';
+const APP_VERSION   = 'media-autosave-sync v35';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -466,8 +466,8 @@ const SYNC_RETRY_MS = 15000;
 const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
 const MEDIA_IMAGE_MAX_CHARS = 48000;
-const MEDIA_SKETCH_MAX_SIDE = 720;
-const MEDIA_SKETCH_QUALITY = 0.86;
+const MEDIA_SKETCH_MAX_SIDE = 960;
+const MEDIA_SKETCH_QUALITY = 0.94;
 const MEDIA_SKETCH_MAX_CHARS = 48000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
@@ -1237,12 +1237,29 @@ function imageToCompressedDataUrl(img, maxSide, quality, maxChars) {
   return dataUrl;
 }
 
-function recompressDataUrl(src) {
+function imageToSketchDataUrl(img) {
+  const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h) throw new Error('Invalid image');
+  const canvas=document.createElement('canvas');
+  canvas.width=w;
+  canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='white';
+  ctx.fillRect(0,0,w,h);
+  ctx.drawImage(img,0,0,w,h);
+  return canvasToSketchDataUrl(canvas, MEDIA_SKETCH_MAX_SIDE, MEDIA_SKETCH_QUALITY, MEDIA_SKETCH_MAX_CHARS);
+}
+
+function recompressDataUrl(src, mediaKind) {
   return new Promise(function(resolve,reject) {
     const img=new Image();
     img.onerror=()=>reject(new Error('Image load failed'));
     img.onload=()=>{
-      try { resolve(imageToCompressedDataUrl(img, MEDIA_IMAGE_MAX_SIDE, MEDIA_IMAGE_QUALITY, MEDIA_IMAGE_MAX_CHARS)); }
+      try {
+        resolve(mediaKind === 'sketch'
+          ? imageToSketchDataUrl(img)
+          : imageToCompressedDataUrl(img, MEDIA_IMAGE_MAX_SIDE, MEDIA_IMAGE_QUALITY, MEDIA_IMAGE_MAX_CHARS));
+      }
       catch(e) { reject(e); }
     };
     img.src=src;
@@ -1256,10 +1273,13 @@ async function shrinkOversizedMedia() {
     const media = entryMedia(entry);
     const kinds = mediaKindList(entry);
     const next = [];
-    for (const src of media) {
-      if (typeof src === 'string' && src.startsWith('data:image/') && src.length > MEDIA_IMAGE_MAX_CHARS) {
+    for (let i=0; i<media.length; i++) {
+      const src = media[i];
+      const kind = normalizeMediaKind(kinds[i]);
+      const maxChars = kind === 'sketch' ? MEDIA_SKETCH_MAX_CHARS : MEDIA_IMAGE_MAX_CHARS;
+      if (typeof src === 'string' && src.startsWith('data:image/') && src.length > maxChars) {
         try {
-          next.push(await recompressDataUrl(src));
+          next.push(await recompressDataUrl(src, kind));
           changed = true;
         } catch {
           next.push(src);
@@ -2748,9 +2768,34 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
   return dataUrl;
 }
 
+function canvasToSketchDataUrl(sourceCanvas, maxSide, quality, maxChars) {
+  let side=maxSide, q=quality, best='';
+  for(let attempt=0; attempt<9; attempt++) {
+    const scale=Math.min(1,side/Math.max(sourceCanvas.width,sourceCanvas.height));
+    const out=document.createElement('canvas');
+    out.width=Math.max(1,Math.round(sourceCanvas.width*scale));
+    out.height=Math.max(1,Math.round(sourceCanvas.height*scale));
+    const ctx=out.getContext('2d');
+    ctx.fillStyle='white';
+    ctx.fillRect(0,0,out.width,out.height);
+    ctx.drawImage(sourceCanvas,0,0,out.width,out.height);
+
+    const png=out.toDataURL('image/png');
+    if(!maxChars || png.length<=maxChars) return png;
+
+    const jpeg=out.toDataURL('image/jpeg',q);
+    best=jpeg;
+    if(!maxChars || jpeg.length<=maxChars) return jpeg;
+
+    side=Math.max(320,Math.floor(side*0.86));
+    q=Math.max(0.62,q-0.035);
+  }
+  return best;
+}
+
 async function saveDrawing() {
   const isImage = editingMediaKind === 'images';
-  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,MEDIA_SKETCH_MAX_SIDE,MEDIA_SKETCH_QUALITY,MEDIA_SKETCH_MAX_CHARS);
+  const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToSketchDataUrl(dCanvas,MEDIA_SKETCH_MAX_SIDE,MEDIA_SKETCH_QUALITY,MEDIA_SKETCH_MAX_CHARS);
   mediaDirty=true;
   if(isImage){
     if(editingDrawingIndex!==null) {
@@ -2860,7 +2905,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v34';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v35';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

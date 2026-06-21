@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260621-rotate-media-edit-1';
+const CACHE_NAME = 'reading-note-pwa-20260621-max-sketch-quality-1';
 const APP_SHELL = [
   './',
   './index.html',
