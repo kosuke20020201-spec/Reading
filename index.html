@@ -395,7 +395,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v22';
+const APP_VERSION   = 'media-autosave-sync v23';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -828,16 +828,24 @@ async function manualSync() {
 
 async function showSyncDiagnostics() {
   const localDeleted = sortedDeletedIds(getDeletedIds());
+  const localMedia = mediaSummary(entries);
   const lastOk = localStorage.getItem(SYNC_LAST_OK_KEY);
   const lastAttempt = localStorage.getItem(SYNC_LAST_ATTEMPT_KEY);
   const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
   let cloudLine = '';
+  let cloudMediaLine = 'Cloud media: could not check.';
+  let cloudMediaSizeLine = 'Largest cloud image: unknown';
+  let mediaMatchLine = '';
   try {
     showSyncStatus('Checking cloud...');
     const cloud = await fetchCloudEntries();
     const active = cloud.filter(e => e && String(e.id) !== BOOK_META_SYNC_ID && !isDeletedEntry(e)).length;
     const deleted = cloud.filter(isDeletedEntry).length;
+    const cloudMedia = mediaSummary(cloud);
     cloudLine = 'Cloud has ' + active + ' notes. Deleted notes remembered: ' + deleted + '.';
+    cloudMediaLine = 'Cloud media: ' + cloudMedia.mediaItems + ' images in ' + cloudMedia.entriesWithMedia + ' notes.';
+    cloudMediaSizeLine = 'Largest cloud image: ' + formatMediaSize(cloudMedia.maxMediaChars);
+    mediaMatchLine = 'Image sync: ' + (cloudMedia.mediaItems >= localMedia.mediaItems ? 'looks caught up.' : 'cloud is missing images.');
   } catch(e) {
     cloudLine = 'Could not check the cloud right now.';
   }
@@ -863,6 +871,11 @@ async function showSyncDiagnostics() {
     '',
     'Last saved to cloud: ' + (lastOk ? syncTimeLabel(lastOk) : 'not yet'),
     cloudLine,
+    'This device media: ' + localMedia.mediaItems + ' images in ' + localMedia.entriesWithMedia + ' notes.',
+    'Largest image here: ' + formatMediaSize(localMedia.maxMediaChars),
+    cloudMediaLine,
+    cloudMediaSizeLine,
+    mediaMatchLine,
     '',
     'Details:',
     'This device: ' + entries.length + ' notes',
@@ -927,6 +940,26 @@ function entryMedia(entry) {
   const merged = drawings.slice();
   images.forEach(src=>{ if(!merged.includes(src)) merged.push(src); });
   return merged;
+}
+
+function mediaSummary(list) {
+  const summary = {entriesWithMedia:0, mediaItems:0, maxMediaChars:0};
+  (Array.isArray(list) ? list : []).forEach(function(entry) {
+    if (!entry || String(entry.id) === BOOK_META_SYNC_ID || isDeletedEntry(entry)) return;
+    const media = entryMedia(entry);
+    if (!media.length) return;
+    summary.entriesWithMedia += 1;
+    summary.mediaItems += media.length;
+    media.forEach(function(src) {
+      if (typeof src === 'string') summary.maxMediaChars = Math.max(summary.maxMediaChars, src.length);
+    });
+  });
+  return summary;
+}
+
+function formatMediaSize(chars) {
+  if (!chars) return 'none';
+  return Math.max(1, Math.round(chars / 1024)) + ' KB';
 }
 
 function mediaTime(entry) {
@@ -1667,7 +1700,7 @@ function deleteEntry(id) {
   showToast('削除しました');
 }
 
-function saveEntry() {
+async function saveEntry() {
   if(mediaProcessingCount>0){ alert('画像を処理中です。数秒待ってから保存してください。'); return; }
   const bookName = document.getElementById('fBook').value.trim();
   if(!bookName){ alert('本タイトルを入力してください'); return; }
@@ -1688,6 +1721,7 @@ function saveEntry() {
   const tags = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const existingEntry = editingId ? entries.find(e=>String(e.id)===String(editingId)) : null;
   const nowIso = new Date().toISOString();
+  const shouldVerifyMedia = mediaDirty || currentDrawings.length > 0;
   const data = {
     book:       bookName,
     author:     document.getElementById('fAuthor').value,
@@ -1708,7 +1742,10 @@ function saveEntry() {
   else { entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}); }
 
   persist(); closeModal(); render(); showToast('保存しました');
-  if(currentDrawings.length) triggerImmediateSync();
+  if(shouldVerifyMedia) {
+    const synced = await syncMediaNow();
+    showToast(synced ? 'Saved to cloud' : 'Saved on this device. Sync pending.');
+  }
 }
 
 function renderFixedTagChips() {
@@ -1754,36 +1791,48 @@ function renderDrawingGallery() {
     </div>`).join('');
   gallery.innerHTML=drawingHTML;
 }
-function deleteTempDrawing(i) {
+async function deleteTempDrawing(i) {
   currentDrawings.splice(i,1);
   mediaDirty=true;
   renderDrawingGallery();
+  if(editingId!==null&&editingId!==undefined) {
+    const synced = await persistEditingMedia();
+    showToast(synced ? 'Image deleted from cloud' : 'Image deleted here. Sync pending.');
+    return;
+  }
+  showToast('Image deleted');
+  return;
   if(persistEditingMedia()) showToast('画像を削除しました');
 }
 function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery(); }
-function persistEditingMedia() {
+async function persistEditingMedia() {
   if(editingId===null||editingId===undefined) return false;
   const nowIso = new Date().toISOString();
   entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
   mediaDirty=false;
   persist();
   render();
-  triggerImmediateSync();
-  return true;
+  return await syncMediaNow();
 }
-function triggerImmediateSync() {
+async function syncMediaNow() {
   if (syncRetryTimer) clearTimeout(syncRetryTimer);
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     markSyncPending(true);
+    recordSyncError(new Error('Offline'));
+    showSyncStatus('Offline - saved here only');
     scheduleCloudSync(SYNC_RETRY_MS);
-    return;
+    return false;
   }
   if (syncInFlight) {
     markSyncPending(true);
+    showSyncStatus('Sync already running');
     scheduleCloudSync(1200);
-    return;
+    return false;
   }
-  syncToCloud({manual:true});
+  return await syncToCloud({manual:true});
+}
+function triggerImmediateSync() {
+  syncMediaNow();
 }
 function openTempViewer(kind, idx) {
   const list = kind === 'images' ? currentImages : currentDrawings;
@@ -1842,6 +1891,13 @@ async function addImageAttachment(ev) {
     currentDrawings.push(dataUrl);
     mediaDirty=true;
     renderDrawingGallery();
+    if(editingId!==null&&editingId!==undefined) {
+      const synced = await persistEditingMedia();
+      showToast(synced ? 'Image saved to cloud' : 'Image saved here. Sync pending.');
+      return;
+    }
+    showToast('Image added. Save the note next.');
+    return;
     if(persistEditingMedia()) showToast('🖼 画像を保存して同期中です');
     else showToast('🖼 画像を追加しました。最後に保存してください');
   } catch(e) {
@@ -2003,7 +2059,7 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
   return dataUrl;
 }
 
-function saveDrawing() {
+async function saveDrawing() {
   const isImage = editingMediaKind === 'images';
   const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,250,0.45);
   mediaDirty=true;
@@ -2018,7 +2074,10 @@ function saveDrawing() {
     currentDrawings.push(dataUrl);
     showToast('🎨 スケッチを保存しました');
   }
-  if(editingId!==null&&editingId!==undefined) persistEditingMedia();
+  if(editingId!==null&&editingId!==undefined) {
+    const synced = await persistEditingMedia();
+    showToast(synced ? 'Image saved to cloud' : 'Image saved here. Sync pending.');
+  }
   renderDrawingGallery();
   closeDrawingModal();
 }
@@ -2096,7 +2155,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v22';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v23';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
