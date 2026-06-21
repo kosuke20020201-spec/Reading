@@ -431,6 +431,7 @@
         <input type="color" id="brushColor" value="#292524" title="色" style="width:36px;height:30px;border:1px solid var(--stone-200);border-radius:0.4rem;cursor:pointer;padding:2px">
         <input type="range" id="brushSize" min="1" max="20" value="3" title="太さ" style="width:60px;accent-color:var(--amber)">
         <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
+        <button class="drawing-tool-btn" onclick="rotateDrawingCanvas()">↻ 回転</button>
         <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
       </div>
       <canvas id="drawingCanvas" height="360"></canvas>
@@ -450,7 +451,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v33';
+const APP_VERSION   = 'media-autosave-sync v34';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2663,6 +2664,58 @@ function undoDrawing() {
   img.src=drawHistory[drawHistory.length-1];
 }
 
+function rotateCanvasSource(sourceCanvas) {
+  const rotated=document.createElement('canvas');
+  rotated.width=sourceCanvas.height;
+  rotated.height=sourceCanvas.width;
+  const rCtx=rotated.getContext('2d');
+  rCtx.fillStyle='white';
+  rCtx.fillRect(0,0,rotated.width,rotated.height);
+  rCtx.translate(rotated.width,0);
+  rCtx.rotate(Math.PI/2);
+  rCtx.drawImage(sourceCanvas,0,0);
+  return rotated;
+}
+
+function rotateDrawingCanvas() {
+  if(!dCanvas||!dCtx) return;
+  saveDrawState();
+  const snapshot=document.createElement('canvas');
+  snapshot.width=dCanvas.width;
+  snapshot.height=dCanvas.height;
+  snapshot.getContext('2d').drawImage(dCanvas,0,0);
+
+  let rotatedBaseUrl='';
+  if(editingMediaKind==='images'&&drawingBaseImage){
+    const base=document.createElement('canvas');
+    base.width=dCanvas.width;
+    base.height=dCanvas.height;
+    const bCtx=base.getContext('2d');
+    bCtx.fillStyle='white';
+    bCtx.fillRect(0,0,base.width,base.height);
+    bCtx.drawImage(drawingBaseImage,0,0,base.width,base.height);
+    rotatedBaseUrl=rotateCanvasSource(base).toDataURL('image/png');
+  }
+
+  const rotated=rotateCanvasSource(snapshot);
+  dCanvas.width=rotated.width;
+  dCanvas.height=rotated.height;
+  dCanvas.style.width='100%';
+  dCanvas.style.height=Math.round((dCanvas.offsetWidth || rotated.width) * rotated.height / rotated.width) + 'px';
+  dCtx=dCanvas.getContext('2d');
+  dCtx.drawImage(rotated,0,0);
+
+  if(rotatedBaseUrl){
+    const img=new Image();
+    img.onload=()=>{ drawingBaseImage=img; drawingBaseImageUrl=rotatedBaseUrl; };
+    img.src=rotatedBaseUrl;
+  }
+
+  saveDrawState();
+  queueDrawingDraftSave();
+  showToast('Rotated');
+}
+
 function clearDrawing() {
   if(editingMediaKind==='images' && drawingBaseImageUrl){
     loadCanvasImage(drawingBaseImageUrl,true,queueDrawingDraftSave);
@@ -2807,7 +2860,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v33';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v34';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
