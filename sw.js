@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260621-media-entry-budget-1';
+const CACHE_NAME = 'reading-note-pwa-20260621-sw-autoreload-1';
 const APP_SHELL = [
   './',
   './index.html',

@@ -2094,6 +2094,16 @@ document.addEventListener('click',e=>{
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
 const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v18';
 if ('serviceWorker' in navigator) {
+  // 新しいService Workerが有効化された瞬間に、今開いているページを1回だけ
+  // 自動リロードする。これがないと、古いキャッシュ/古いJSのまま動き続け、
+  // 「同期はクラウド側まで届いているのに画面には反映されない」状態になりうる。
+  let swReloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swReloaded) return;
+    swReloaded = true;
+    location.reload();
+  });
+
   (async () => {
     try {
       if (!localStorage.getItem(SW_CLEANUP_FLAG)) {
@@ -2109,11 +2119,15 @@ if ('serviceWorker' in navigator) {
       }
       // updateViaCache:'none' により、sw.js自体はブラウザ/CDNのHTTPキャッシュを
       // 経由せず毎回取得され、新しいバージョンへの切り替えが確実に行われる。
-      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(err => {
-        console.warn('Service worker registration failed:', err);
+      const reg = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      // アプリをバックグラウンドから復帰させたとき（ホーム画面アイコンの再起動など）にも
+      // 明示的に更新チェックを走らせる。これでWebAPKを開きっぱなしにしていても
+      // 新しいsw.js/アプリ本体に切り替わりやすくなる。
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) reg.update().catch(() => {});
       });
     } catch (err) {
-      console.warn('Service worker cleanup failed:', err);
+      console.warn('Service worker registration failed:', err);
     }
   })();
 }
