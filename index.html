@@ -432,6 +432,7 @@
         <input type="range" id="brushSize" min="1" max="20" value="3" title="太さ" style="width:60px;accent-color:var(--amber)">
         <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
         <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
+        <button class="drawing-tool-btn" onclick="resetDrawingToBlank()">□ 白紙</button>
       </div>
       <canvas id="drawingCanvas" height="360"></canvas>
     </div>
@@ -450,7 +451,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v30';
+const APP_VERSION   = 'media-autosave-sync v31';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -463,10 +464,10 @@ const SYNC_LAST_ERROR_KEY = 'reading_log_sync_last_error';
 const SYNC_RETRY_MS = 15000;
 const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
-const MEDIA_IMAGE_MAX_CHARS = 42000;
-const MEDIA_SKETCH_MAX_SIDE = 560;
-const MEDIA_SKETCH_QUALITY = 0.78;
-const MEDIA_SKETCH_MAX_CHARS = 42000;
+const MEDIA_IMAGE_MAX_CHARS = 48000;
+const MEDIA_SKETCH_MAX_SIDE = 720;
+const MEDIA_SKETCH_QUALITY = 0.86;
+const MEDIA_SKETCH_MAX_CHARS = 48000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
@@ -1193,8 +1194,8 @@ function imageToCompressedDataUrl(img, maxSide, quality, maxChars) {
     ctx.drawImage(img,0,0,cw,ch);
     dataUrl=canvas.toDataURL('image/jpeg',q);
     if(!maxChars || dataUrl.length<=maxChars) return dataUrl;
-    side=Math.max(240,Math.floor(side*0.78));
-    q=Math.max(0.42,q-0.05);
+    side=Math.max(260,Math.floor(side*0.82));
+    q=Math.max(0.5,q-0.04);
   }
   return dataUrl;
 }
@@ -2536,6 +2537,10 @@ function clearDrawing() {
     loadCanvasImage(drawingBaseImageUrl,true);
     return;
   }
+  resetDrawingToBlank();
+}
+
+function resetDrawingToBlank() {
   dCtx.fillStyle='white'; dCtx.fillRect(0,0,dCanvas.width,dCanvas.height);
   drawHistory=[]; saveDrawState();
 }
@@ -2655,7 +2660,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v30';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v31';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
