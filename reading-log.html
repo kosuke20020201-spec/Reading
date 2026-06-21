@@ -451,7 +451,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v35';
+const APP_VERSION   = 'media-autosave-sync v36';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2804,6 +2804,7 @@ async function saveDrawing() {
     } else {
       currentDrawings.push(dataUrl);
       currentMediaKinds.push('image');
+      editingDrawingIndex=currentDrawings.length-1;
     }
     showToast('🖼 画像を更新しました');
   } else if(editingDrawingIndex!==null){
@@ -2813,6 +2814,7 @@ async function saveDrawing() {
   } else {
     currentDrawings.push(dataUrl);
     currentMediaKinds.push('sketch');
+    editingDrawingIndex=currentDrawings.length-1;
     showToast('🎨 スケッチを保存しました');
   }
   if(editingId!==null&&editingId!==undefined) {
@@ -2820,7 +2822,7 @@ async function saveDrawing() {
     showToast(synced ? 'Image saved to cloud' : 'Image saved here. Sync pending.');
   }
   renderDrawingGallery();
-  closeDrawingModal(true);
+  clearDrawingDraft();
 }
 
 async function handleAI(id,btn) {
@@ -2905,7 +2907,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v35';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v36';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
