@@ -432,7 +432,6 @@
         <input type="range" id="brushSize" min="1" max="20" value="3" title="太さ" style="width:60px;accent-color:var(--amber)">
         <button class="drawing-tool-btn" onclick="undoDrawing()">↶ 戻す</button>
         <button class="drawing-tool-btn" onclick="clearDrawing()">🗑 クリア</button>
-        <button class="drawing-tool-btn" onclick="resetDrawingToBlank()">□ 白紙</button>
       </div>
       <canvas id="drawingCanvas" height="360"></canvas>
     </div>
@@ -451,7 +450,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v31';
+const APP_VERSION   = 'media-autosave-sync v32';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -496,7 +495,7 @@ const SPINE_THEMES = {
 };
 
 let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', editingId = null, pendingAiId = null;
-let currentDrawings = [], currentImages = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
+let currentDrawings = [], currentImages = [], currentMediaKinds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
@@ -1126,6 +1125,27 @@ function entryMedia(entry) {
   return merged;
 }
 
+function normalizeMediaKind(kind) {
+  return kind === 'image' || kind === 'images' ? 'image' : 'sketch';
+}
+
+function mediaKindList(entry) {
+  const media = entryMedia(entry);
+  const rawKinds = Array.isArray(entry&&entry.mediaKinds) ? entry.mediaKinds : [];
+  const drawings = mediaList(entry&&entry.drawings);
+  const images = mediaList(entry&&entry.images);
+  return media.map(function(src, i) {
+    if (rawKinds[i]) return normalizeMediaKind(rawKinds[i]);
+    if (images.includes(src) && !drawings.includes(src)) return 'image';
+    return 'sketch';
+  });
+}
+
+function normalizeCurrentMediaKinds() {
+  currentMediaKinds = currentDrawings.map((_, i)=>normalizeMediaKind(currentMediaKinds[i]));
+  return currentMediaKinds;
+}
+
 function mediaSummary(list) {
   const summary = {entriesWithMedia:0, mediaItems:0, maxMediaChars:0};
   (Array.isArray(list) ? list : []).forEach(function(entry) {
@@ -1165,15 +1185,30 @@ function mergeEntryMedia(cloudEntry, localEntry) {
   return merged;
 }
 
+function mergeEntryMediaKinds(cloudEntry, localEntry, mergedMedia) {
+  const cloudMedia = entryMedia(cloudEntry);
+  const localMedia = entryMedia(localEntry);
+  const cloudKinds = mediaKindList(cloudEntry);
+  const localKinds = mediaKindList(localEntry);
+  return (mergedMedia || []).map(function(src) {
+    const localIndex = localMedia.indexOf(src);
+    if (localIndex >= 0) return normalizeMediaKind(localKinds[localIndex]);
+    const cloudIndex = cloudMedia.indexOf(src);
+    if (cloudIndex >= 0) return normalizeMediaKind(cloudKinds[cloudIndex]);
+    return 'sketch';
+  });
+}
+
 function migrateImagesIntoDrawings() {
   let changed = false;
   entries = entries.map(function(entry) {
     if (!entry) return entry;
     const merged = entryMedia(entry);
     const images = mediaList(entry.images);
-    if (!images.length && merged.length === mediaList(entry.drawings).length && Array.isArray(entry.drawings)) return entry;
+    const kinds = mediaKindList(entry);
+    if (!images.length && merged.length === mediaList(entry.drawings).length && Array.isArray(entry.drawings) && Array.isArray(entry.mediaKinds) && entry.mediaKinds.length === merged.length) return entry;
     changed = true;
-    return {...entry, drawings: merged, images: [], mediaUpdatedAt: entry.mediaUpdatedAt || entry.updatedAt || new Date().toISOString()};
+    return {...entry, drawings: merged, images: [], mediaKinds: merged.map((_, i)=>normalizeMediaKind(kinds[i])), mediaUpdatedAt: entry.mediaUpdatedAt || entry.updatedAt || new Date().toISOString()};
   });
   if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   return changed;
@@ -1217,6 +1252,7 @@ async function shrinkOversizedMedia() {
   for (const entry of entries) {
     if (!entry) continue;
     const media = entryMedia(entry);
+    const kinds = mediaKindList(entry);
     const next = [];
     for (const src of media) {
       if (typeof src === 'string' && src.startsWith('data:image/') && src.length > MEDIA_IMAGE_MAX_CHARS) {
@@ -1232,6 +1268,7 @@ async function shrinkOversizedMedia() {
     }
     entry.drawings = next;
     entry.images = [];
+    entry.mediaKinds = next.map((_, i)=>normalizeMediaKind(kinds[i]));
   }
   if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   return changed;
@@ -1399,8 +1436,9 @@ async function loadFromCloud(options) {
       const c=cloudMap[id], l=localMap[id];
       const chosen = chooseEntryVersion(c, l, preferLocal);
       const drawings = mergeEntryMedia(c, l);
+      const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
-      return {...chosen, drawings, images: [], mediaUpdatedAt};
+      return {...chosen, drawings, images: [], mediaKinds, mediaUpdatedAt};
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -2156,6 +2194,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
   currentFixedTags = [];
   currentDrawings  = [];
   currentImages    = [];
+  currentMediaKinds = [];
   mediaDirty = false;
 
   if (id) {
@@ -2172,6 +2211,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
       currentFixedTags = getBookFixedTags(e.book||'');
       currentDrawings  = entryMedia(e).slice();
       currentImages    = [];
+      currentMediaKinds = mediaKindList(e);
     }
   } else if (presetBook) {
     document.getElementById('fBook').value   = presetBook;
@@ -2233,6 +2273,7 @@ async function saveEntry() {
     tags,
     drawings:   currentDrawings,
     images:     [],
+    mediaKinds: normalizeCurrentMediaKinds(),
     fixedTags:  [...currentFixedTags],
     mediaUpdatedAt: mediaDirty ? nowIso : ((existingEntry&&existingEntry.mediaUpdatedAt)||''),
     updatedAt:  nowIso,
@@ -2283,9 +2324,10 @@ function editBookTags(idx) {
 
 function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
+  normalizeCurrentMediaKinds();
   const drawingHTML=currentDrawings.map((src,i)=>`
     <div class="drawing-thumb" title="クリックで編集">
-      <img src="${src}" alt="スケッチ・画像${i+1}" onclick="openDrawingModal(${i},'images')">
+      <img src="${src}" alt="スケッチ・画像${i+1}" onclick="openDrawingModal(${i},'${currentMediaKinds[i] === 'image' ? 'images' : 'drawings'}')">
       <div class="drawing-thumb-edit-badge">編集</div>
       <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempDrawing(${i})">✕</button>
     </div>`).join('');
@@ -2293,6 +2335,7 @@ function renderDrawingGallery() {
 }
 async function deleteTempDrawing(i) {
   currentDrawings.splice(i,1);
+  currentMediaKinds.splice(i,1);
   mediaDirty=true;
   renderDrawingGallery();
   if(editingId!==null&&editingId!==undefined) {
@@ -2308,7 +2351,7 @@ function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery();
 async function persistEditingMedia() {
   if(editingId===null||editingId===undefined) return false;
   const nowIso = new Date().toISOString();
-  entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
+  entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaKinds:normalizeCurrentMediaKinds(),mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
   mediaDirty=false;
   persist();
   render();
@@ -2348,8 +2391,10 @@ function annotateEntryMedia(entryId, idx) {
   editingId=entry.id;
   currentDrawings=entryMedia(entry).slice();
   currentImages=[];
+  currentMediaKinds=mediaKindList(entry);
   currentFixedTags=getBookFixedTags(entry.book||'');
-  openDrawingModal(parseInt(idx),'images');
+  const mediaIndex=parseInt(idx);
+  openDrawingModal(mediaIndex,currentMediaKinds[mediaIndex] === 'image' ? 'images' : 'drawings');
 }
 
 function compressImageFile(file) {
@@ -2389,6 +2434,7 @@ async function addImageAttachment(ev) {
   try {
     const dataUrl=await compressImageFile(file);
     currentDrawings.push(dataUrl);
+    currentMediaKinds.push('image');
     mediaDirty=true;
     renderDrawingGallery();
     if(editingId!==null&&editingId!==undefined) {
@@ -2557,8 +2603,8 @@ function canvasToJpeg(sourceCanvas, maxSide, quality, maxChars) {
     ctx.drawImage(sourceCanvas,0,0,out.width,out.height);
     dataUrl=out.toDataURL('image/jpeg',q);
     if(!maxChars || dataUrl.length<=maxChars) return dataUrl;
-    side=Math.max(240,Math.floor(side*0.78));
-    q=Math.max(0.42,q-0.05);
+    side=Math.max(260,Math.floor(side*0.82));
+    q=Math.max(0.5,q-0.04);
   }
   return dataUrl;
 }
@@ -2568,14 +2614,21 @@ async function saveDrawing() {
   const dataUrl=isImage ? canvasToJpeg(dCanvas,MEDIA_IMAGE_MAX_SIDE,MEDIA_IMAGE_QUALITY,MEDIA_IMAGE_MAX_CHARS) : canvasToJpeg(dCanvas,MEDIA_SKETCH_MAX_SIDE,MEDIA_SKETCH_QUALITY,MEDIA_SKETCH_MAX_CHARS);
   mediaDirty=true;
   if(isImage){
-    if(editingDrawingIndex!==null) currentDrawings[editingDrawingIndex]=dataUrl;
-    else currentDrawings.push(dataUrl);
+    if(editingDrawingIndex!==null) {
+      currentDrawings[editingDrawingIndex]=dataUrl;
+      currentMediaKinds[editingDrawingIndex]='image';
+    } else {
+      currentDrawings.push(dataUrl);
+      currentMediaKinds.push('image');
+    }
     showToast('🖼 画像を更新しました');
   } else if(editingDrawingIndex!==null){
     currentDrawings[editingDrawingIndex]=dataUrl;
+    currentMediaKinds[editingDrawingIndex]='sketch';
     showToast('✏️ スケッチを更新しました');
   } else {
     currentDrawings.push(dataUrl);
+    currentMediaKinds.push('sketch');
     showToast('🎨 スケッチを保存しました');
   }
   if(editingId!==null&&editingId!==undefined) {
@@ -2660,7 +2713,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v31';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v32';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
