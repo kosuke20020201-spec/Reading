@@ -215,7 +215,7 @@
   .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
   .tag-bulk-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:0.5rem; align-items:center; }
   .tag-bulk-toolbar input { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
-  .tag-bulk-list { display:flex; flex-wrap:wrap; gap:0.4rem; max-height:14rem; overflow:auto; padding:0.55rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
+  .tag-bulk-list { display:flex; flex-wrap:wrap; align-content:flex-start; gap:0.4rem; height:clamp(22rem, 50vh, 34rem); overflow:auto; padding:0.65rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
   .tag-bulk-chip { border:1px solid var(--stone-200); background:white; color:var(--stone-700); border-radius:999px; padding:0.28rem 0.68rem; font:inherit; font-size:0.72rem; font-weight:700; cursor:pointer; }
   .tag-bulk-chip.selected { background:var(--stone-800); border-color:var(--stone-800); color:white; }
   .tag-bulk-chip.assigned:not(.selected) { border-color:#fed7aa; color:#9a3412; background:#fff7ed; }
@@ -238,6 +238,7 @@
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
     .tag-folder-create, .tag-folder-add-line, .tag-bulk-toolbar { grid-template-columns: 1fr; }
+    .tag-bulk-list { height:52vh; min-height:18rem; }
     .card-actions { opacity: 1; }
     .bookshelf-main { gap: 0.55rem 0.4rem; }
     .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
@@ -447,7 +448,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v26';
+const APP_VERSION   = 'media-autosave-sync v27';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1459,7 +1460,6 @@ function assignedFolderTags() {
 function activeFolderTags() {
   if (!activeTagFolder) return [];
   const tags = allTagSet();
-  if (activeTagFolder === '__unfiled__') return unfiledTags();
   return folderTagsForPath(activeTagFolder).filter(tag => tags.has(tag));
 }
 
@@ -1472,7 +1472,6 @@ function entryMatchesActiveTagFilter(entry) {
 
 function activeTagFilterLabel() {
   if (activeTag) return `選択タグ「${esc(activeTag)}」のみ`;
-  if (activeTagFolder === '__unfiled__') return '未分類タグのみ';
   if (activeTagFolder) return `フォルダ「${esc(folderDisplayName(activeTagFolder))}」のみ`;
   return '選択タグのみ';
 }
@@ -1577,8 +1576,7 @@ function render() {
   const tags=allTags(),groups=bookGroups();
   const folders = getTagFolders();
   if (activeTag && !tags.includes(activeTag)) activeTag = '';
-  if (activeTagFolder && activeTagFolder !== '__unfiled__' && !folderTagsForPath(activeTagFolder).some(tag => tags.includes(tag))) activeTagFolder = '';
-  if (activeTagFolder === '__unfiled__' && !unfiledTags().length) activeTagFolder = '';
+  if (activeTagFolder && !folderTagsForPath(activeTagFolder).some(tag => tags.includes(tag))) activeTagFolder = '';
   const folderCount = tagFolderNames().length;
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
   const themeSelect = document.getElementById('shelfThemeSelect');
@@ -1617,14 +1615,14 @@ function render() {
     wrap.appendChild(group);
   });
   const looseTags = unfiledTags();
-  if (looseTags.length) {
+  looseTags.forEach(function(tag) {
     const b = document.createElement('button');
-    b.className = 'tag-folder-btn' + (activeTagFolder==='__unfiled__' ? ' active' : '');
+    b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
     b.type = 'button';
-    b.textContent = '未分類 ' + looseTags.length;
-    b.onclick = () => setTagFolder('__unfiled__');
+    b.textContent = tag;
+    b.onclick = () => setTag(tag);
     wrap.appendChild(b);
-  }
+  });
 
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
   if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
@@ -2642,7 +2640,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v26';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v27';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
