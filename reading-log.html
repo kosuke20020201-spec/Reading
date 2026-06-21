@@ -67,6 +67,8 @@
   .tag-folder-btn { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; border: 1px solid #fdba74; background: white; color: #9a3412; cursor: pointer; font-family: inherit; }
   .tag-folder-btn.active { background: #9a3412; border-color: #9a3412; color: white; }
   .tag-folder-inner-tags { display: inline-flex; flex-wrap: wrap; gap: 0.28rem; }
+  .tag-folder-child-btn { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.58rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); cursor: pointer; font-family: inherit; }
+  .tag-folder-child-btn.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
@@ -211,6 +213,13 @@
   .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
   .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; }
   .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
+  .tag-bulk-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:0.5rem; align-items:center; }
+  .tag-bulk-toolbar input { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
+  .tag-bulk-list { display:flex; flex-wrap:wrap; gap:0.4rem; max-height:14rem; overflow:auto; padding:0.55rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
+  .tag-bulk-chip { border:1px solid var(--stone-200); background:white; color:var(--stone-700); border-radius:999px; padding:0.28rem 0.68rem; font:inherit; font-size:0.72rem; font-weight:700; cursor:pointer; }
+  .tag-bulk-chip.selected { background:var(--stone-800); border-color:var(--stone-800); color:white; }
+  .tag-bulk-chip.assigned:not(.selected) { border-color:#fed7aa; color:#9a3412; background:#fff7ed; }
+  .tag-bulk-count { font-size:0.72rem; color:var(--stone-500); font-weight:700; }
   .tag-folder-add-line { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
   .tag-folder-create input, .tag-folder-create select, .tag-folder-add-line select { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
   .tag-folder-card { border:1px solid var(--stone-200); border-radius:0.75rem; background:white; padding:0.75rem; }
@@ -228,7 +237,7 @@
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
-    .tag-folder-create, .tag-folder-add-line { grid-template-columns: 1fr; }
+    .tag-folder-create, .tag-folder-add-line, .tag-bulk-toolbar { grid-template-columns: 1fr; }
     .card-actions { opacity: 1; }
     .bookshelf-main { gap: 0.55rem 0.4rem; }
     .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
@@ -372,10 +381,17 @@
     </div>
     <div class="modal-body">
       <div class="tag-folder-create">
-        <input type="text" id="tagFolderName" placeholder="フォルダ名">
-        <select id="tagFolderTagSelect"></select>
-        <button type="button" class="btn-sub" onclick="addTagFolderFromForm()">追加</button>
+        <input type="text" id="tagFolderName" placeholder="新規フォルダ名">
+        <select id="tagFolderTargetSelect" onchange="onTagFolderTargetChange()"></select>
+        <button type="button" class="btn-sub" onclick="addSelectedTagsToFolderFromForm()">選択をまとめる</button>
       </div>
+      <div class="tag-bulk-toolbar">
+        <input type="text" id="tagFolderSearch" placeholder="タグを検索" oninput="onTagFolderSearch(this.value)">
+        <button type="button" class="btn-sub" onclick="selectAllVisibleTags()">表示分を選択</button>
+        <button type="button" class="btn-sub" onclick="clearTagFolderSelection()">解除</button>
+      </div>
+      <div class="tag-bulk-count" id="tagFolderSelectedCount">0個選択中</div>
+      <div class="tag-bulk-list" id="tagBulkList"></div>
       <div class="tag-folder-list" id="tagFolderList"></div>
     </div>
   </div>
@@ -431,7 +447,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v24';
+const APP_VERSION   = 'media-autosave-sync v26';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -479,6 +495,8 @@ let fixedTagEditOnly = false;
 let openBookKey = null;
 let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
+let tagFolderSelectedTags = new Set();
+let tagFolderSearchQuery = '';
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
 if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0;
@@ -634,11 +652,63 @@ function setTagFolders(folders, options) {
   }
 }
 
+function normalizeFolderPath(path) {
+  return cleanTagList(String(path || '').split(/[\\/＞>›]+/)).join('/');
+}
+
+function folderParts(path) {
+  return normalizeFolderPath(path).split('/').filter(Boolean);
+}
+
+function folderDepth(path) {
+  return Math.max(0, folderParts(path).length - 1);
+}
+
+function folderDisplayName(path) {
+  return folderParts(path).join(' › ');
+}
+
+function folderLeafName(path) {
+  const parts = folderParts(path);
+  return parts[parts.length - 1] || '';
+}
+
+function folderParentPath(path) {
+  const parts = folderParts(path);
+  parts.pop();
+  return parts.join('/');
+}
+
+function isFolderDescendantOrSelf(path, ancestor) {
+  path = normalizeFolderPath(path);
+  ancestor = normalizeFolderPath(ancestor);
+  return path === ancestor || (!!ancestor && path.startsWith(ancestor + '/'));
+}
+
+function folderPathSort(a,b) {
+  const left = folderParts(a);
+  const right = folderParts(b);
+  for (let i = 0; i < Math.min(left.length, right.length); i++) {
+    const diff = left[i].localeCompare(right[i], 'ja');
+    if (diff) return diff;
+  }
+  return left.length - right.length;
+}
+
+function folderTreePaths(folders) {
+  const paths = new Set();
+  Object.keys(folders || {}).forEach(function(path) {
+    const parts = folderParts(path);
+    for (let i = 1; i <= parts.length; i++) paths.add(parts.slice(0, i).join('/'));
+  });
+  return [...paths].sort(folderPathSort);
+}
+
 function cleanTagFolders(folders) {
   const clean = {};
   if (!folders || typeof folders !== 'object' || Array.isArray(folders)) return clean;
   Object.keys(folders).forEach(function(name) {
-    const folderName = String(name || '').trim();
+    const folderName = normalizeFolderPath(name);
     const tags = cleanTagList(folders[name]);
     if (folderName && tags.length) clean[folderName] = tags;
   });
@@ -1376,7 +1446,7 @@ function allTagSet() {
 }
 
 function tagFolderNames() {
-  return Object.keys(getTagFolders()).sort((a,b)=>a.localeCompare(b,'ja'));
+  return folderTreePaths(getTagFolders());
 }
 
 function assignedFolderTags() {
@@ -1389,7 +1459,8 @@ function assignedFolderTags() {
 function activeFolderTags() {
   if (!activeTagFolder) return [];
   const tags = allTagSet();
-  return cleanTagList(getTagFolders()[activeTagFolder]).filter(tag => tags.has(tag));
+  if (activeTagFolder === '__unfiled__') return unfiledTags();
+  return folderTagsForPath(activeTagFolder).filter(tag => tags.has(tag));
 }
 
 function entryMatchesActiveTagFilter(entry) {
@@ -1401,8 +1472,38 @@ function entryMatchesActiveTagFilter(entry) {
 
 function activeTagFilterLabel() {
   if (activeTag) return `選択タグ「${esc(activeTag)}」のみ`;
-  if (activeTagFolder) return `フォルダ「${esc(activeTagFolder)}」のみ`;
+  if (activeTagFolder === '__unfiled__') return '未分類タグのみ';
+  if (activeTagFolder) return `フォルダ「${esc(folderDisplayName(activeTagFolder))}」のみ`;
   return '選択タグのみ';
+}
+
+function folderTagsForPath(path) {
+  const folders = getTagFolders();
+  const merged = [];
+  Object.keys(folders).forEach(function(name) {
+    if (isFolderDescendantOrSelf(name, path)) merged.push(...cleanTagList(folders[name]));
+  });
+  return cleanTagList(merged);
+}
+
+function directFolderTags(path) {
+  return cleanTagList(getTagFolders()[normalizeFolderPath(path)] || []);
+}
+
+function childFolderPaths(path) {
+  const current = normalizeFolderPath(path);
+  return tagFolderNames().filter(function(name) {
+    return folderParentPath(name) === current;
+  });
+}
+
+function topFolderPaths() {
+  return tagFolderNames().filter(name => folderDepth(name) === 0);
+}
+
+function unfiledTags() {
+  const assigned = assignedFolderTags();
+  return allTags().filter(tag => !assigned.has(tag)).sort((a,b)=>a.localeCompare(b,'ja'));
 }
 
 function bookGroups() {
@@ -1476,7 +1577,8 @@ function render() {
   const tags=allTags(),groups=bookGroups();
   const folders = getTagFolders();
   if (activeTag && !tags.includes(activeTag)) activeTag = '';
-  if (activeTagFolder && !cleanTagList(folders[activeTagFolder]).some(tag => tags.includes(tag))) activeTagFolder = '';
+  if (activeTagFolder && activeTagFolder !== '__unfiled__' && !folderTagsForPath(activeTagFolder).some(tag => tags.includes(tag))) activeTagFolder = '';
+  if (activeTagFolder === '__unfiled__' && !unfiledTags().length) activeTagFolder = '';
   const folderCount = tagFolderNames().length;
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
   const themeSelect = document.getElementById('shelfThemeSelect');
@@ -1484,35 +1586,45 @@ function render() {
 
   const wrap=document.getElementById('tagFilters');
   wrap.innerHTML=`<button class="tag-btn${activeTag===''&&activeTagFolder===''?' active':''}" onclick="setTag('')">すべて</button>`;
-  const assigned = assignedFolderTags();
   const tagSet = new Set(tags);
-  tagFolderNames().forEach(function(name) {
-    const folderTags = cleanTagList(folders[name]).filter(tag => tagSet.has(tag));
+  topFolderPaths().forEach(function(name) {
+    const folderTags = folderTagsForPath(name).filter(tag => tagSet.has(tag));
     if (!folderTags.length) return;
     const group = document.createElement('span');
     group.className = 'tag-folder-group';
     const folderBtn = document.createElement('button');
-    folderBtn.className = 'tag-folder-btn' + (activeTagFolder===name ? ' active' : '');
+    const folderActive = activeTagFolder === name || (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, name));
+    folderBtn.className = 'tag-folder-btn' + (folderActive ? ' active' : '');
     folderBtn.type = 'button';
-    folderBtn.textContent = '📁 ' + name + ' ' + folderTags.length;
+    folderBtn.textContent = '📁 ' + folderLeafName(name) + ' ' + folderTags.length;
     folderBtn.onclick = () => setTagFolder(name);
     group.appendChild(folderBtn);
-    if (activeTagFolder === name) {
+    if (folderActive) {
       const inner = document.createElement('span');
       inner.className = 'tag-folder-inner-tags';
-      folderTags.forEach(function(tag) {
+      tagFolderNames().filter(path => path !== name && isFolderDescendantOrSelf(path, name)).forEach(function(path) {
+        const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
+        if (!subTags.length) return;
         const b = document.createElement('button');
-        b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
+        b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
         b.type = 'button';
-        b.textContent = tag;
-        b.onclick = () => setTag(tag);
+        b.textContent = '↳ ' + folderDisplayName(path).replace(folderDisplayName(name) + ' › ', '') + ' ' + subTags.length;
+        b.onclick = () => setTagFolder(path);
         inner.appendChild(b);
       });
       group.appendChild(inner);
     }
     wrap.appendChild(group);
   });
-  tags.filter(tag => !assigned.has(tag)).forEach(t=>{const b=document.createElement('button');b.className=`tag-btn ${tagClass(t)}${activeTag===t?' active':''}`;b.textContent=t;b.onclick=()=>setTag(t);wrap.appendChild(b);});
+  const looseTags = unfiledTags();
+  if (looseTags.length) {
+    const b = document.createElement('button');
+    b.className = 'tag-folder-btn' + (activeTagFolder==='__unfiled__' ? ' active' : '');
+    b.type = 'button';
+    b.textContent = '未分類 ' + looseTags.length;
+    b.onclick = () => setTagFolder('__unfiled__');
+    wrap.appendChild(b);
+  }
 
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
   if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
@@ -1734,6 +1846,11 @@ function tagFolderOptions(excludedTags) {
   return '<option value="">タグを選択</option>' + tags.map(tag => `<option value="${esc(tag)}">${esc(tag)}</option>`).join('');
 }
 
+function tagFolderTargetOptions() {
+  const names = tagFolderNames();
+  return '<option value="">新規フォルダ</option>' + names.map(name => `<option value="${esc(name)}">${esc(folderDisplayName(name))}に追加</option>`).join('');
+}
+
 function openTagFolders() {
   renderTagFolderManager();
   document.getElementById('tagFolderOverlay').classList.add('open');
@@ -1744,8 +1861,9 @@ function closeTagFolders() {
 }
 
 function renderTagFolderManager() {
-  const mainSelect = document.getElementById('tagFolderTagSelect');
-  if (mainSelect) mainSelect.innerHTML = tagFolderOptions([]);
+  const targetSelect = document.getElementById('tagFolderTargetSelect');
+  if (targetSelect) targetSelect.innerHTML = tagFolderTargetOptions();
+  renderTagBulkList();
   const list = document.getElementById('tagFolderList');
   if (!list) return;
   const folders = getTagFolders();
@@ -1755,19 +1873,22 @@ function renderTagFolderManager() {
     return;
   }
   list.innerHTML = names.map(function(name, idx) {
-    const tags = cleanTagList(folders[name]);
+    const tags = directFolderTags(name);
     const chips = tags.map(tag => `
       <span class="tag-folder-chip">${esc(tag)}
         <button type="button" onclick='removeTagFromFolder(${jsArg(name)},${jsArg(tag)})'>×</button>
       </span>`).join('');
     const addOptions = tagFolderOptions(tags);
+    const children = childFolderPaths(name).length;
+    const totalTags = folderTagsForPath(name).length;
+    const indent = Math.min(folderDepth(name), 3) * 0.8;
     return `
-      <div class="tag-folder-card">
+      <div class="tag-folder-card" style="margin-left:${indent}rem">
         <div class="tag-folder-card-header">
-          <div class="tag-folder-card-title">📁 ${esc(name)}</div>
+          <div class="tag-folder-card-title">📁 ${esc(folderLeafName(name))}${children ? ` <span style="font-size:0.68rem;color:var(--stone-400);font-weight:700">子${children} / 計${totalTags}</span>` : ''}</div>
           <button type="button" class="btn-cancel" onclick='deleteTagFolder(${jsArg(name)})'>削除</button>
         </div>
-        <div class="tag-folder-chip-row">${chips}</div>
+        <div class="tag-folder-chip-row">${chips || '<span style="font-size:0.72rem;color:var(--stone-400)">直接入っているタグなし</span>'}</div>
         <div class="tag-folder-add-line">
           <select id="tagFolderAdd${idx}">${addOptions}</select>
           <button type="button" class="btn-sub" onclick='addSelectedTagToFolder(${jsArg(name)},${idx})'>タグ追加</button>
@@ -1776,28 +1897,104 @@ function renderTagFolderManager() {
   }).join('');
 }
 
-function addTagFolderFromForm() {
-  const nameInput = document.getElementById('tagFolderName');
-  const tagSelect = document.getElementById('tagFolderTagSelect');
-  const name = (nameInput.value || '').trim();
-  const tag = tagSelect.value;
-  if (!name || !tag) { showToast('フォルダ名とタグを選んでください'); return; }
+function visibleBulkTags() {
+  const q = tagFolderSearchQuery.trim().toLocaleLowerCase('ja-JP');
+  return allTags().sort((a,b)=>a.localeCompare(b,'ja')).filter(function(tag) {
+    return !q || tag.toLocaleLowerCase('ja-JP').includes(q);
+  });
+}
+
+function renderTagBulkList() {
+  const list = document.getElementById('tagBulkList');
+  const count = document.getElementById('tagFolderSelectedCount');
+  if (!list) return;
+  const tags = visibleBulkTags();
+  const assigned = assignedFolderTags();
+  if (!tags.length) {
+    list.innerHTML = '<div class="tag-folder-empty">タグがありません</div>';
+  } else {
+    const folders = getTagFolders();
+    list.innerHTML = tags.map(function(tag) {
+      const selected = tagFolderSelectedTags.has(tag);
+      const folderNames = tagFolderNames().filter(name => cleanTagList(folders[name]).includes(tag));
+      const title = folderNames.length ? ` title="${esc('所属: ' + folderNames.join(', '))}"` : '';
+      return `<button type="button"${title} class="tag-bulk-chip${selected?' selected':''}${assigned.has(tag)?' assigned':''}" onclick='toggleTagFolderTag(${jsArg(tag)})'>${selected?'✓ ':''}${esc(tag)}</button>`;
+    }).join('');
+  }
+  if (count) count.textContent = tagFolderSelectedTags.size + '個選択中';
+}
+
+function toggleTagFolderTag(tag) {
+  if (tagFolderSelectedTags.has(tag)) tagFolderSelectedTags.delete(tag);
+  else tagFolderSelectedTags.add(tag);
+  renderTagBulkList();
+}
+
+function onTagFolderSearch(value) {
+  tagFolderSearchQuery = value || '';
+  renderTagBulkList();
+}
+
+function selectAllVisibleTags() {
+  visibleBulkTags().forEach(tag => tagFolderSelectedTags.add(tag));
+  renderTagBulkList();
+}
+
+function clearTagFolderSelection() {
+  tagFolderSelectedTags.clear();
+  renderTagBulkList();
+}
+
+function onTagFolderTargetChange() {
+  const target = document.getElementById('tagFolderTargetSelect').value;
+  const input = document.getElementById('tagFolderName');
+  input.placeholder = target ? 'サブフォルダ名（空なら既存へ追加）' : '新規フォルダ名 / 親/子';
+}
+
+function selectedFolderNameFromForm() {
+  const target = document.getElementById('tagFolderTargetSelect').value;
+  const name = (document.getElementById('tagFolderName').value || '').trim();
+  if (target && name) return normalizeFolderPath(target + '/' + name);
+  return normalizeFolderPath(target || name);
+}
+
+function moveTagsIntoFolder(folderName, tags) {
+  addTagsToFolder(folderName, tags);
+}
+
+function addTagsToFolder(folderName, tags) {
+  folderName = normalizeFolderPath(folderName);
+  const selected = cleanTagList(tags);
+  if (!folderName || !selected.length) return;
   const folders = getTagFolders();
-  folders[name] = cleanTagList([...(folders[name] || []), tag]);
+  folders[folderName] = cleanTagList([...(folders[folderName] || []), ...selected]);
   setTagFolders(folders);
-  tagSelect.value = '';
+}
+
+function addSelectedTagsToFolderFromForm() {
+  const nameInput = document.getElementById('tagFolderName');
+  const targetSelect = document.getElementById('tagFolderTargetSelect');
+  const name = selectedFolderNameFromForm();
+  const selected = cleanTagList([...tagFolderSelectedTags]);
+  if (!name) { showToast('フォルダ名を入力するか既存フォルダを選んでください'); return; }
+  if (!selected.length) { showToast('まとめるタグを選んでください'); return; }
+  moveTagsIntoFolder(name, selected);
+  tagFolderSelectedTags.clear();
+  if (nameInput) nameInput.value = '';
   renderTagFolderManager();
   render();
-  showToast('タグフォルダを保存しました');
+  showToast(selected.length + '個のタグをまとめました');
+}
+
+function addTagFolderFromForm() {
+  addSelectedTagsToFolderFromForm();
 }
 
 function addSelectedTagToFolder(name, idx) {
   const select = document.getElementById('tagFolderAdd' + idx);
   const tag = select && select.value;
   if (!tag) return;
-  const folders = getTagFolders();
-  folders[name] = cleanTagList([...(folders[name] || []), tag]);
-  setTagFolders(folders);
+  moveTagsIntoFolder(name, [tag]);
   renderTagFolderManager();
   render();
 }
@@ -1814,9 +2011,12 @@ function removeTagFromFolder(name, tag) {
 }
 
 function deleteTagFolder(name) {
+  name = normalizeFolderPath(name);
   const folders = getTagFolders();
-  delete folders[name];
-  if (activeTagFolder === name) activeTagFolder = '';
+  Object.keys(folders).forEach(function(path) {
+    if (isFolderDescendantOrSelf(path, name)) delete folders[path];
+  });
+  if (activeTagFolder === name || isFolderDescendantOrSelf(activeTagFolder, name)) activeTagFolder = '';
   setTagFolders(folders);
   renderTagFolderManager();
   render();
@@ -2442,7 +2642,7 @@ document.addEventListener('click',e=>{
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v24';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v26';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
