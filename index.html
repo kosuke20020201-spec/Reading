@@ -86,6 +86,9 @@
   .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
   .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
   .book-group.open { width: 100%; order: -1; }
+  .book-group.dragging { opacity: 0.45; }
+  .book-group.drop-before .book-spine { box-shadow: -0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
+  .book-group.drop-after .book-spine { box-shadow: 0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
   .book-order-list { display: flex; flex-direction: column; gap: 0.45rem; }
   .book-order-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 0.75rem; padding: 0.7rem 0.8rem; border: 1px solid var(--stone-200); border-radius: 0.85rem; background: white; cursor: grab; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
   .book-order-row:active { cursor: grabbing; }
@@ -329,7 +332,6 @@
         <option value="date">新しい順</option>
         <option value="book">書名順</option>
       </select>
-      <button class="btn-sub" onclick="openBookOrder()" type="button">☰ 本の順番</button>
       <button class="btn-sub" onclick="openTagFolders()" type="button">🏷 タグ整理</button>
     </div>
   </div>
@@ -401,18 +403,6 @@
     <div class="modal-body">
       <p style="font-size:0.8rem;color:var(--stone-400)">本を選ぶと、著者が自動入力された状態で記録追加できます</p>
       <div class="bookshelf-list" id="bookshelfList"></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="bookOrderOverlay">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header">
-      <h2 class="modal-title">☰ 本の順番</h2>
-      <button class="modal-close" onclick="closeBookOrder()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="book-order-list" id="bookOrderList"></div>
     </div>
   </div>
 </div>
@@ -495,7 +485,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v43';
+const APP_VERSION   = 'media-autosave-sync v44';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -554,6 +544,7 @@ let tagFolderSelectedTags = new Set();
 let currentRenderedBookKeys = [];
 let bookOrderDragKey = '';
 let bookOrderSelectedKey = '';
+let bookOrderJustDragged = false;
 let tagFolderSearchQuery = '';
 let tagFolderUnfiledOnly = false;
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
@@ -1803,6 +1794,51 @@ function folderExplorerLabel(path, root) {
   return folderParts(path).slice(rootParts.length).join(' > ');
 }
 
+function folderRootPath(path) {
+  const parts = folderParts(path);
+  return parts[0] || normalizeFolderPath(path);
+}
+
+function folderPathTrail(root, path) {
+  root = normalizeFolderPath(root);
+  path = normalizeFolderPath(path);
+  if (!path || path === root || !isFolderDescendantOrSelf(path, root)) return [];
+  const rootParts = folderParts(root);
+  const parts = folderParts(path);
+  const trail = [];
+  for (let i = rootParts.length + 1; i <= parts.length; i++) {
+    trail.push(parts.slice(0, i).join('/'));
+  }
+  return trail;
+}
+
+function appendFolderButtonRow(paths, host, tagSet, depth) {
+  paths = paths.filter(path => folderTagsForPath(path).some(tag => tagSet.has(tag)));
+  if (!paths.length) return;
+  const row = document.createElement('span');
+  row.className = 'tag-folder-child-row';
+  row.style.setProperty('--depth', depth);
+  paths.forEach(function(path) {
+    const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
+    const b = document.createElement('button');
+    b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
+    b.type = 'button';
+    b.textContent = folderLeafName(path) + ' ' + subTags.length;
+    b.onclick = () => setTagFolder(path);
+    row.appendChild(b);
+  });
+  host.appendChild(row);
+}
+
+function appendActiveFolderRows(root, host, tagSet) {
+  const active = activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, root) ? activeTagFolder : root;
+  const trail = folderPathTrail(root, active);
+  trail.forEach(function(path, index) {
+    appendFolderButtonRow([path], host, tagSet, index);
+  });
+  appendFolderButtonRow(childFolderPaths(active), host, tagSet, trail.length);
+}
+
 function appendFolderChildRows(parent, host, tagSet, depth) {
   const children = childFolderPaths(parent).filter(path => folderTagsForPath(path).some(tag => tagSet.has(tag)));
   if (!children.length) return;
@@ -1953,6 +1989,53 @@ function onBookOrderDragEnd(event) {
   clearBookOrderDropState();
 }
 
+function clearShelfBookDropState() {
+  document.querySelectorAll('.book-group.drop-before,.book-group.drop-after').forEach(function(group) {
+    group.classList.remove('drop-before','drop-after');
+    delete group.dataset.dropPosition;
+  });
+}
+
+function onShelfBookDragStart(event, key) {
+  bookOrderDragKey = String(key || '');
+  bookOrderSelectedKey = '';
+  bookOrderJustDragged = true;
+  event.currentTarget.classList.add('dragging');
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', bookOrderDragKey);
+  }
+}
+
+function onShelfBookDragOver(event, key) {
+  if (!bookOrderDragKey || bookOrderDragKey === String(key || '')) return;
+  event.preventDefault();
+  const group = event.currentTarget;
+  const rect = group.getBoundingClientRect();
+  const position = event.clientX > rect.left + rect.width / 2 ? 'after' : 'before';
+  clearShelfBookDropState();
+  group.dataset.dropPosition = position;
+  group.classList.add(position === 'after' ? 'drop-after' : 'drop-before');
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+}
+
+function onShelfBookDrop(event, key) {
+  event.preventDefault();
+  const group = event.currentTarget;
+  const dragKey = bookOrderDragKey || (event.dataTransfer && event.dataTransfer.getData('text/plain')) || '';
+  const position = group.dataset.dropPosition || 'before';
+  clearShelfBookDropState();
+  bookOrderDragKey = '';
+  reorderBookOrder(dragKey, key, position);
+}
+
+function onShelfBookDragEnd(event) {
+  event.currentTarget.classList.remove('dragging');
+  bookOrderDragKey = '';
+  clearShelfBookDropState();
+  setTimeout(function(){ bookOrderJustDragged = false; }, 80);
+}
+
 function selectBookOrderRow(key) {
   key = String(key || '');
   if (!bookOrderSelectedKey) {
@@ -2050,7 +2133,9 @@ function render() {
   const wrap=document.getElementById('tagFilters');
   wrap.innerHTML=`<button class="tag-btn${activeTag===''&&activeTagFolder===''?' active':''}" onclick="setTag('')">すべて</button>`;
   const tagSet = new Set(tags);
-  topFolderPaths().forEach(function(name) {
+  let visibleTopFolders = activeTagFolder ? topFolderPaths().filter(name => isFolderDescendantOrSelf(activeTagFolder, name)) : topFolderPaths();
+  if (activeTagFolder && !visibleTopFolders.length) visibleTopFolders = [folderRootPath(activeTagFolder)];
+  visibleTopFolders.forEach(function(name) {
     const folderTags = folderTagsForPath(name).filter(tag => tagSet.has(tag));
     if (!folderTags.length) return;
     const group = document.createElement('span');
@@ -2065,7 +2150,7 @@ function render() {
     if (folderActive) {
       const inner = document.createElement('span');
       inner.className = 'tag-folder-inner-tags';
-      appendFolderChildRows(name, inner, tagSet, 0);
+      appendActiveFolderRows(name, inner, tagSet);
       if (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, name)) {
         const tagRow = document.createElement('span');
         tagRow.className = 'tag-folder-child-row';
@@ -2109,7 +2194,12 @@ function render() {
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const isOpen = openBookKey === k;
     return `
-<div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
+<div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}" draggable="true"
+  ondragstart="onShelfBookDragStart(event,${jsArg(k)})"
+  ondragover="onShelfBookDragOver(event,${jsArg(k)})"
+  ondrop="onShelfBookDrop(event,${jsArg(k)})"
+  ondragleave="clearShelfBookDropState()"
+  ondragend="onShelfBookDragEnd(event)">
   <button type="button" class="book-spine" style="${spineVars}" onclick="toggleBookGroup(${gi})" data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
     <span class="book-spine-title">${formatSpineText(g.book||'タイトル未入力')}</span>
     ${g.author?`<span class="book-spine-author">${formatSpineText(g.author)}</span>`:''}
@@ -2210,6 +2300,7 @@ function formatSpineText(text) {
 }
 
 function toggleBookGroup(index) {
+  if (bookOrderJustDragged) return;
   const group = document.getElementById(`grp-${index}`);
   if (!group) return;
   const shouldOpen = !group.classList.contains('open');
@@ -2658,13 +2749,15 @@ function openBookOrder() {
   bookOrderDragKey = '';
   bookOrderSelectedKey = '';
   renderBookOrderList();
-  document.getElementById('bookOrderOverlay').classList.add('open');
+  const overlay = document.getElementById('bookOrderOverlay');
+  if (overlay) overlay.classList.add('open');
 }
 
 function closeBookOrder() {
   bookOrderDragKey = '';
   bookOrderSelectedKey = '';
-  document.getElementById('bookOrderOverlay').classList.remove('open');
+  const overlay = document.getElementById('bookOrderOverlay');
+  if (overlay) overlay.classList.remove('open');
 }
 
 // BUGFIX: book名をインデックス経由で安全に取得する
@@ -3507,7 +3600,6 @@ document.addEventListener('keydown',e=>{
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
-document.getElementById('bookOrderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookOrder();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.addEventListener('click',e=>{
@@ -3524,7 +3616,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v43';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v44';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
