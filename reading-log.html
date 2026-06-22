@@ -86,6 +86,8 @@
   .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
   .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
   .book-group.open { width: 100%; order: -1; }
+  .bookshelf-main.book-reorder-mode .book-spine { cursor: pointer; }
+  .book-group.reorder-selected .book-spine { outline: 3px solid var(--amber); outline-offset: 3px; filter: brightness(1.08) saturate(1.05); }
   .book-group.dragging { opacity: 0.45; }
   .book-group.drop-before .book-spine { box-shadow: -0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
   .book-group.drop-after .book-spine { box-shadow: 0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
@@ -334,6 +336,7 @@
         <option value="date">新しい順</option>
         <option value="book">書名順</option>
       </select>
+      <button class="btn-sub" id="shelfReorderBtn" onclick="toggleShelfReorderMode()" type="button">↔ 本移動</button>
       <button class="btn-sub" onclick="openTagFolders()" type="button">🏷 タグ整理</button>
     </div>
   </div>
@@ -487,7 +490,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v45';
+const APP_VERSION   = 'media-autosave-sync v46';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -548,6 +551,8 @@ let bookOrderDragKey = '';
 let bookOrderSelectedKey = '';
 let bookOrderJustDragged = false;
 let shelfPointerDrag = null;
+let shelfReorderMode = false;
+let shelfReorderSelectedKey = '';
 let tagFolderSearchQuery = '';
 let tagFolderUnfiledOnly = false;
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
@@ -1943,6 +1948,7 @@ function reorderBookOrder(dragKey, targetKey, position) {
   if (position === 'after') to += 1;
   order.splice(Math.max(0, Math.min(to, order.length)), 0, dragKey);
   setBookOrder(order);
+  shelfReorderSelectedKey = '';
   render();
   renderBookOrderList();
 }
@@ -2053,6 +2059,7 @@ function finishShelfPointerDrag() {
 }
 
 function onShelfBookPointerDown(event, key) {
+  if (shelfReorderMode) return;
   if (event.button !== undefined && event.button !== 0) return;
   const source = event.currentTarget.closest('.book-group');
   if (!source) return;
@@ -2127,6 +2134,40 @@ function selectBookOrderRow(key) {
   const moving = bookOrderSelectedKey;
   bookOrderSelectedKey = '';
   reorderBookOrder(moving, key, 'before');
+}
+
+function toggleShelfReorderMode() {
+  shelfReorderMode = !shelfReorderMode;
+  shelfReorderSelectedKey = '';
+  openBookKey = null;
+  render();
+  showToast(shelfReorderMode ? '本移動モード' : '本移動を終了');
+}
+
+function moveShelfBookByTap(key) {
+  key = String(key || '');
+  if (!shelfReorderSelectedKey) {
+    shelfReorderSelectedKey = key;
+    render();
+    return;
+  }
+  if (shelfReorderSelectedKey === key) {
+    shelfReorderSelectedKey = '';
+    render();
+    return;
+  }
+  const moving = shelfReorderSelectedKey;
+  shelfReorderSelectedKey = '';
+  reorderBookOrder(moving, key, 'before');
+  showToast('本を移動しました');
+}
+
+function onShelfBookTap(index, key) {
+  if (shelfReorderMode) {
+    moveShelfBookByTap(key);
+    return;
+  }
+  toggleBookGroup(index);
 }
 
 function bookGroups() {
@@ -2205,6 +2246,11 @@ function render() {
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
   const themeSelect = document.getElementById('shelfThemeSelect');
   if (themeSelect) themeSelect.value = shelfTheme;
+  const reorderBtn = document.getElementById('shelfReorderBtn');
+  if (reorderBtn) {
+    reorderBtn.classList.toggle('active', shelfReorderMode);
+    reorderBtn.textContent = shelfReorderMode ? '✓ 移動中' : '↔ 本移動';
+  }
 
   const wrap=document.getElementById('tagFilters');
   wrap.innerHTML=`<button class="tag-btn${activeTag===''&&activeTagFolder===''?' active':''}" onclick="setTag('')">すべて</button>`;
@@ -2266,12 +2312,12 @@ function render() {
   grouped = orderGroupedBooks(grouped);
   currentRenderedBookKeys = [...grouped.keys()];
 
-  container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}">${[...grouped.entries()].map(([k,g],gi)=>{
+  container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}${shelfReorderMode?' book-reorder-mode':''}">${[...grouped.entries()].map(([k,g],gi)=>{
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const isOpen = openBookKey === k;
     return `
-<div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
-  <button type="button" class="book-spine" style="${spineVars}" onclick="toggleBookGroup(${gi})"
+<div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" data-book-key="${esc(k)}">
+  <button type="button" class="book-spine" style="${spineVars}" onclick="onShelfBookTap(${gi},${jsArg(k)})"
     onpointerdown="onShelfBookPointerDown(event,${jsArg(k)})"
     onpointermove="onShelfBookPointerMove(event)"
     onpointerup="onShelfBookPointerUp(event)"
@@ -3692,7 +3738,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v45';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v46';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
