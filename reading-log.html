@@ -104,7 +104,7 @@
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
-  .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
+  .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; content-visibility: auto; contain-intrinsic-size: 34rem; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
@@ -463,7 +463,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v39';
+const APP_VERSION   = 'media-autosave-sync v40';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -526,6 +526,11 @@ let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
 let entryDraftDirty = false, entryDraftTimer = null, suppressEntryDraft = false;
+let tagFolderCacheText = null, tagFolderCacheValue = null;
+let tagFolderOrderCacheText = null, tagFolderOrderCacheValue = null;
+let tagFolderNamesCacheKey = '', tagFolderNamesCacheValue = [];
+let assignedTagsCacheKey = '', assignedTagsCacheValue = [];
+let folderTagsCacheKey = '', folderTagsCache = new Map();
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
@@ -664,15 +669,39 @@ function getTagFolders() {
   try {
     const stored = localStorage.getItem(TAG_FOLDERS_KEY);
     if (!stored) return {};
-    return inheritTagFolders(cleanTagFolders(JSON.parse(stored)));
+    if (stored !== tagFolderCacheText || !tagFolderCacheValue) {
+      tagFolderCacheValue = inheritTagFolders(cleanTagFolders(JSON.parse(stored)));
+      tagFolderCacheText = stored;
+      invalidateTagFolderDerivedCaches();
+    }
+    return cloneTagFolders(tagFolderCacheValue);
   } catch(e) { return {}; }
 }
 
 function getTagFolderOrder() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(TAG_FOLDER_ORDER_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed.map(normalizeFolderPath).filter(Boolean) : [];
+    const stored = localStorage.getItem(TAG_FOLDER_ORDER_KEY) || '[]';
+    if (stored !== tagFolderOrderCacheText || !tagFolderOrderCacheValue) {
+      const parsed = JSON.parse(stored);
+      tagFolderOrderCacheValue = Array.isArray(parsed) ? parsed.map(normalizeFolderPath).filter(Boolean) : [];
+      tagFolderOrderCacheText = stored;
+      invalidateTagFolderDerivedCaches();
+    }
+    return tagFolderOrderCacheValue.slice();
   } catch(e) { return []; }
+}
+
+function cloneTagFolders(folders) {
+  const copy = {};
+  Object.keys(folders || {}).forEach(key => { copy[key] = cleanTagList(folders[key]); });
+  return copy;
+}
+
+function invalidateTagFolderDerivedCaches() {
+  tagFolderNamesCacheKey = '';
+  assignedTagsCacheKey = '';
+  folderTagsCacheKey = '';
+  folderTagsCache = new Map();
 }
 
 function cleanTagFolderOrder(order, folders) {
@@ -688,7 +717,12 @@ function cleanTagFolderOrder(order, folders) {
 }
 
 function setTagFolderOrder(order, options) {
-  localStorage.setItem(TAG_FOLDER_ORDER_KEY, JSON.stringify(cleanTagFolderOrder(order)));
+  const clean = cleanTagFolderOrder(order);
+  const text = JSON.stringify(clean);
+  localStorage.setItem(TAG_FOLDER_ORDER_KEY, text);
+  tagFolderOrderCacheText = text;
+  tagFolderOrderCacheValue = clean.slice();
+  invalidateTagFolderDerivedCaches();
   if (!options || options.sync !== false) {
     markSyncPending(true);
     scheduleCloudSync(0);
@@ -697,8 +731,16 @@ function setTagFolderOrder(order, options) {
 
 function setTagFolders(folders, options) {
   const clean = inheritTagFolders(cleanTagFolders(folders));
-  localStorage.setItem(TAG_FOLDERS_KEY, JSON.stringify(clean));
-  localStorage.setItem(TAG_FOLDER_ORDER_KEY, JSON.stringify(cleanTagFolderOrder(getTagFolderOrder(), clean)));
+  const text = JSON.stringify(clean);
+  localStorage.setItem(TAG_FOLDERS_KEY, text);
+  tagFolderCacheText = text;
+  tagFolderCacheValue = cloneTagFolders(clean);
+  const order = cleanTagFolderOrder(getTagFolderOrder(), clean);
+  const orderText = JSON.stringify(order);
+  localStorage.setItem(TAG_FOLDER_ORDER_KEY, orderText);
+  tagFolderOrderCacheText = orderText;
+  tagFolderOrderCacheValue = order.slice();
+  invalidateTagFolderDerivedCaches();
   if (!options || options.sync !== false) {
     markSyncPending(true);
     scheduleCloudSync(0);
@@ -757,21 +799,26 @@ function folderTreePathsRaw(folders) {
   return [...paths].sort(folderPathSortRaw);
 }
 
-function folderPathSort(a,b) {
+function folderPathSortWithOrder(a,b,order) {
   a = normalizeFolderPath(a);
   b = normalizeFolderPath(b);
   if (a === b) return 0;
   if (isFolderDescendantOrSelf(b, a)) return -1;
   if (isFolderDescendantOrSelf(a, b)) return 1;
-  const order = cleanTagFolderOrder(getTagFolderOrder());
   const ai = order.indexOf(a);
   const bi = order.indexOf(b);
   if (ai >= 0 && bi >= 0 && ai !== bi) return ai - bi;
   return folderPathSortRaw(a,b);
 }
 
+function folderPathSort(a,b) {
+  return folderPathSortWithOrder(a,b,cleanTagFolderOrder(getTagFolderOrder()));
+}
+
 function folderTreePaths(folders) {
-  return folderTreePathsRaw(folders).sort(folderPathSort);
+  const clean = folders || getTagFolders();
+  const order = cleanTagFolderOrder(getTagFolderOrder(), clean);
+  return folderTreePathsRaw(clean).sort((a,b)=>folderPathSortWithOrder(a,b,order));
 }
 
 function cleanTagFolders(folders) {
@@ -1626,14 +1673,23 @@ function allTagSet() {
 }
 
 function tagFolderNames() {
-  return folderTreePaths(getTagFolders());
+  const key = (localStorage.getItem(TAG_FOLDERS_KEY) || '') + '\n' + (localStorage.getItem(TAG_FOLDER_ORDER_KEY) || '');
+  if (key !== tagFolderNamesCacheKey) {
+    tagFolderNamesCacheValue = folderTreePaths(getTagFolders());
+    tagFolderNamesCacheKey = key;
+  }
+  return tagFolderNamesCacheValue.slice();
 }
 
 function assignedFolderTags() {
+  const key = localStorage.getItem(TAG_FOLDERS_KEY) || '';
+  if (key === assignedTagsCacheKey) return new Set(assignedTagsCacheValue);
   const s = new Set();
   const folders = getTagFolders();
   Object.keys(folders).forEach(name => folders[name].forEach(tag => s.add(tag)));
-  return s;
+  assignedTagsCacheKey = key;
+  assignedTagsCacheValue = [...s];
+  return new Set(assignedTagsCacheValue);
 }
 
 function activeFolderTags() {
@@ -1656,12 +1712,21 @@ function activeTagFilterLabel() {
 }
 
 function folderTagsForPath(path) {
+  path = normalizeFolderPath(path);
+  const key = localStorage.getItem(TAG_FOLDERS_KEY) || '';
+  if (key !== folderTagsCacheKey) {
+    folderTagsCacheKey = key;
+    folderTagsCache = new Map();
+  }
+  if (folderTagsCache.has(path)) return folderTagsCache.get(path).slice();
   const folders = getTagFolders();
   const merged = [];
   Object.keys(folders).forEach(function(name) {
     if (isFolderDescendantOrSelf(name, path)) merged.push(...cleanTagList(folders[name]));
   });
-  return cleanTagList(merged);
+  const clean = cleanTagList(merged);
+  folderTagsCache.set(path, clean);
+  return clean.slice();
 }
 
 function directFolderTags(path) {
@@ -1963,7 +2028,7 @@ function cardHTML(e) {
   const sketchHTML=media.length?`
     <div class="section-block" style="background:var(--stone-50)">
       <div class="section-label">🎨 スケッチ・画像</div>
-      <div class="sketch-grid">${media.map((d,i)=>`<img src="${d}" alt="スケッチ・画像${i+1}" onclick="annotateEntryMedia('${e.id}','${i}')">`).join('')}</div>
+      <div class="sketch-grid">${media.map((d,i)=>`<img src="${d}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="annotateEntryMedia('${e.id}','${i}')">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
@@ -2577,7 +2642,7 @@ function queueEntryDraftSave() {
   entryDraftDirty = true;
   setEntryDraftStatus('未保存の変更あり');
   if (entryDraftTimer) clearTimeout(entryDraftTimer);
-  entryDraftTimer = setTimeout(saveEntryDraftNow, 500);
+  entryDraftTimer = setTimeout(saveEntryDraftNow, 1000);
 }
 
 function clearEntryDraft() {
@@ -3195,7 +3260,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v39';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v40';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
