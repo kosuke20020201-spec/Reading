@@ -94,6 +94,8 @@
   .book-move-btn { min-height: 1.75rem; padding: 0.2rem 0.48rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-700); box-shadow: 0 2px 8px #0000000d; font: inherit; font-size: 0.64rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
   .book-move-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
   .book-move-btn.active { background: var(--amber); border-color: var(--amber); color: white; }
+  .book-move-status { display: none; margin: -0.25rem 0 0.75rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; border: 1px solid var(--amber-border); background: #fffbeb; color: #92400e; font-size: 0.75rem; font-weight: 800; }
+  .book-move-status.show { display: block; }
   .book-group.dragging { opacity: 0.45; }
   .book-group.drop-before .book-spine { box-shadow: -0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
   .book-group.drop-after .book-spine { box-shadow: 0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
@@ -349,6 +351,7 @@
   </div>
 
   <p class="results-count" id="resultsCount" style="display:none"></p>
+  <p class="book-move-status" id="bookMoveStatus"></p>
   <div id="cardsContainer"></div>
   <div class="empty" id="emptyState" style="display:none">
     <div class="empty-icon">📭</div>
@@ -496,7 +499,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v47';
+const APP_VERSION   = 'media-autosave-sync v48';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2199,15 +2202,39 @@ function bookMoveActionsHTML(key) {
   key = String(key || '');
   if (!shelfReorderMode) return '';
   if (!shelfReorderSelectedKey) {
-    return `<div class="book-move-actions"><button type="button" class="book-move-btn" onclick="chooseShelfMoveSource(event,${jsArg(key)})">これを移動</button></div>`;
+    return `<div class="book-move-actions"><button type="button" class="book-move-btn" data-book-move-action="source" data-book-key="${esc(key)}">これを移動</button></div>`;
   }
   if (shelfReorderSelectedKey === key) {
-    return `<div class="book-move-actions"><button type="button" class="book-move-btn active" onclick="clearShelfMoveSource(event)">選択中</button></div>`;
+    return `<div class="book-move-actions"><button type="button" class="book-move-btn active" data-book-move-action="clear" data-book-key="${esc(key)}">選択中</button></div>`;
   }
   return `<div class="book-move-actions">
-    <button type="button" class="book-move-btn" onclick="placeShelfMoveTarget(event,${jsArg(key)},'before')">前へ</button>
-    <button type="button" class="book-move-btn" onclick="placeShelfMoveTarget(event,${jsArg(key)},'after')">後へ</button>
+    <button type="button" class="book-move-btn" data-book-move-action="before" data-book-key="${esc(key)}">前へ</button>
+    <button type="button" class="book-move-btn" data-book-move-action="after" data-book-key="${esc(key)}">後へ</button>
   </div>`;
+}
+
+function handleShelfMoveButtonClick(event) {
+  const btn = event.target.closest && event.target.closest('[data-book-move-action]');
+  if (!btn) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  const key = btn.dataset.bookKey || '';
+  const action = btn.dataset.bookMoveAction || '';
+  if (action === 'source') {
+    chooseShelfMoveSource(null, key);
+    showToast('移動する本を選びました');
+    return true;
+  }
+  if (action === 'clear') {
+    clearShelfMoveSource(null);
+    showToast('選択を解除しました');
+    return true;
+  }
+  if (action === 'before' || action === 'after') {
+    placeShelfMoveTarget(null, key, action);
+    return true;
+  }
+  return false;
 }
 
 function onShelfBookTap(index, key) {
@@ -2298,6 +2325,13 @@ function render() {
   if (reorderBtn) {
     reorderBtn.classList.toggle('active', shelfReorderMode);
     reorderBtn.textContent = shelfReorderMode ? '✓ 移動中' : '↔ 本移動';
+  }
+  const moveStatus = document.getElementById('bookMoveStatus');
+  if (moveStatus) {
+    moveStatus.classList.toggle('show', shelfReorderMode);
+    if (!shelfReorderMode) moveStatus.textContent = '';
+    else if (shelfReorderSelectedKey) moveStatus.textContent = '移動先の本で「前へ」か「後へ」を押してください';
+    else moveStatus.textContent = '動かしたい本の「これを移動」を押してください';
   }
 
   const wrap=document.getElementById('tagFilters');
@@ -3775,6 +3809,7 @@ document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
+document.getElementById('cardsContainer').addEventListener('click', handleShelfMoveButtonClick, true);
 document.addEventListener('click',e=>{
   if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
   if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
@@ -3789,7 +3824,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v47';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v48';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

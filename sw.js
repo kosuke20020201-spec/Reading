@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260622-visible-shelf-move-buttons-1';
+const CACHE_NAME = 'reading-note-pwa-20260622-delegated-shelf-move-1';
 const APP_SHELL = [
   './',
   './index.html',
