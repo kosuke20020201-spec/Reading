@@ -72,7 +72,8 @@
   .tag-folder-group { display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; padding: 0.16rem 0.28rem; border-radius: 999px; background: #fff7ed; border: 1px solid #fed7aa; }
   .tag-folder-btn { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; border: 1px solid #fdba74; background: white; color: #9a3412; cursor: pointer; font-family: inherit; }
   .tag-folder-btn.active { background: #9a3412; border-color: #9a3412; color: white; }
-  .tag-folder-inner-tags { display: inline-flex; flex-wrap: wrap; gap: 0.28rem; }
+  .tag-folder-inner-tags { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.28rem; }
+  .tag-folder-child-row { display: flex; flex-wrap: wrap; gap: 0.28rem; margin-left: calc(var(--depth, 0) * 0.9rem); }
   .tag-folder-child-btn { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.58rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); cursor: pointer; font-family: inherit; }
   .tag-folder-child-btn.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
@@ -85,10 +86,17 @@
   .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
   .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
   .book-group.open { width: 100%; order: -1; }
-  .book-order-controls { display:flex; flex-direction:column; gap:0.25rem; align-self:flex-end; padding-bottom:0.35rem; }
-  .book-order-controls button { width:2rem; height:2rem; border-radius:999px; border:1px solid var(--stone-200); background:white; color:var(--stone-600); box-shadow:0 2px 8px #0000000d; cursor:pointer; font:inherit; font-weight:900; line-height:1; }
-  .book-order-controls button:hover { border-color:var(--amber); color:var(--amber); background:#fffbeb; }
-  .book-order-controls button:disabled { opacity:0.35; cursor:default; }
+  .book-order-list { display: flex; flex-direction: column; gap: 0.45rem; }
+  .book-order-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 0.75rem; padding: 0.7rem 0.8rem; border: 1px solid var(--stone-200); border-radius: 0.85rem; background: white; cursor: grab; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
+  .book-order-row:active { cursor: grabbing; }
+  .book-order-row.dragging { opacity: 0.42; transform: scale(0.99); }
+  .book-order-row.drop-before { border-top: 3px solid var(--amber); }
+  .book-order-row.drop-after { border-bottom: 3px solid var(--amber); }
+  .book-order-row.selected { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b22; }
+  .book-order-grip { width: 2rem; height: 2rem; border: none; border-radius: 0.6rem; background: var(--stone-100); color: var(--stone-500); font: inherit; font-size: 1.05rem; font-weight: 900; cursor: grab; line-height: 1; }
+  .book-order-title { font-size: 0.84rem; font-weight: 800; color: var(--stone-800); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .book-order-meta { font-size: 0.68rem; color: var(--stone-400); margin-top: 0.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .book-order-count { font-size: 0.7rem; font-weight: 800; color: #92400e; background: var(--amber-light); border: 1px solid var(--amber-border); border-radius: 999px; padding: 0.14rem 0.55rem; white-space: nowrap; }
   .book-spine { position: relative; width: var(--spine-width, 4.6rem); height: 15.5rem; padding: 0.82rem 0.48rem 0.74rem; border-radius: 0.62rem 0.48rem 0.24rem 0.24rem; border: 1px solid var(--spine-edge, #4b2e21); border-left-color: var(--spine-light, #8a6a4b); border-right-color: var(--spine-shadow, #2f1f18); background: linear-gradient(90deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.16) 9%, rgba(255,255,255,0.03) 31%, rgba(0,0,0,0.08) 58%, rgba(0,0,0,0.26) 84%, rgba(0,0,0,0.44) 100%), linear-gradient(180deg, rgba(255,255,255,0.22) 0, rgba(255,255,255,0.06) 0.32rem, transparent 0.62rem, transparent calc(100% - 0.72rem), rgba(0,0,0,0.22) calc(100% - 0.34rem), rgba(0,0,0,0.36) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.055) 0 1px, transparent 1px 5px), repeating-linear-gradient(0deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 6px), linear-gradient(180deg, var(--spine-top, #79513a) 0%, var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18) 100%); color: var(--spine-ink, #fff4d6); box-shadow: inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; overflow: hidden; transform-origin: bottom center; }
   .book-spine::before { content: ""; position: absolute; inset: 0.5rem 0.32rem 0.58rem; border-radius: 0.46rem 0.36rem 0.16rem 0.16rem; background: linear-gradient(90deg, rgba(255,255,255,0.18) 0 0.28rem, rgba(0,0,0,0.12) 0.36rem 0.46rem, transparent 0.68rem calc(100% - 0.46rem), rgba(0,0,0,0.18) calc(100% - 0.34rem) 100%), linear-gradient(180deg, transparent 0 13%, rgba(255,255,255,0.18) 13% 14.2%, rgba(0,0,0,0.25) 14.2% 16.3%, transparent 16.3% 36%, rgba(255,255,255,0.16) 36% 37.2%, rgba(0,0,0,0.23) 37.2% 39.4%, transparent 39.4% 61%, rgba(255,255,255,0.15) 61% 62.2%, rgba(0,0,0,0.22) 62.2% 64.4%, transparent 64.4% 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 6px 7px rgba(255,255,255,0.08), inset 0 -10px 12px rgba(0,0,0,0.16); opacity: 0.95; pointer-events: none; }
   .book-spine::after { content: ""; position: absolute; left: 0.6rem; right: 0.58rem; top: 0.72rem; height: 2.35rem; border-radius: 0.34rem; border-top: 1px solid rgba(255,255,255,0.34); border-bottom: 1px solid rgba(0,0,0,0.22); background: linear-gradient(180deg, var(--spine-label, #f3e5c0), rgba(255,255,255,0.04)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.12); opacity: var(--spine-label-opacity, 0.16); pointer-events: none; }
@@ -321,6 +329,7 @@
         <option value="date">新しい順</option>
         <option value="book">書名順</option>
       </select>
+      <button class="btn-sub" onclick="openBookOrder()" type="button">☰ 本の順番</button>
       <button class="btn-sub" onclick="openTagFolders()" type="button">🏷 タグ整理</button>
     </div>
   </div>
@@ -392,6 +401,18 @@
     <div class="modal-body">
       <p style="font-size:0.8rem;color:var(--stone-400)">本を選ぶと、著者が自動入力された状態で記録追加できます</p>
       <div class="bookshelf-list" id="bookshelfList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bookOrderOverlay">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h2 class="modal-title">☰ 本の順番</h2>
+      <button class="modal-close" onclick="closeBookOrder()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="book-order-list" id="bookOrderList"></div>
     </div>
   </div>
 </div>
@@ -474,7 +495,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v42';
+const APP_VERSION   = 'media-autosave-sync v43';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -531,6 +552,8 @@ let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
 let tagFolderSelectedTags = new Set();
 let currentRenderedBookKeys = [];
+let bookOrderDragKey = '';
+let bookOrderSelectedKey = '';
 let tagFolderSearchQuery = '';
 let tagFolderUnfiledOnly = false;
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
@@ -1780,6 +1803,29 @@ function folderExplorerLabel(path, root) {
   return folderParts(path).slice(rootParts.length).join(' > ');
 }
 
+function appendFolderChildRows(parent, host, tagSet, depth) {
+  const children = childFolderPaths(parent).filter(path => folderTagsForPath(path).some(tag => tagSet.has(tag)));
+  if (!children.length) return;
+  const row = document.createElement('span');
+  row.className = 'tag-folder-child-row';
+  row.style.setProperty('--depth', depth);
+  children.forEach(function(path) {
+    const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
+    const b = document.createElement('button');
+    b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
+    b.type = 'button';
+    b.textContent = folderLeafName(path) + ' ' + subTags.length;
+    b.onclick = () => setTagFolder(path);
+    row.appendChild(b);
+  });
+  host.appendChild(row);
+  children.forEach(function(path) {
+    if (activeTagFolder && (activeTagFolder === path || isFolderDescendantOrSelf(activeTagFolder, path))) {
+      appendFolderChildRows(path, host, tagSet, depth + 1);
+    }
+  });
+}
+
 function unfiledTags() {
   const assigned = assignedFolderTags();
   return allTags().filter(tag => !assigned.has(tag)).sort((a,b)=>a.localeCompare(b,'ja'));
@@ -1843,6 +1889,85 @@ function moveBookOrder(key, direction) {
   order[next] = key;
   setBookOrder(order);
   render();
+}
+
+function reorderBookOrder(dragKey, targetKey, position) {
+  dragKey = String(dragKey || '');
+  targetKey = String(targetKey || '');
+  if (!dragKey || !targetKey || dragKey === targetKey) return;
+  const order = normalizeBookOrder(getBookOrder(), currentBookKeys());
+  const from = order.indexOf(dragKey);
+  let to = order.indexOf(targetKey);
+  if (from < 0 || to < 0) return;
+  order.splice(from, 1);
+  if (from < to) to -= 1;
+  if (position === 'after') to += 1;
+  order.splice(Math.max(0, Math.min(to, order.length)), 0, dragKey);
+  setBookOrder(order);
+  render();
+  renderBookOrderList();
+}
+
+function clearBookOrderDropState() {
+  document.querySelectorAll('.book-order-row.drop-before,.book-order-row.drop-after').forEach(function(row) {
+    row.classList.remove('drop-before','drop-after');
+    delete row.dataset.dropPosition;
+  });
+}
+
+function onBookOrderDragStart(event, key) {
+  bookOrderDragKey = String(key || '');
+  bookOrderSelectedKey = '';
+  event.currentTarget.classList.add('dragging');
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', bookOrderDragKey);
+  }
+}
+
+function onBookOrderDragOver(event, key) {
+  if (!bookOrderDragKey || bookOrderDragKey === String(key || '')) return;
+  event.preventDefault();
+  const row = event.currentTarget;
+  const rect = row.getBoundingClientRect();
+  const position = event.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+  clearBookOrderDropState();
+  row.dataset.dropPosition = position;
+  row.classList.add(position === 'after' ? 'drop-after' : 'drop-before');
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+}
+
+function onBookOrderDrop(event, key) {
+  event.preventDefault();
+  const row = event.currentTarget;
+  const dragKey = bookOrderDragKey || (event.dataTransfer && event.dataTransfer.getData('text/plain')) || '';
+  const position = row.dataset.dropPosition || 'before';
+  clearBookOrderDropState();
+  bookOrderDragKey = '';
+  reorderBookOrder(dragKey, key, position);
+}
+
+function onBookOrderDragEnd(event) {
+  event.currentTarget.classList.remove('dragging');
+  bookOrderDragKey = '';
+  clearBookOrderDropState();
+}
+
+function selectBookOrderRow(key) {
+  key = String(key || '');
+  if (!bookOrderSelectedKey) {
+    bookOrderSelectedKey = key;
+    renderBookOrderList();
+    return;
+  }
+  if (bookOrderSelectedKey === key) {
+    bookOrderSelectedKey = '';
+    renderBookOrderList();
+    return;
+  }
+  const moving = bookOrderSelectedKey;
+  bookOrderSelectedKey = '';
+  reorderBookOrder(moving, key, 'before');
 }
 
 function bookGroups() {
@@ -1940,25 +2065,20 @@ function render() {
     if (folderActive) {
       const inner = document.createElement('span');
       inner.className = 'tag-folder-inner-tags';
-      visibleFolderExplorerPaths(name).forEach(function(path) {
-        const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
-        if (!subTags.length) return;
-        const b = document.createElement('button');
-        b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
-        b.type = 'button';
-        b.textContent = '↳ ' + folderExplorerLabel(path, name) + ' ' + subTags.length;
-        b.onclick = () => setTagFolder(path);
-        inner.appendChild(b);
-      });
+      appendFolderChildRows(name, inner, tagSet, 0);
       if (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, name)) {
+        const tagRow = document.createElement('span');
+        tagRow.className = 'tag-folder-child-row';
+        tagRow.style.setProperty('--depth', folderDepth(activeTagFolder) - folderDepth(name) + 1);
         directFolderTags(activeTagFolder).filter(tag => tagSet.has(tag)).forEach(function(tag) {
           const b = document.createElement('button');
           b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
           b.type = 'button';
           b.textContent = tag;
           b.onclick = () => setTag(tag);
-          inner.appendChild(b);
+          tagRow.appendChild(b);
         });
+        if (tagRow.children.length) inner.appendChild(tagRow);
       }
       group.appendChild(inner);
     }
@@ -1988,13 +2108,8 @@ function render() {
   container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}">${[...grouped.entries()].map(([k,g],gi)=>{
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const isOpen = openBookKey === k;
-    const bookIndex = currentRenderedBookKeys.indexOf(k);
     return `
 <div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
-  <div class="book-order-controls" aria-label="book order">
-    <button type="button" onclick="event.stopPropagation();moveBookOrder(${jsArg(k)},-1)" ${bookIndex<=0?'disabled':''} title="上へ" aria-label="上へ">↑</button>
-    <button type="button" onclick="event.stopPropagation();moveBookOrder(${jsArg(k)},1)" ${bookIndex>=currentRenderedBookKeys.length-1?'disabled':''} title="下へ" aria-label="下へ">↓</button>
-  </div>
   <button type="button" class="book-spine" style="${spineVars}" onclick="toggleBookGroup(${gi})" data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
     <span class="book-spine-title">${formatSpineText(g.book||'タイトル未入力')}</span>
     ${g.author?`<span class="book-spine-author">${formatSpineText(g.author)}</span>`:''}
@@ -2517,6 +2632,40 @@ function openBookshelf() {
   document.getElementById('bookshelfOverlay').classList.add('open');
 }
 function closeBookshelf() { document.getElementById('bookshelfOverlay').classList.remove('open'); }
+
+function renderBookOrderList() {
+  const list = document.getElementById('bookOrderList');
+  if (!list) return;
+  const rows = [...bookGroups().entries()];
+  list.innerHTML = rows.length ? rows.map(([key, group]) => `
+    <div class="book-order-row${bookOrderSelectedKey===key?' selected':''}" draggable="true"
+      onclick="selectBookOrderRow(${jsArg(key)})"
+      ondragstart="onBookOrderDragStart(event,${jsArg(key)})"
+      ondragover="onBookOrderDragOver(event,${jsArg(key)})"
+      ondrop="onBookOrderDrop(event,${jsArg(key)})"
+      ondragleave="clearBookOrderDropState()"
+      ondragend="onBookOrderDragEnd(event)">
+      <button type="button" class="book-order-grip" tabindex="-1" aria-label="ドラッグ">☰</button>
+      <div style="min-width:0">
+        <div class="book-order-title">${esc(group.book || 'タイトル未入力')}</div>
+        ${group.author ? `<div class="book-order-meta">${esc(group.author)}</div>` : ''}
+      </div>
+      <span class="book-order-count">${group.entries.length}件</span>
+    </div>`).join('') : '<p style="font-size:0.82rem;color:var(--stone-400);text-align:center;padding:1rem">まだ記録がありません</p>';
+}
+
+function openBookOrder() {
+  bookOrderDragKey = '';
+  bookOrderSelectedKey = '';
+  renderBookOrderList();
+  document.getElementById('bookOrderOverlay').classList.add('open');
+}
+
+function closeBookOrder() {
+  bookOrderDragKey = '';
+  bookOrderSelectedKey = '';
+  document.getElementById('bookOrderOverlay').classList.remove('open');
+}
 
 // BUGFIX: book名をインデックス経由で安全に取得する
 function getBookByIdx(idx) {
@@ -3352,12 +3501,13 @@ document.addEventListener('keydown',e=>{
       closeDrawingModal();
       return;
     }
-    closeModal();closeAiModal();closeBookshelf();closeTagFolders();closeViewer();
+    closeModal();closeAiModal();closeBookshelf();closeBookOrder();closeTagFolders();closeViewer();
   }
 });
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
+document.getElementById('bookOrderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookOrder();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.addEventListener('click',e=>{
@@ -3374,7 +3524,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v42';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v43';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
