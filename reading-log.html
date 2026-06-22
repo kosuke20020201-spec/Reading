@@ -206,6 +206,9 @@
 
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
+  .scroll-top-btn { position: fixed; left: 1rem; bottom: 1.1rem; width: 2.8rem; height: 2.8rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-700); box-shadow: 0 8px 22px #00000018; font: inherit; font-size: 1.1rem; font-weight: 900; cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(0.4rem); transition: opacity 0.18s, transform 0.18s, border-color 0.12s, color 0.12s; z-index: 220; }
+  .scroll-top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .scroll-top-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
 
   /* 固定タグ */
   .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
@@ -460,10 +463,11 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()" type="button" title="一番上へ" aria-label="一番上へ">↑</button>
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v40';
+const APP_VERSION   = 'media-autosave-sync v41';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -3232,6 +3236,16 @@ function showToast(msg) {
   clearTimeout(t._timer); t._timer=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
+function updateScrollTopButton() {
+  const btn = document.getElementById('scrollTopBtn');
+  if (!btn) return;
+  btn.classList.toggle('show', window.scrollY > 500);
+}
+
+function scrollToTop() {
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(document.getElementById('drawingOverlay').classList.contains('open')) {
@@ -3260,7 +3274,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v40';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v41';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -3300,9 +3314,10 @@ window.addEventListener('beforeunload',e=>{
 window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
+window.addEventListener('scroll', updateScrollTopButton, {passive:true});
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
-load(); migrateOldFixedTags(); render(); updateSyncPanel(); loadFromCloud();
+load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); loadFromCloud();
 </script>
 </body>
 </html>

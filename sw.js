@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260622-performance-cache-1';
+const CACHE_NAME = 'reading-note-pwa-20260622-scroll-top-button-1';
 const APP_SHELL = [
   './',
   './index.html',
