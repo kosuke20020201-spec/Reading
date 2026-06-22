@@ -96,6 +96,10 @@
   .book-move-btn.active { background: var(--amber); border-color: var(--amber); color: white; }
   .book-move-status { display: none; margin: -0.25rem 0 0.75rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; border: 1px solid var(--amber-border); background: #fffbeb; color: #92400e; font-size: 0.75rem; font-weight: 800; }
   .book-move-status.show { display: block; }
+  .book-insert-slot { display: none; align-self: stretch; align-items: flex-end; padding: 0 0.1rem 0.35rem; }
+  .bookshelf-main.book-reorder-mode.has-moving-book .book-insert-slot { display: flex; }
+  .book-insert-btn { min-height: 2rem; padding: 0.25rem 0.55rem; border-radius: 999px; border: 1px dashed var(--amber); background: #fffbeb; color: #92400e; font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px #0000000d; }
+  .book-insert-btn:hover { background: var(--amber-light); border-style: solid; }
   .book-group.dragging { opacity: 0.45; }
   .book-group.drop-before .book-spine { box-shadow: -0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
   .book-group.drop-after .book-spine { box-shadow: 0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
@@ -499,7 +503,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v48';
+const APP_VERSION   = 'media-autosave-sync v49';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2198,6 +2202,34 @@ function placeShelfMoveTarget(event, key, position) {
   showToast('本を移動しました');
 }
 
+function insertShelfMoveAtIndex(event, index) {
+  if (event) event.stopPropagation();
+  if (!shelfReorderSelectedKey) return;
+  const moving = shelfReorderSelectedKey;
+  const visible = currentRenderedBookKeys.slice();
+  let insertIndex = Math.max(0, Math.min(Number(index) || 0, visible.length));
+  const oldIndex = visible.indexOf(moving);
+  const withoutMoving = visible.filter(key => key !== moving);
+  if (oldIndex >= 0 && oldIndex < insertIndex) insertIndex -= 1;
+  insertIndex = Math.max(0, Math.min(insertIndex, withoutMoving.length));
+  shelfReorderSelectedKey = '';
+  if (!withoutMoving.length) {
+    render();
+    return;
+  }
+  if (insertIndex >= withoutMoving.length) {
+    reorderBookOrder(moving, withoutMoving[withoutMoving.length - 1], 'after');
+  } else {
+    reorderBookOrder(moving, withoutMoving[insertIndex], 'before');
+  }
+  showToast('本を挿入しました');
+}
+
+function bookInsertSlotHTML(index) {
+  if (!shelfReorderMode || !shelfReorderSelectedKey) return '';
+  return `<div class="book-insert-slot"><button type="button" class="book-insert-btn" data-book-move-action="insert" data-insert-index="${index}">ここに挿入</button></div>`;
+}
+
 function bookMoveActionsHTML(key) {
   key = String(key || '');
   if (!shelfReorderMode) return '';
@@ -2205,12 +2237,9 @@ function bookMoveActionsHTML(key) {
     return `<div class="book-move-actions"><button type="button" class="book-move-btn" data-book-move-action="source" data-book-key="${esc(key)}">これを移動</button></div>`;
   }
   if (shelfReorderSelectedKey === key) {
-    return `<div class="book-move-actions"><button type="button" class="book-move-btn active" data-book-move-action="clear" data-book-key="${esc(key)}">選択中</button></div>`;
+    return `<div class="book-move-actions"><button type="button" class="book-move-btn active" data-book-move-action="clear" data-book-key="${esc(key)}">取り出し中</button></div>`;
   }
-  return `<div class="book-move-actions">
-    <button type="button" class="book-move-btn" data-book-move-action="before" data-book-key="${esc(key)}">前へ</button>
-    <button type="button" class="book-move-btn" data-book-move-action="after" data-book-key="${esc(key)}">後へ</button>
-  </div>`;
+  return '';
 }
 
 function handleShelfMoveButtonClick(event) {
@@ -2232,6 +2261,10 @@ function handleShelfMoveButtonClick(event) {
   }
   if (action === 'before' || action === 'after') {
     placeShelfMoveTarget(null, key, action);
+    return true;
+  }
+  if (action === 'insert') {
+    insertShelfMoveAtIndex(null, btn.dataset.insertIndex || 0);
     return true;
   }
   return false;
@@ -2330,7 +2363,7 @@ function render() {
   if (moveStatus) {
     moveStatus.classList.toggle('show', shelfReorderMode);
     if (!shelfReorderMode) moveStatus.textContent = '';
-    else if (shelfReorderSelectedKey) moveStatus.textContent = '移動先の本で「前へ」か「後へ」を押してください';
+    else if (shelfReorderSelectedKey) moveStatus.textContent = '本を取り出し中です。入れたい場所の「ここに挿入」を押してください';
     else moveStatus.textContent = '動かしたい本の「これを移動」を押してください';
   }
 
@@ -2394,10 +2427,12 @@ function render() {
   grouped = orderGroupedBooks(grouped);
   currentRenderedBookKeys = [...grouped.keys()];
 
-  container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}${shelfReorderMode?' book-reorder-mode':''}">${[...grouped.entries()].map(([k,g],gi)=>{
+  const bookEntries = [...grouped.entries()];
+  container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}${shelfReorderMode?' book-reorder-mode':''}${shelfReorderSelectedKey?' has-moving-book':''}">${bookEntries.map(([k,g],gi)=>{
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const isOpen = openBookKey === k;
     return `
+${bookInsertSlotHTML(gi)}
 <div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" data-book-key="${esc(k)}">
   <div class="book-shell" style="${spineVars}">
     <button type="button" class="book-spine" style="${spineVars}" onclick="onShelfBookTap(${gi},${jsArg(k)})"
@@ -2417,7 +2452,7 @@ function render() {
   </div>
   <div class="book-group-cards" id="grp-${gi}-cards">${expandedRecordsHTML(g)}</div>
 </div>`;
-  }).join('')}</div>`;
+  }).join('')}${bookInsertSlotHTML(bookEntries.length)}</div>`;
 }
 
 function expandedRecordsHTML(group) {
@@ -3824,7 +3859,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v48';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v49';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
