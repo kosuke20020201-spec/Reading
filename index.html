@@ -463,7 +463,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v37';
+const APP_VERSION   = 'media-autosave-sync v38';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2084,7 +2084,8 @@ function visibleBulkTags() {
   const q = tagFolderSearchQuery.trim().toLocaleLowerCase('ja-JP');
   const target = normalizeFolderPath(document.getElementById('tagFolderTargetSelect')?.value || '');
   const assigned = assignedFolderTags();
-  let base = target ? folderTagsForPath(target).filter(tag => allTags().includes(tag)) : allTags();
+  const parent = target ? folderParentPath(target) : '';
+  let base = target && parent ? folderTagsForPath(parent).filter(tag => allTags().includes(tag)) : allTags();
   if (tagFolderUnfiledOnly && !target) base = base.filter(tag => !assigned.has(tag));
   return cleanTagList(base).sort((a,b)=>a.localeCompare(b,'ja')).filter(function(tag) {
     return !q || tag.toLocaleLowerCase('ja-JP').includes(q);
@@ -3182,7 +3183,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v37';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v38';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

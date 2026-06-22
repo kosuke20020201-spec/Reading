@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260622-save-state-tags-drafts-1';
+const CACHE_NAME = 'reading-note-pwa-20260622-child-folder-tag-pick-1';
 const APP_SHELL = [
   './',
   './index.html',
