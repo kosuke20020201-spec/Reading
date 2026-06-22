@@ -57,6 +57,7 @@
   .entry-sync-badge.error { border-color:#fecaca; background:#fef2f2; color:#b91c1c; }
   @keyframes syncPulse { from { opacity: 0.45; } to { opacity: 1; } }
 
+  .sticky-controls { position: sticky; top: 0; z-index: 120; margin: 0 -0.45rem 1.25rem; padding: 0.5rem 0.45rem 0.65rem; background: linear-gradient(135deg, rgba(253,248,240,0.96) 0%, rgba(254,249,239,0.96) 50%, rgba(253,250,245,0.96) 100%); border-bottom: 1px solid rgba(231,229,228,0.82); backdrop-filter: blur(10px); }
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
   .search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
   .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; font-family: inherit; outline: none; transition: border-color 0.1s; }
@@ -64,7 +65,7 @@
   .search-input::placeholder { color: var(--stone-300); }
   .search-clear { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--stone-300); font-size: 1rem; line-height: 1; display: none; }
 
-  .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0; }
   .tag-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
@@ -84,6 +85,10 @@
   .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
   .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
   .book-group.open { width: 100%; order: -1; }
+  .book-order-controls { display:flex; flex-direction:column; gap:0.25rem; align-self:flex-end; padding-bottom:0.35rem; }
+  .book-order-controls button { width:2rem; height:2rem; border-radius:999px; border:1px solid var(--stone-200); background:white; color:var(--stone-600); box-shadow:0 2px 8px #0000000d; cursor:pointer; font:inherit; font-weight:900; line-height:1; }
+  .book-order-controls button:hover { border-color:var(--amber); color:var(--amber); background:#fffbeb; }
+  .book-order-controls button:disabled { opacity:0.35; cursor:default; }
   .book-spine { position: relative; width: var(--spine-width, 4.6rem); height: 15.5rem; padding: 0.82rem 0.48rem 0.74rem; border-radius: 0.62rem 0.48rem 0.24rem 0.24rem; border: 1px solid var(--spine-edge, #4b2e21); border-left-color: var(--spine-light, #8a6a4b); border-right-color: var(--spine-shadow, #2f1f18); background: linear-gradient(90deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.16) 9%, rgba(255,255,255,0.03) 31%, rgba(0,0,0,0.08) 58%, rgba(0,0,0,0.26) 84%, rgba(0,0,0,0.44) 100%), linear-gradient(180deg, rgba(255,255,255,0.22) 0, rgba(255,255,255,0.06) 0.32rem, transparent 0.62rem, transparent calc(100% - 0.72rem), rgba(0,0,0,0.22) calc(100% - 0.34rem), rgba(0,0,0,0.36) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.055) 0 1px, transparent 1px 5px), repeating-linear-gradient(0deg, rgba(0,0,0,0.045) 0 1px, transparent 1px 6px), linear-gradient(180deg, var(--spine-top, #79513a) 0%, var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18) 100%); color: var(--spine-ink, #fff4d6); box-shadow: inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; font-family: inherit; transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; overflow: hidden; transform-origin: bottom center; }
   .book-spine::before { content: ""; position: absolute; inset: 0.5rem 0.32rem 0.58rem; border-radius: 0.46rem 0.36rem 0.16rem 0.16rem; background: linear-gradient(90deg, rgba(255,255,255,0.18) 0 0.28rem, rgba(0,0,0,0.12) 0.36rem 0.46rem, transparent 0.68rem calc(100% - 0.46rem), rgba(0,0,0,0.18) calc(100% - 0.34rem) 100%), linear-gradient(180deg, transparent 0 13%, rgba(255,255,255,0.18) 13% 14.2%, rgba(0,0,0,0.25) 14.2% 16.3%, transparent 16.3% 36%, rgba(255,255,255,0.16) 36% 37.2%, rgba(0,0,0,0.23) 37.2% 39.4%, transparent 39.4% 61%, rgba(255,255,255,0.15) 61% 62.2%, rgba(0,0,0,0.22) 62.2% 64.4%, transparent 64.4% 100%); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 6px 7px rgba(255,255,255,0.08), inset 0 -10px 12px rgba(0,0,0,0.16); opacity: 0.95; pointer-events: none; }
   .book-spine::after { content: ""; position: absolute; left: 0.6rem; right: 0.58rem; top: 0.72rem; height: 2.35rem; border-radius: 0.34rem; border-top: 1px solid rgba(255,255,255,0.34); border-bottom: 1px solid rgba(0,0,0,0.22); background: linear-gradient(180deg, var(--spine-label, #f3e5c0), rgba(255,255,255,0.04)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.12); opacity: var(--spine-label-opacity, 0.16); pointer-events: none; }
@@ -206,7 +211,7 @@
 
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
-  .scroll-top-btn { position: fixed; left: 1rem; bottom: 1.1rem; width: 2.8rem; height: 2.8rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-700); box-shadow: 0 8px 22px #00000018; font: inherit; font-size: 1.1rem; font-weight: 900; cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(0.4rem); transition: opacity 0.18s, transform 0.18s, border-color 0.12s, color 0.12s; z-index: 220; }
+  .scroll-top-btn { position: fixed; left: 1rem; bottom: 1.1rem; width: 3.6rem; height: 3.6rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-700); box-shadow: 0 8px 22px #00000018; font: inherit; font-size: 1.45rem; font-weight: 900; cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(0.4rem); transition: opacity 0.18s, transform 0.18s, border-color 0.12s, color 0.12s; z-index: 220; }
   .scroll-top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
   .scroll-top-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
 
@@ -297,6 +302,7 @@
     </div>
   </header>
 
+  <div class="sticky-controls">
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
     <input class="search-input" id="searchInput" type="text" placeholder="本・著者・内容・教訓・タグで検索…" autocomplete="off" oninput="onSearch(this.value)">
@@ -317,6 +323,7 @@
       </select>
       <button class="btn-sub" onclick="openTagFolders()" type="button">🏷 タグ整理</button>
     </div>
+  </div>
   </div>
 
   <p class="results-count" id="resultsCount" style="display:none"></p>
@@ -467,7 +474,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v41';
+const APP_VERSION   = 'media-autosave-sync v42';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -489,6 +496,7 @@ const MEDIA_SKETCH_MAX_CHARS = 48000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
+const BOOK_ORDER_KEY = 'reading_log_book_order';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
   classic: [
@@ -522,6 +530,7 @@ let openBookKey = null;
 let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
 let tagFolderSelectedTags = new Set();
+let currentRenderedBookKeys = [];
 let tagFolderSearchQuery = '';
 let tagFolderUnfiledOnly = false;
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
@@ -1748,9 +1757,92 @@ function topFolderPaths() {
   return tagFolderNames().filter(name => folderDepth(name) === 0);
 }
 
+function visibleFolderExplorerPaths(root) {
+  root = normalizeFolderPath(root);
+  const active = activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, root) ? activeTagFolder : root;
+  const visible = [];
+  let current = root;
+  while (current) {
+    const children = childFolderPaths(current);
+    children.forEach(function(path) {
+      if (!visible.includes(path)) visible.push(path);
+    });
+    if (!active || current === active) break;
+    const next = children.find(path => active === path || isFolderDescendantOrSelf(active, path));
+    if (!next) break;
+    current = next;
+  }
+  return visible;
+}
+
+function folderExplorerLabel(path, root) {
+  const rootParts = folderParts(root);
+  return folderParts(path).slice(rootParts.length).join(' > ');
+}
+
 function unfiledTags() {
   const assigned = assignedFolderTags();
   return allTags().filter(tag => !assigned.has(tag)).sort((a,b)=>a.localeCompare(b,'ja'));
+}
+
+function currentBookKeys() {
+  const keys = [];
+  entries.forEach(function(entry) {
+    const key = bookKey(entry.book);
+    if (!keys.includes(key)) keys.push(key);
+  });
+  return keys;
+}
+
+function getBookOrder() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(BOOK_ORDER_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeBookOrder(order, keys) {
+  const keySet = new Set(keys);
+  const clean = [];
+  (Array.isArray(order) ? order : []).forEach(function(key) {
+    key = String(key || '');
+    if (keySet.has(key) && !clean.includes(key)) clean.push(key);
+  });
+  keys.forEach(function(key) {
+    if (!clean.includes(key)) clean.push(key);
+  });
+  return clean;
+}
+
+function setBookOrder(order) {
+  localStorage.setItem(BOOK_ORDER_KEY, JSON.stringify(normalizeBookOrder(order, currentBookKeys())));
+}
+
+function orderGroupedBooks(grouped) {
+  const ordered = new Map();
+  normalizeBookOrder(getBookOrder(), [...grouped.keys()]).forEach(function(key) {
+    if (grouped.has(key)) ordered.set(key, grouped.get(key));
+  });
+  return ordered;
+}
+
+function moveBookOrder(key, direction) {
+  key = String(key || '');
+  const visibleKeys = currentRenderedBookKeys.length ? currentRenderedBookKeys : currentBookKeys();
+  const visibleIndex = visibleKeys.indexOf(key);
+  const visibleNext = visibleIndex + (direction < 0 ? -1 : 1);
+  if (visibleIndex < 0 || visibleNext < 0 || visibleNext >= visibleKeys.length) return;
+  const targetKey = visibleKeys[visibleNext];
+  const order = normalizeBookOrder(getBookOrder(), currentBookKeys());
+  const index = order.indexOf(key);
+  const next = order.indexOf(targetKey);
+  if (index < 0 || next < 0) return;
+  order[index] = targetKey;
+  order[next] = key;
+  setBookOrder(order);
+  render();
 }
 
 function bookGroups() {
@@ -1760,7 +1852,7 @@ function bookGroups() {
     if(!map.has(k)) map.set(k,{book:e.book||'',author:e.author||'',entries:[]});
     map.get(k).entries.push(e);
   });
-  return map;
+  return orderGroupedBooks(map);
 }
 
 function getFiltered() {
@@ -1848,13 +1940,13 @@ function render() {
     if (folderActive) {
       const inner = document.createElement('span');
       inner.className = 'tag-folder-inner-tags';
-      tagFolderNames().filter(path => path !== name && isFolderDescendantOrSelf(path, name)).forEach(function(path) {
+      visibleFolderExplorerPaths(name).forEach(function(path) {
         const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
         if (!subTags.length) return;
         const b = document.createElement('button');
         b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
         b.type = 'button';
-        b.textContent = '↳ ' + folderDisplayName(path).replace(folderDisplayName(name) + ' › ', '') + ' ' + subTags.length;
+        b.textContent = '↳ ' + folderExplorerLabel(path, name) + ' ' + subTags.length;
         b.onclick = () => setTagFolder(path);
         inner.appendChild(b);
       });
@@ -1887,14 +1979,22 @@ function render() {
   if(!list.length){container.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
 
-  const grouped=new Map();
+  let grouped=new Map();
   list.forEach(e=>{const k=bookKey(e.book)||'（タイトル未入力）';if(!grouped.has(k))grouped.set(k,{book:e.book||'',author:e.author||'',entries:[]});grouped.get(k).entries.push(e);});
+
+  grouped = orderGroupedBooks(grouped);
+  currentRenderedBookKeys = [...grouped.keys()];
 
   container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}">${[...grouped.entries()].map(([k,g],gi)=>{
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const isOpen = openBookKey === k;
+    const bookIndex = currentRenderedBookKeys.indexOf(k);
     return `
 <div class="book-group${isOpen?' open':''}" id="grp-${gi}" data-book-key="${esc(k)}">
+  <div class="book-order-controls" aria-label="book order">
+    <button type="button" onclick="event.stopPropagation();moveBookOrder(${jsArg(k)},-1)" ${bookIndex<=0?'disabled':''} title="上へ" aria-label="上へ">↑</button>
+    <button type="button" onclick="event.stopPropagation();moveBookOrder(${jsArg(k)},1)" ${bookIndex>=currentRenderedBookKeys.length-1?'disabled':''} title="下へ" aria-label="下へ">↓</button>
+  </div>
   <button type="button" class="book-spine" style="${spineVars}" onclick="toggleBookGroup(${gi})" data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
     <span class="book-spine-title">${formatSpineText(g.book||'タイトル未入力')}</span>
     ${g.author?`<span class="book-spine-author">${formatSpineText(g.author)}</span>`:''}
@@ -3274,7 +3374,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v41';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v42';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
