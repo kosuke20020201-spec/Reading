@@ -39,6 +39,7 @@
   .btn-add:hover { filter: brightness(1.08); } .btn-add:active { transform: scale(0.97); }
   .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.77rem; transition: all 0.1s; font-family: inherit; white-space: nowrap; }
   .btn-sub:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  .btn-sub.active { border-color: var(--stone-800); color: white; background: var(--stone-800); }
   .sync-strip { align-self: stretch; display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
   .sync-pill { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2rem; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); font: inherit; font-size: 0.72rem; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
   .sync-pill:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
@@ -50,6 +51,10 @@
   .sync-dot.busy { background: #0ea5e9; animation: syncPulse 0.9s ease-in-out infinite alternate; }
   .sync-info-btn { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-500); font: inherit; font-size: 0.76rem; font-weight: 800; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
   .sync-info-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  .entry-sync-badge { display:inline-flex; align-items:center; gap:0.3rem; margin-top:0.35rem; padding:0.16rem 0.5rem; border-radius:999px; border:1px solid var(--stone-200); background:var(--stone-50); color:var(--stone-500); font-size:0.66rem; font-weight:800; }
+  .entry-sync-badge.ok { border-color:#bbf7d0; background:#f0fdf4; color:#15803d; }
+  .entry-sync-badge.pending { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
+  .entry-sync-badge.error { border-color:#fecaca; background:#fef2f2; color:#b91c1c; }
   @keyframes syncPulse { from { opacity: 0.45; } to { opacity: 1; } }
 
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
@@ -215,13 +220,17 @@
   #tagFolderOverlay .modal-body { min-height: 0; }
   .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; flex:0 0 auto; }
   .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
-  .tag-bulk-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:0.5rem; align-items:center; }
+  .tag-bulk-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto auto; gap:0.5rem; align-items:center; }
   .tag-bulk-toolbar input { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
   .tag-bulk-list { display:flex; flex-wrap:wrap; align-content:flex-start; gap:0.4rem; flex:0 0 clamp(24rem, 58vh, 42rem); min-height:24rem; overflow:auto; padding:0.65rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
   .tag-bulk-chip { border:1px solid var(--stone-200); background:white; color:var(--stone-700); border-radius:999px; padding:0.28rem 0.68rem; font:inherit; font-size:0.72rem; font-weight:700; cursor:pointer; }
   .tag-bulk-chip.selected { background:var(--stone-800); border-color:var(--stone-800); color:white; }
   .tag-bulk-chip.assigned:not(.selected) { border-color:#fed7aa; color:#9a3412; background:#fff7ed; }
   .tag-bulk-count { font-size:0.72rem; color:var(--stone-500); font-weight:700; }
+  .tag-folder-order-actions { display:flex; align-items:center; gap:0.25rem; flex-shrink:0; }
+  .tag-folder-order-actions button { min-width:2rem; height:2rem; border-radius:0.55rem; border:1px solid var(--stone-200); background:white; color:var(--stone-600); cursor:pointer; font:inherit; font-weight:800; }
+  .tag-folder-order-actions button:hover { border-color:var(--amber); color:var(--amber); background:#fffbeb; }
+  .tag-folder-order-actions button:disabled { opacity:0.35; cursor:default; }
   .tag-folder-add-line { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
   .tag-folder-create input, .tag-folder-create select, .tag-folder-add-line select { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
   .tag-folder-card { border:1px solid var(--stone-200); border-radius:0.75rem; background:white; padding:0.75rem; }
@@ -329,7 +338,7 @@
       </div>
       <div class="field-row">
         <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
-        <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55"></div>
+        <div class="field"><label>ページ</label><input type="text" id="fPage" placeholder="pp.42–55" onblur="normalizePageField()"></div>
       </div>
       <div class="field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
       <div class="field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
@@ -359,6 +368,7 @@
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
+      <span id="entryDraftStatus" style="font-size:0.72rem;color:var(--stone-400);font-weight:700"></span>
     </div>
   </div>
 </div>
@@ -390,6 +400,7 @@
       </div>
       <div class="tag-bulk-toolbar">
         <input type="text" id="tagFolderSearch" placeholder="タグを検索" oninput="onTagFolderSearch(this.value)">
+        <button type="button" class="btn-sub" id="tagFolderUnfiledBtn" onclick="toggleTagFolderUnfiledOnly()">未分類のみ</button>
         <button type="button" class="btn-sub" onclick="selectAllVisibleTags()">表示分を選択</button>
         <button type="button" class="btn-sub" onclick="clearTagFolderSelection()">解除</button>
       </div>
@@ -439,6 +450,7 @@
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeDrawingModal()">キャンセル</button>
       <button class="btn-save" onclick="saveDrawing()">保存する</button>
+      <span id="drawingSaveStatus" style="font-size:0.72rem;color:var(--stone-400);font-weight:700"></span>
     </div>
   </div>
 </div>
@@ -451,7 +463,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v36';
+const APP_VERSION   = 'media-autosave-sync v37';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -462,6 +474,7 @@ const SYNC_LAST_OK_KEY = 'reading_log_sync_last_ok';
 const SYNC_LAST_ATTEMPT_KEY = 'reading_log_sync_last_attempt';
 const SYNC_LAST_ERROR_KEY = 'reading_log_sync_last_error';
 const DRAWING_DRAFT_KEY = 'reading_log_drawing_draft_v1';
+const ENTRY_DRAFT_KEY = 'reading_log_entry_draft_v1';
 const SYNC_RETRY_MS = 15000;
 const MEDIA_IMAGE_MAX_SIDE = 720;
 const MEDIA_IMAGE_QUALITY = 0.72;
@@ -471,6 +484,7 @@ const MEDIA_SKETCH_QUALITY = 0.94;
 const MEDIA_SKETCH_MAX_CHARS = 48000;
 const BOOK_META_KEY = 'reading_log_book_meta';
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
+const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const SPINE_THEMES = {
   classic: [
@@ -505,11 +519,13 @@ let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
 let tagFolderSelectedTags = new Set();
 let tagFolderSearchQuery = '';
+let tagFolderUnfiledOnly = false;
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
 if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
+let entryDraftDirty = false, entryDraftTimer = null, suppressEntryDraft = false;
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
@@ -652,8 +668,37 @@ function getTagFolders() {
   } catch(e) { return {}; }
 }
 
+function getTagFolderOrder() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TAG_FOLDER_ORDER_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.map(normalizeFolderPath).filter(Boolean) : [];
+  } catch(e) { return []; }
+}
+
+function cleanTagFolderOrder(order, folders) {
+  const paths = folderTreePathsRaw(folders || getTagFolders());
+  const pathSet = new Set(paths);
+  const clean = [];
+  (Array.isArray(order) ? order : []).forEach(function(path) {
+    path = normalizeFolderPath(path);
+    if (path && pathSet.has(path) && !clean.includes(path)) clean.push(path);
+  });
+  paths.forEach(path => { if (!clean.includes(path)) clean.push(path); });
+  return clean;
+}
+
+function setTagFolderOrder(order, options) {
+  localStorage.setItem(TAG_FOLDER_ORDER_KEY, JSON.stringify(cleanTagFolderOrder(order)));
+  if (!options || options.sync !== false) {
+    markSyncPending(true);
+    scheduleCloudSync(0);
+  }
+}
+
 function setTagFolders(folders, options) {
-  localStorage.setItem(TAG_FOLDERS_KEY, JSON.stringify(cleanTagFolders(folders)));
+  const clean = cleanTagFolders(folders);
+  localStorage.setItem(TAG_FOLDERS_KEY, JSON.stringify(clean));
+  localStorage.setItem(TAG_FOLDER_ORDER_KEY, JSON.stringify(cleanTagFolderOrder(getTagFolderOrder(), clean)));
   if (!options || options.sync !== false) {
     markSyncPending(true);
     scheduleCloudSync(0);
@@ -693,7 +738,7 @@ function isFolderDescendantOrSelf(path, ancestor) {
   return path === ancestor || (!!ancestor && path.startsWith(ancestor + '/'));
 }
 
-function folderPathSort(a,b) {
+function folderPathSortRaw(a,b) {
   const left = folderParts(a);
   const right = folderParts(b);
   for (let i = 0; i < Math.min(left.length, right.length); i++) {
@@ -703,13 +748,30 @@ function folderPathSort(a,b) {
   return left.length - right.length;
 }
 
-function folderTreePaths(folders) {
+function folderTreePathsRaw(folders) {
   const paths = new Set();
   Object.keys(folders || {}).forEach(function(path) {
     const parts = folderParts(path);
     for (let i = 1; i <= parts.length; i++) paths.add(parts.slice(0, i).join('/'));
   });
-  return [...paths].sort(folderPathSort);
+  return [...paths].sort(folderPathSortRaw);
+}
+
+function folderPathSort(a,b) {
+  a = normalizeFolderPath(a);
+  b = normalizeFolderPath(b);
+  if (a === b) return 0;
+  if (isFolderDescendantOrSelf(b, a)) return -1;
+  if (isFolderDescendantOrSelf(a, b)) return 1;
+  const order = cleanTagFolderOrder(getTagFolderOrder());
+  const ai = order.indexOf(a);
+  const bi = order.indexOf(b);
+  if (ai >= 0 && bi >= 0 && ai !== bi) return ai - bi;
+  return folderPathSortRaw(a,b);
+}
+
+function folderTreePaths(folders) {
+  return folderTreePathsRaw(folders).sort(folderPathSort);
 }
 
 function cleanTagFolders(folders) {
@@ -728,7 +790,7 @@ function buildTagFolderSyncEntry() {
     id: TAG_FOLDER_SYNC_ID,
     book: '',
     title: '',
-    content: JSON.stringify(getTagFolders()),
+    content: JSON.stringify({folders:getTagFolders(), order:getTagFolderOrder()}),
     tags: [],
     drawings: [],
     images: [],
@@ -738,13 +800,26 @@ function buildTagFolderSyncEntry() {
   };
 }
 
+function parseTagFolderPayload(value) {
+  let parsed;
+  try {
+    parsed = JSON.parse(value || '{}');
+  } catch(e) {
+    parsed = {};
+  }
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.folders) {
+    return {
+      folders: cleanTagFolders(parsed.folders),
+      order: Array.isArray(parsed.order) ? parsed.order : []
+    };
+  }
+  return {folders: cleanTagFolders(parsed), order: []};
+}
+
 function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
   if (!cloudEntry) return;
-  let cloudFolders;
-  try {
-    cloudFolders = JSON.parse(cloudEntry.content || '{}');
-  } catch(e) { return; }
-  const cloud = cleanTagFolders(cloudFolders);
+  const payload = parseTagFolderPayload(cloudEntry.content || '{}');
+  const cloud = payload.folders;
   const local = getTagFolders();
   const merged = {};
   Object.keys(cloud).forEach(function(name) {
@@ -757,7 +832,10 @@ function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
       merged[name] = cleanTagList([...(merged[name] || []), ...(local[name] || [])]);
     }
   });
+  const localOrder = getTagFolderOrder();
+  const mergedOrder = cleanTagFolderOrder(preferLocal ? [...localOrder, ...payload.order] : [...payload.order, ...localOrder], merged);
   setTagFolders(merged, {sync:false});
+  setTagFolderOrder(mergedOrder, {sync:false});
 }
 
 // クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
@@ -993,11 +1071,31 @@ function updateSyncPanel(forceState) {
   const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
   let state = forceState || (lastError ? 'error' : (pending ? 'pending' : (lastOk ? 'ok' : 'idle')));
   dot.className = 'sync-dot ' + (state === 'idle' ? '' : state);
-  if (state === 'busy') text.textContent = 'Syncing...';
-  else if (state === 'error') text.textContent = 'Sync problem';
-  else if (pending) text.textContent = 'Not synced yet';
-  else if (lastOk) text.textContent = 'Saved to cloud';
-  else text.textContent = 'Sync now';
+  if (state === 'busy') text.textContent = '同期中';
+  else if (state === 'error') text.textContent = '同期失敗';
+  else if (pending) text.textContent = '端末のみ';
+  else if (lastOk) text.textContent = 'クラウド済み';
+  else text.textContent = '同期する';
+}
+
+function entrySyncBadge(entry) {
+  const lastOk = Date.parse(localStorage.getItem(SYNC_LAST_OK_KEY) || '') || 0;
+  const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
+  const pending = hasPendingSync();
+  const updated = entryTime(entry);
+  let cls = '';
+  let label = '端末保存';
+  if (lastError && (!lastOk || updated >= lastOk)) {
+    cls = ' error';
+    label = '同期失敗';
+  } else if (pending && (!lastOk || updated >= lastOk)) {
+    cls = ' pending';
+    label = '端末のみ';
+  } else if (lastOk) {
+    cls = ' ok';
+    label = 'クラウド済み';
+  }
+  return `<div class="entry-sync-badge${cls}">${label}</div>`;
 }
 
 async function manualSync() {
@@ -1417,12 +1515,14 @@ async function syncToCloud(options) {
     markSyncPending(false);
     markDeletedIdsSynced(deletedIds);
     recordSyncSuccess();
+    render();
     showSyncStatus('Saved to cloud');
     setTimeout(hideSyncStatus, 1800);
     return true;
   } catch(e) {
     markSyncPending(true);
     recordSyncError(e);
+    render();
     console.warn('Cloud sync failed:', e);
     showSyncStatus('Sync problem - will retry');
     scheduleCloudSync(SYNC_RETRY_MS);
@@ -1861,6 +1961,7 @@ function cardHTML(e) {
         ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
         ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
         ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
+        ${entrySyncBadge(e)}
       </div>
       <div class="card-actions">
         <button class="card-action-btn" onclick="editEntry(${esc(JSON.stringify(e.id))})">✏️</button>
@@ -1937,6 +2038,8 @@ function closeTagFolders() {
 function renderTagFolderManager() {
   const targetSelect = document.getElementById('tagFolderTargetSelect');
   if (targetSelect) targetSelect.innerHTML = tagFolderTargetOptions();
+  const unfiledBtn = document.getElementById('tagFolderUnfiledBtn');
+  if (unfiledBtn) unfiledBtn.classList.toggle('active', tagFolderUnfiledOnly);
   renderTagBulkList();
   const list = document.getElementById('tagFolderList');
   if (!list) return;
@@ -1956,11 +2059,17 @@ function renderTagFolderManager() {
     const children = childFolderPaths(name).length;
     const totalTags = folderTagsForPath(name).length;
     const indent = Math.min(folderDepth(name), 3) * 0.8;
+    const siblings = tagFolderNames().filter(path => folderParentPath(path) === folderParentPath(name));
+    const pos = siblings.indexOf(name);
     return `
       <div class="tag-folder-card" style="margin-left:${indent}rem">
         <div class="tag-folder-card-header">
           <div class="tag-folder-card-title">📁 ${esc(folderLeafName(name))}${children ? ` <span style="font-size:0.68rem;color:var(--stone-400);font-weight:700">子${children} / 計${totalTags}</span>` : ''}</div>
-          <button type="button" class="btn-cancel" onclick='deleteTagFolder(${jsArg(name)})'>削除</button>
+          <div class="tag-folder-order-actions">
+            <button type="button" onclick='moveTagFolderOrder(${jsArg(name)},-1)' ${pos<=0?'disabled':''}>↑</button>
+            <button type="button" onclick='moveTagFolderOrder(${jsArg(name)},1)' ${pos>=siblings.length-1?'disabled':''}>↓</button>
+            <button type="button" onclick='deleteTagFolder(${jsArg(name)})'>削除</button>
+          </div>
         </div>
         <div class="tag-folder-chip-row">${chips || '<span style="font-size:0.72rem;color:var(--stone-400)">直接入っているタグなし</span>'}</div>
         <div class="tag-folder-add-line">
@@ -1973,7 +2082,11 @@ function renderTagFolderManager() {
 
 function visibleBulkTags() {
   const q = tagFolderSearchQuery.trim().toLocaleLowerCase('ja-JP');
-  return allTags().sort((a,b)=>a.localeCompare(b,'ja')).filter(function(tag) {
+  const target = normalizeFolderPath(document.getElementById('tagFolderTargetSelect')?.value || '');
+  const assigned = assignedFolderTags();
+  let base = target ? folderTagsForPath(target).filter(tag => allTags().includes(tag)) : allTags();
+  if (tagFolderUnfiledOnly && !target) base = base.filter(tag => !assigned.has(tag));
+  return cleanTagList(base).sort((a,b)=>a.localeCompare(b,'ja')).filter(function(tag) {
     return !q || tag.toLocaleLowerCase('ja-JP').includes(q);
   });
 }
@@ -2022,7 +2135,41 @@ function clearTagFolderSelection() {
 function onTagFolderTargetChange() {
   const target = document.getElementById('tagFolderTargetSelect').value;
   const input = document.getElementById('tagFolderName');
+  if (target) tagFolderUnfiledOnly = false;
   input.placeholder = target ? 'サブフォルダ名（空なら既存へ追加）' : '新規フォルダ名 / 親/子';
+  renderTagBulkList();
+  const unfiledBtn = document.getElementById('tagFolderUnfiledBtn');
+  if (unfiledBtn) unfiledBtn.classList.toggle('active', tagFolderUnfiledOnly);
+}
+
+function toggleTagFolderUnfiledOnly() {
+  tagFolderUnfiledOnly = !tagFolderUnfiledOnly;
+  if (tagFolderUnfiledOnly) {
+    const target = document.getElementById('tagFolderTargetSelect');
+    if (target) target.value = '';
+  }
+  renderTagFolderManager();
+}
+
+function moveTagFolderOrder(name, direction) {
+  name = normalizeFolderPath(name);
+  const folders = getTagFolders();
+  const siblings = tagFolderNames().filter(path => folderParentPath(path) === folderParentPath(name));
+  const index = siblings.indexOf(name);
+  const nextIndex = index + (direction < 0 ? -1 : 1);
+  if (index < 0 || nextIndex < 0 || nextIndex >= siblings.length) return;
+  const nextSiblings = siblings.slice();
+  const tmp = nextSiblings[index];
+  nextSiblings[index] = nextSiblings[nextIndex];
+  nextSiblings[nextIndex] = tmp;
+  const currentOrder = cleanTagFolderOrder(getTagFolderOrder(), folders);
+  const siblingIndexes = siblings.map(path => currentOrder.indexOf(path)).filter(i => i >= 0);
+  const firstSiblingIndex = siblingIndexes.length ? Math.min(...siblingIndexes) : currentOrder.length;
+  const rest = currentOrder.filter(path => !siblings.includes(path));
+  rest.splice(firstSiblingIndex, 0, ...nextSiblings);
+  setTagFolderOrder(rest);
+  renderTagFolderManager();
+  render();
 }
 
 function selectedFolderNameFromForm() {
@@ -2243,11 +2390,22 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
 
   renderFixedTagChips();
   renderDrawingGallery();
+  entryDraftDirty = false;
+  setEntryDraftStatus('');
+  maybeRestoreEntryDraft();
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
 }
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('suggestList').style.display='none'; document.getElementById('tagSuggestList').style.display='none'; fixedTagEditOnly=false; }
+function closeModal(force) {
+  if (!force && entryDraftDirty && !confirm('保存していない記録があります。閉じますか？')) return false;
+  if (force || entryDraftDirty) clearEntryDraft();
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('suggestList').style.display='none';
+  document.getElementById('tagSuggestList').style.display='none';
+  fixedTagEditOnly=false;
+  return true;
+}
 function editEntry(id) { openModal(id); }
 
 function deleteEntry(id) {
@@ -2263,6 +2421,7 @@ function deleteEntry(id) {
 }
 
 async function saveEntry() {
+  normalizePageField();
   if(mediaProcessingCount>0){ alert('画像を処理中です。数秒待ってから保存してください。'); return; }
   const bookName = document.getElementById('fBook').value.trim();
   if(!bookName){ alert('本タイトルを入力してください'); return; }
@@ -2271,7 +2430,8 @@ async function saveEntry() {
   if (fixedTagEditOnly) {
     setBookFixedTags(bookName, currentFixedTags);
     persist();
-    closeModal();
+    clearEntryDraft();
+    closeModal(true);
     render();
     showToast('固定タグを保存しました');
     return;
@@ -2287,7 +2447,7 @@ async function saveEntry() {
   const data = {
     book:       bookName,
     author:     document.getElementById('fAuthor').value,
-    page:       document.getElementById('fPage').value,
+    page:       formatPageValue(document.getElementById('fPage').value),
     title:      document.getElementById('fTitle').value,
     content:    document.getElementById('fContent').value,
     lesson:     document.getElementById('fLesson').value,
@@ -2304,7 +2464,7 @@ async function saveEntry() {
   if(editingId){ entries=entries.map(e=>e.id===editingId?{...e,...data}:e); }
   else { entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}); }
 
-  persist(); closeModal(); render(); showToast('保存しました');
+  persist(); clearEntryDraft(); closeModal(true); render(); showToast('保存しました');
   if(shouldVerifyMedia) {
     const synced = await syncMediaNow();
     showToast(synced ? 'Saved to cloud' : 'Saved on this device. Sync pending.');
@@ -2342,6 +2502,107 @@ function editBookTags(idx) {
   closeBookshelf();
   openModal(null, g.book, g.author, true);
   showToast('固定タグだけを保存できます');
+}
+
+function entryDraftContext() {
+  return editingId===null||editingId===undefined ? 'new' : String(editingId);
+}
+
+function entryFieldIds() {
+  return ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'];
+}
+
+function collectEntryDraftData() {
+  const data = {};
+  entryFieldIds().forEach(function(id) {
+    const el = document.getElementById(id);
+    data[id] = el ? el.value : '';
+  });
+  return data;
+}
+
+function applyEntryDraftData(data) {
+  if (!data) return;
+  suppressEntryDraft = true;
+  entryFieldIds().forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el && Object.prototype.hasOwnProperty.call(data, id)) el.value = data[id] || '';
+  });
+  currentFixedTags = getBookFixedTags(document.getElementById('fBook').value || '');
+  renderFixedTagChips();
+  suppressEntryDraft = false;
+}
+
+function getEntryDraft() {
+  try {
+    const raw = localStorage.getItem(ENTRY_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+function setEntryDraftStatus(text) {
+  const el = document.getElementById('entryDraftStatus');
+  if (el) el.textContent = text || '';
+}
+
+function saveEntryDraftNow() {
+  if (fixedTagEditOnly || suppressEntryDraft) return;
+  try {
+    localStorage.setItem(ENTRY_DRAFT_KEY, JSON.stringify({
+      context: entryDraftContext(),
+      data: collectEntryDraftData(),
+      savedAt: new Date().toISOString()
+    }));
+    setEntryDraftStatus('下書き保存済み');
+  } catch(e) {
+    console.warn('Entry draft save failed:', e);
+  }
+}
+
+function queueEntryDraftSave() {
+  if (fixedTagEditOnly || suppressEntryDraft) return;
+  entryDraftDirty = true;
+  setEntryDraftStatus('未保存の変更あり');
+  if (entryDraftTimer) clearTimeout(entryDraftTimer);
+  entryDraftTimer = setTimeout(saveEntryDraftNow, 500);
+}
+
+function clearEntryDraft() {
+  if (entryDraftTimer) clearTimeout(entryDraftTimer);
+  entryDraftTimer = null;
+  entryDraftDirty = false;
+  localStorage.removeItem(ENTRY_DRAFT_KEY);
+  setEntryDraftStatus('');
+}
+
+function maybeRestoreEntryDraft() {
+  if (fixedTagEditOnly) return;
+  const draft = getEntryDraft();
+  if (!draft || draft.context !== entryDraftContext() || !draft.data) return;
+  applyEntryDraftData(draft.data);
+  entryDraftDirty = true;
+  setEntryDraftStatus('下書きを復元');
+  showToast('Unsaved note draft restored');
+}
+
+function formatPageValue(value) {
+  const nums = String(value || '').match(/\d+/g) || [];
+  if (!nums.length) return String(value || '').trim();
+  const start = Number(nums[0]);
+  const end = Number(nums[nums.length - 1]);
+  if (!Number.isFinite(start)) return String(value || '').trim();
+  if (nums.length === 1 || !Number.isFinite(end) || end === start) return 'p. ' + start;
+  return 'pp. ' + start + '-' + end;
+}
+
+function normalizePageField() {
+  const el = document.getElementById('fPage');
+  if (!el) return;
+  const next = formatPageValue(el.value);
+  if (next !== el.value) {
+    el.value = next;
+    queueEntryDraftSave();
+  }
 }
 
 function renderDrawingGallery() {
@@ -2407,6 +2668,11 @@ function openTempViewer(kind, idx) {
   document.getElementById('viewerOverlay').classList.add('open');
 }
 
+function setDrawingSaveStatus(text) {
+  const el = document.getElementById('drawingSaveStatus');
+  if (el) el.textContent = text || '';
+}
+
 function drawingDraftContext() {
   return {
     editingId: editingId===null||editingId===undefined ? '' : String(editingId),
@@ -2429,6 +2695,7 @@ function clearDrawingDraft() {
   drawingDraftTimer = null;
   localStorage.removeItem(DRAWING_DRAFT_KEY);
   drawingDirty = false;
+  setDrawingSaveStatus('');
 }
 
 function saveDrawingDraftNow() {
@@ -2447,6 +2714,7 @@ function saveDrawingDraftNow() {
 
 function queueDrawingDraftSave() {
   drawingDirty = true;
+  setDrawingSaveStatus('未保存');
   if (drawingDraftTimer) clearTimeout(drawingDraftTimer);
   drawingDraftTimer = setTimeout(saveDrawingDraftNow, 300);
 }
@@ -2543,6 +2811,7 @@ function openDrawingModal(editIndex, mediaKind) {
   const isEdit = editingDrawingIndex!==null;
   const isImage = editingMediaKind === 'images';
   drawingDirty = false;
+  setDrawingSaveStatus(isEdit ? '保存済み' : '');
   drawingBaseImageUrl = '';
   drawingBaseImage = null;
   document.getElementById('drawingModalTitle').textContent = isImage ? '🖼 画像に書き込み' : (isEdit ? '🎨 スケッチを編集' : '🎨 スケッチを描画');
@@ -2823,6 +3092,7 @@ async function saveDrawing() {
   }
   renderDrawingGallery();
   clearDrawingDraft();
+  setDrawingSaveStatus('保存済み ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
 }
 
 async function handleAI(id,btn) {
@@ -2902,12 +3172,17 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
   if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
 });
+entryFieldIds().forEach(function(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', queueEntryDraftSave);
+});
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v36';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v37';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -2940,7 +3215,7 @@ document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!de
 document.getElementById('btnDismiss')?.addEventListener('click',()=>{banner.style.display='none';});
 window.addEventListener('appinstalled',()=>{banner.style.display='none';deferredPrompt=null;});
 window.addEventListener('beforeunload',e=>{
-  if(!drawingDirty) return;
+  if(!drawingDirty && !entryDraftDirty) return;
   e.preventDefault();
   e.returnValue='';
 });
