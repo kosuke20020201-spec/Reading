@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260623-android-icon-1';
+const CACHE_NAME = 'reading-note-pwa-20260624-sticky-folder-only-1';
 const APP_SHELL = [
   './',
   './index.html',

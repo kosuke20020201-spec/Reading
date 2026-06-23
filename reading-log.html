@@ -75,6 +75,9 @@
   .tag-folder-child-row { display: flex; flex-wrap: wrap; gap: 0.28rem; margin-left: calc(var(--depth, 0) * 0.9rem); }
   .tag-folder-child-btn { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.58rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); cursor: pointer; font-family: inherit; }
   .tag-folder-child-btn.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
+  .tag-expanded-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: -0.45rem 0 0.9rem; padding: 0.2rem 0.1rem 0; }
+  .tag-expanded-tags:empty { display: none; }
+  .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
@@ -354,6 +357,7 @@
   </div>
   </div>
 
+  <div class="tag-expanded-tags" id="tagExpandedTags"></div>
   <p class="results-count" id="resultsCount" style="display:none"></p>
   <div class="book-move-status" id="bookMoveStatus"></div>
   <div id="cardsContainer"></div>
@@ -503,7 +507,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v53';
+const APP_VERSION   = 'media-autosave-sync v54';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2440,7 +2444,9 @@ function render() {
   }
 
   const wrap=document.getElementById('tagFilters');
+  const expandedWrap=document.getElementById('tagExpandedTags');
   wrap.innerHTML=`<button class="tag-btn${activeTag===''&&activeTagFolder===''?' active':''}" onclick="setTag('')">すべて</button>`;
+  if (expandedWrap) expandedWrap.innerHTML='';
   const tagSet = new Set(tags);
   let visibleTopFolders = activeTagFolder ? topFolderPaths().filter(name => isFolderDescendantOrSelf(activeTagFolder, name)) : topFolderPaths();
   if (activeTagFolder && !visibleTopFolders.length) visibleTopFolders = [folderRootPath(activeTagFolder)];
@@ -2460,24 +2466,20 @@ function render() {
       const inner = document.createElement('span');
       inner.className = 'tag-folder-inner-tags';
       appendActiveFolderRows(name, inner, tagSet);
-      if (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, name)) {
-        const tagRow = document.createElement('span');
-        tagRow.className = 'tag-folder-child-row';
-        tagRow.style.setProperty('--depth', folderDepth(activeTagFolder) - folderDepth(name) + 1);
-        directFolderTags(activeTagFolder).filter(tag => tagSet.has(tag)).forEach(function(tag) {
-          const b = document.createElement('button');
-          b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
-          b.type = 'button';
-          b.textContent = tag;
-          b.onclick = () => setTag(tag);
-          tagRow.appendChild(b);
-        });
-        if (tagRow.children.length) inner.appendChild(tagRow);
-      }
       group.appendChild(inner);
     }
     wrap.appendChild(group);
   });
+  if (expandedWrap && activeTagFolder) {
+    directFolderTags(activeTagFolder).filter(tag => tagSet.has(tag)).forEach(function(tag) {
+      const b = document.createElement('button');
+      b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
+      b.type = 'button';
+      b.textContent = tag;
+      b.onclick = () => setTag(tag);
+      expandedWrap.appendChild(b);
+    });
+  }
   const looseTags = unfiledTags();
   looseTags.forEach(function(tag) {
     const b = document.createElement('button');
@@ -2485,7 +2487,7 @@ function render() {
     b.type = 'button';
     b.textContent = tag;
     b.onclick = () => setTag(tag);
-    wrap.appendChild(b);
+    (expandedWrap || wrap).appendChild(b);
   });
 
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
@@ -3926,7 +3928,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v53';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v54';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
