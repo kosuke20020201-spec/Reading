@@ -504,7 +504,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v50';
+const APP_VERSION   = 'media-autosave-sync v51';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1967,6 +1967,26 @@ function reorderBookOrder(dragKey, targetKey, position) {
   renderBookOrderList();
 }
 
+function swapBookOrder(firstKey, secondKey) {
+  firstKey = String(firstKey || '');
+  secondKey = String(secondKey || '');
+  if (!firstKey || !secondKey || firstKey === secondKey) {
+    shelfReorderSelectedKey = '';
+    render();
+    return;
+  }
+  const order = normalizeBookOrder(getBookOrder(), currentBookKeys());
+  const firstIndex = order.indexOf(firstKey);
+  const secondIndex = order.indexOf(secondKey);
+  if (firstIndex < 0 || secondIndex < 0) return;
+  order[firstIndex] = secondKey;
+  order[secondIndex] = firstKey;
+  setBookOrder(order);
+  shelfReorderSelectedKey = '';
+  render();
+  showToast('本を入れ替えました');
+}
+
 function clearBookOrderDropState() {
   document.querySelectorAll('.book-order-row.drop-before,.book-order-row.drop-after').forEach(function(row) {
     row.classList.remove('drop-before','drop-after');
@@ -2289,6 +2309,45 @@ function onShelfBookTap(index, key) {
   toggleBookGroup(index);
 }
 
+function handleShelfClick(event) {
+  const btn = event.target.closest && event.target.closest('[data-book-move-action]');
+  if (btn) {
+    event.preventDefault();
+    event.stopPropagation();
+    const key = btn.dataset.bookKey || '';
+    const action = btn.dataset.bookMoveAction || '';
+    if (action === 'source') {
+      chooseShelfMoveSource(null, key);
+      showToast('Swap source selected');
+      return true;
+    }
+    if (action === 'clear') {
+      clearShelfMoveSource(null);
+      showToast('Selection cleared');
+      return true;
+    }
+    return false;
+  }
+
+  const spine = event.target.closest && event.target.closest('.book-spine');
+  if (!spine) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  const key = spine.dataset.bookKey || '';
+  const index = Number(spine.dataset.bookIndex || 0);
+  if (shelfReorderMode) {
+    if (!shelfReorderSelectedKey && key) {
+      chooseShelfMoveSource(null, key);
+      showToast('Swap source selected');
+    } else if (shelfReorderSelectedKey && key && key !== shelfReorderSelectedKey) {
+      swapBookOrder(shelfReorderSelectedKey, key);
+    }
+    return true;
+  }
+  toggleBookGroup(index);
+  return true;
+}
+
 function bookGroups() {
   const map = new Map();
   entries.forEach(e => {
@@ -2375,7 +2434,7 @@ function render() {
     moveStatus.classList.toggle('show', shelfReorderMode);
     if (!shelfReorderMode) moveStatus.innerHTML = '';
     else if (shelfReorderSelectedKey) {
-      moveStatus.innerHTML = '<span>本を取り出し中です。入れたい位置の本をタップすると、その本の前に入ります。</span><span class="book-move-status-actions"><button type="button" class="book-move-btn" data-book-move-action="end">末尾へ</button><button type="button" class="book-move-btn" data-book-move-action="clear">キャンセル</button></span>';
+      moveStatus.innerHTML = '<span>入れ替えたい相手の本をタップしてください。</span><span class="book-move-status-actions"><button type="button" class="book-move-btn" data-book-move-action="clear">キャンセル</button></span>';
     } else {
       moveStatus.innerHTML = '<span>動かしたい本の「これを移動」を押してください。</span>';
     }
@@ -2448,8 +2507,8 @@ function render() {
     return `
 <div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" data-book-key="${esc(k)}">
   <div class="book-shell" style="${spineVars}">
-    <button type="button" class="book-spine" style="${spineVars}" onclick="onShelfBookTap(${gi},${jsArg(k)})"
-      data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
+    <button type="button" class="book-spine" style="${spineVars}"
+      data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
       <span class="book-spine-title">${formatSpineText(g.book||'タイトル未入力')}</span>
       ${g.author?`<span class="book-spine-author">${formatSpineText(g.author)}</span>`:''}
       <span class="book-spine-meta">
@@ -3853,7 +3912,7 @@ document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
-document.getElementById('cardsContainer').addEventListener('click', handleShelfMoveButtonClick, true);
+document.getElementById('cardsContainer').addEventListener('click', handleShelfClick, true);
 document.addEventListener('click',e=>{
   if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
   if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
@@ -3868,7 +3927,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v50';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v51';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
