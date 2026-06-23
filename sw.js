@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260622-shelf-drag-tag-branch-1';
+const CACHE_NAME = 'reading-note-pwa-20260622-clean-shelf-target-reorder-1';
 const APP_SHELL = [
   './',
   './index.html',
