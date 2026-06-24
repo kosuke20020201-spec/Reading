@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260624-tag-tray-scroll-top-1';
+const CACHE_NAME = 'reading-note-pwa-20260624-sticky-tag-tray-1';
 const APP_SHELL = [
   './',
   './index.html',
