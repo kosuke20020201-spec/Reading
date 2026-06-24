@@ -75,7 +75,7 @@
   .tag-folder-child-row { display: flex; flex-wrap: wrap; gap: 0.28rem; margin-left: calc(var(--depth, 0) * 0.9rem); }
   .tag-folder-child-btn { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.58rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); cursor: pointer; font-family: inherit; }
   .tag-folder-child-btn.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
-  .tag-expanded-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: -0.45rem 0 0.9rem; padding: 0.2rem 0.1rem 0; }
+  .tag-expanded-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: min(24vh, 9.5rem); overflow-y: auto; overscroll-behavior: contain; margin: -0.45rem 0 0.9rem; padding: 0.55rem 0.6rem; border: 1px solid var(--stone-200); border-radius: 0.9rem; background: rgba(255,255,255,0.76); box-shadow: inset 0 -12px 18px rgba(120,113,108,0.06); }
   .tag-expanded-tags:empty { display: none; }
   .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
@@ -286,6 +286,7 @@
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
     .field-row { grid-template-columns: 1fr; }
+    .tag-expanded-tags { max-height: 6.5rem; padding: 0.45rem; }
     .tag-folder-create, .tag-folder-add-line, .tag-bulk-toolbar { grid-template-columns: 1fr; }
     .tag-bulk-list { flex-basis:58vh; min-height:22rem; }
     .card-actions { opacity: 1; }
@@ -507,7 +508,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v54';
+const APP_VERSION   = 'media-autosave-sync v55';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2631,6 +2632,11 @@ function toggleBookGroup(index) {
     button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
     button.setAttribute('aria-label', button.dataset.bookTitle + 'の記録を' + (shouldOpen ? '閉じる' : '開く'));
   }
+  if (shouldOpen) {
+    requestAnimationFrame(function() {
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  }
 }
 
 function cardHTML(e) {
@@ -3928,7 +3934,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v54';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v55';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
