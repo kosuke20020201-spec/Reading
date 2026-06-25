@@ -546,7 +546,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v61';
+const APP_VERSION   = 'media-autosave-sync v62';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2354,6 +2354,14 @@ function onShelfBookTap(index, key) {
 }
 
 function handleShelfClick(event) {
+  const addBtn = event.target.closest && event.target.closest('[data-record-add-book]');
+  if (addBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    openEntryForBook(addBtn.dataset.recordAddBook || '', addBtn.dataset.recordAddAuthor || '');
+    return true;
+  }
+
   const btn = event.target.closest && event.target.closest('[data-book-move-action]');
   if (btn) {
     event.preventDefault();
@@ -2638,7 +2646,7 @@ function expandedRecordsHTML(group) {
         <option value="all"${scopeValue==='all'?' selected':''}>すべての記録</option>
         <option value="activeTag"${scopeValue==='activeTag'?' selected':''}>${activeTagLabel}</option>
       </select>
-      <button type="button" class="record-add-btn" onclick="openEntryForBook(${addBookArg},${addAuthorArg})">＋ この本に記録</button>
+      <button type="button" class="record-add-btn" data-record-add-book="${esc(group.book || '')}" data-record-add-author="${esc(group.author || '')}">＋ この本に記録</button>
     </div>
     ${records.length ? records.map(e=>cardHTML(e)).join('') : '<div class="record-empty">該当する記録がありません</div>'}`;
 }
@@ -4071,7 +4079,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v61';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v62';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
