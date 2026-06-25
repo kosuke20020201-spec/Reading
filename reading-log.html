@@ -95,7 +95,7 @@
   .book-shell { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.38rem; min-height: 17.15rem; padding: 0 0.22rem 0.86rem; }
   .book-shell::before { content: ""; position: absolute; z-index: 0; left: -0.3rem; right: -0.3rem; bottom: 0.55rem; height: 15.7rem; border-radius: 0.5rem 0.5rem 0.2rem 0.2rem; background: linear-gradient(90deg, rgba(92,64,51,0.16), rgba(255,255,255,0.12) 45%, rgba(41,37,36,0.12)); box-shadow: inset 0 0 0 1px rgba(92,64,51,0.1), inset 0 -1.1rem 1.1rem rgba(92,64,51,0.12); pointer-events: none; }
   .book-shell::after { content: ""; position: absolute; z-index: 0; left: -0.52rem; right: -0.52rem; bottom: 0; height: 0.78rem; border-radius: 0.18rem 0.18rem 0.45rem 0.45rem; background: linear-gradient(180deg, #b77935 0%, #8a5a2b 48%, #5f3518 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -2px 0 rgba(41,37,36,0.22), 0 0.34rem 0.55rem rgba(41,37,36,0.2); pointer-events: none; }
-  .book-group.open { width: 100%; min-height: auto; align-items: flex-start; order: -1; }
+  .book-group.open { display: grid; grid-template-columns: auto minmax(0, 1fr); width: 100%; min-height: auto; align-items: flex-start; gap: 0.62rem; order: -1; }
   .book-group.open .book-shell { flex-shrink: 0; }
   .bookshelf-main.book-reorder-mode .book-spine { cursor: pointer; }
   .book-group.reorder-selected .book-spine { outline: 3px solid var(--amber); outline-offset: 3px; filter: brightness(1.08) saturate(1.05); }
@@ -144,7 +144,7 @@
   .book-spine-tag, .book-spine-date { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; font-weight: 800; line-height: 1.1; }
   .book-spine-tag { padding: 0.13rem 0.38rem; font-size: 0.58rem; border: 1px solid var(--spine-badge-border, rgba(255,255,255,0.18)); background: var(--spine-badge-bg, rgba(255,255,255,0.13)); color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); }
   .book-spine-date { font-size: 0.52rem; color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); opacity: 0.82; }
-  .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: min(540px, calc(100vw - 6.6rem)); max-width: 540px; padding-left: 0.75rem; border-left: 2px solid var(--amber-border); }
+  .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: 100%; min-width: 0; max-width: none; padding-left: 0.65rem; border-left: 2px solid var(--amber-border); overflow: hidden; }
   .book-group.open .book-group-cards { display: flex; }
   .records-list-main { display: flex; flex-direction: column; gap: 0.9rem; padding-bottom: 1.5rem; }
   .record-book-section { border: 1px solid var(--stone-200); border-radius: 1rem; background: rgba(255,255,255,0.82); box-shadow: 0 1px 6px #0000000a; overflow: hidden; }
@@ -158,9 +158,11 @@
   .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
   .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .record-add-btn { margin-left: auto; min-height: 2rem; padding: 0.34rem 0.78rem; border-radius: 999px; border: 1px solid var(--stone-800); background: var(--stone-800); color: white; font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+  .record-add-btn:hover { filter: brightness(1.08); }
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
-  .card { position: relative; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; content-visibility: auto; contain-intrinsic-size: 34rem; }
+  .card { position: relative; min-width: 0; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; content-visibility: auto; contain-intrinsic-size: 34rem; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
@@ -178,7 +180,7 @@
   .card-sections { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .section-block { border-radius: 0.6rem; padding: 0.6rem 0.75rem; }
   .section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.2rem; }
-  .section-text { font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap; }
+  .section-text { font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
   .content-bg { background: var(--stone-50); } .content-bg .section-text { color: var(--stone-600); }
   .lesson-bg { background: var(--amber-light); } .lesson-bg .section-text { color: #78350f; }
   .supplement-bg { background: var(--stone-50); } .supplement-bg .section-text { color: var(--stone-600); }
@@ -323,7 +325,9 @@
     .book-spine-title { font-size: var(--title-size, 0.78rem); height: 10rem; width: var(--title-width-mobile, var(--title-width, 2.4rem)); }
     .book-spine-author { font-size: 0.58rem; height: 2.2rem; width: min(var(--title-width-mobile, var(--title-width, 2.4rem)), 2.4rem); }
     .book-spine-tag { font-size: 0.54rem; padding-inline: 0.3rem; }
-    .book-group-cards { width: calc(100vw - 5.7rem); padding-left: 0.55rem; }
+    .book-group.open { grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem; }
+    .book-group-cards { width: 100%; min-width: 0; padding-left: 0.5rem; }
+    .record-add-btn { width: 100%; margin-left: 0; }
     .record-book-header { grid-template-columns: auto minmax(0,1fr); }
     .record-book-count { justify-self: start; grid-column: 2; }
   }
@@ -542,7 +546,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v59';
+const APP_VERSION   = 'media-autosave-sync v61';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2622,6 +2626,8 @@ function expandedRecordsHTML(group) {
   const hasTagFilter = !!(activeTag || activeTagFolder);
   const scopeValue = hasTagFilter ? expandedRecordScope : 'all';
   const activeTagLabel = activeTagFilterLabel();
+  const addBookArg = jsArg(group.book || '');
+  const addAuthorArg = jsArg(group.author || '');
   return `
     <div class="record-view-controls">
       <select class="record-view-select" onchange="setExpandedRecordSort(this.value)">
@@ -2632,6 +2638,7 @@ function expandedRecordsHTML(group) {
         <option value="all"${scopeValue==='all'?' selected':''}>すべての記録</option>
         <option value="activeTag"${scopeValue==='activeTag'?' selected':''}>${activeTagLabel}</option>
       </select>
+      <button type="button" class="record-add-btn" onclick="openEntryForBook(${addBookArg},${addAuthorArg})">＋ この本に記録</button>
     </div>
     ${records.length ? records.map(e=>cardHTML(e)).join('') : '<div class="record-empty">該当する記録がありません</div>'}`;
 }
@@ -3214,7 +3221,13 @@ function selectBookFromShelf(idx) {
   openModal(null, g.book, g.author);
 }
 
-function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
+function openEntryForBook(book, author) {
+  openModal(null, book, author, false, {skipDraft:true});
+  showToast('この本に記録を追加');
+}
+
+function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
+  options = options || {};
   id = id || null;
   presetBook = presetBook || '';
   presetAuthor = presetAuthor || '';
@@ -3257,7 +3270,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly) {
   renderDrawingGallery();
   entryDraftDirty = false;
   setEntryDraftStatus('');
-  maybeRestoreEntryDraft();
+  if (!options.skipDraft) maybeRestoreEntryDraft();
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
@@ -4058,7 +4071,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v59';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v61';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

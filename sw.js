@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260625-real-shelf-1';
+const CACHE_NAME = 'reading-note-pwa-20260625-add-record-from-book-1';
 const APP_SHELL = [
   './',
   './index.html',
