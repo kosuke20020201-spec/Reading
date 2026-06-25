@@ -86,11 +86,14 @@
   .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
-  .bookshelf-main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 0.55rem; padding: 0.75rem 0.25rem 1.5rem; border-bottom: 10px solid #8a5a2b; background: linear-gradient(180deg, rgba(255,250,240,0.56), rgba(255,250,240,0) 60%), linear-gradient(90deg, rgba(120,53,15,0.08), rgba(255,255,255,0.22) 42%, rgba(92,64,51,0.06)); box-shadow: inset 0 -4px 0 rgba(87,53,24,0.18); }
-  .bookshelf-main.theme-library { border-bottom-color: #5b3f24; background: linear-gradient(180deg, rgba(253,246,229,0.5), rgba(253,246,229,0) 62%), linear-gradient(90deg, rgba(41,37,36,0.08), rgba(255,255,255,0.18), rgba(41,37,36,0.08)); }
-  .bookshelf-main.theme-quiet { border-bottom-color: #3f3f46; background: linear-gradient(180deg, rgba(245,245,244,0.58), rgba(245,245,244,0) 62%), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.18), rgba(28,25,23,0.08)); }
+  .bookshelf-main { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.15rem 0.62rem; padding: 1rem 0.65rem 2.1rem; border: 1px solid #b77935; border-bottom: 13px solid #8a5a2b; border-radius: 0.95rem 0.95rem 0.5rem 0.5rem; background-color: #f7ead3; background-image: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.08) 42%, rgba(92,64,51,0.08) 100%), repeating-linear-gradient(0deg, transparent 0 15.85rem, rgba(120,53,15,0.22) 15.85rem 16.15rem, rgba(255,255,255,0.5) 16.15rem 16.28rem, transparent 16.28rem 18.55rem), repeating-linear-gradient(90deg, rgba(120,53,15,0.055) 0 1px, transparent 1px 9px), linear-gradient(90deg, rgba(120,53,15,0.12), rgba(255,255,255,0.28) 42%, rgba(92,64,51,0.09)); box-shadow: inset 0 0 0 4px rgba(255,255,255,0.22), inset 10px 0 16px rgba(120,53,15,0.08), inset -10px 0 18px rgba(41,37,36,0.08), inset 0 -7px 0 rgba(87,53,24,0.18), 0 8px 18px rgba(41,37,36,0.08); overflow: hidden; }
+  .bookshelf-main::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 16% 8%, rgba(255,255,255,0.3), transparent 28%), linear-gradient(90deg, rgba(87,53,24,0.12), transparent 1.4rem, transparent calc(100% - 1.4rem), rgba(87,53,24,0.12)); mix-blend-mode: multiply; opacity: 0.55; }
+  .bookshelf-main::after { content: ""; position: absolute; left: 0.35rem; right: 0.35rem; bottom: 0.38rem; height: 0.35rem; border-radius: 999px; background: linear-gradient(90deg, rgba(92,64,51,0.2), rgba(255,255,255,0.38), rgba(92,64,51,0.25)); pointer-events: none; }
+  .bookshelf-main.theme-library { border-color: #79512d; border-bottom-color: #5b3f24; background-color: #efe1c8; background-image: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0.06) 42%, rgba(41,37,36,0.08) 100%), repeating-linear-gradient(0deg, transparent 0 15.85rem, rgba(91,63,36,0.24) 15.85rem 16.15rem, rgba(255,255,255,0.42) 16.15rem 16.28rem, transparent 16.28rem 18.55rem), repeating-linear-gradient(90deg, rgba(41,37,36,0.06) 0 1px, transparent 1px 9px), linear-gradient(90deg, rgba(41,37,36,0.1), rgba(255,255,255,0.18), rgba(41,37,36,0.1)); }
+  .bookshelf-main.theme-quiet { border-color: #78716c; border-bottom-color: #3f3f46; background-color: #eee9df; background-image: linear-gradient(180deg, rgba(255,255,255,0.48), rgba(255,255,255,0.08) 42%, rgba(28,25,23,0.06) 100%), repeating-linear-gradient(0deg, transparent 0 15.85rem, rgba(63,63,70,0.18) 15.85rem 16.15rem, rgba(255,255,255,0.48) 16.15rem 16.28rem, transparent 16.28rem 18.55rem), repeating-linear-gradient(90deg, rgba(28,25,23,0.045) 0 1px, transparent 1px 9px), linear-gradient(90deg, rgba(28,25,23,0.07), rgba(255,255,255,0.2), rgba(28,25,23,0.07)); }
   .book-group { display: flex; align-items: flex-start; gap: 0.75rem; margin: 0; order: 0; }
-  .book-shell { display: flex; flex-direction: column; align-items: center; gap: 0.38rem; }
+  .book-shell { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 0.38rem; }
+  .book-shell::after { content: ""; position: absolute; left: 0.08rem; right: 0.08rem; bottom: -0.42rem; height: 0.28rem; border-radius: 999px; background: rgba(41,37,36,0.18); filter: blur(2px); pointer-events: none; }
   .book-group.open { width: 100%; order: -1; }
   .bookshelf-main.book-reorder-mode .book-spine { cursor: pointer; }
   .book-group.reorder-selected .book-spine { outline: 3px solid var(--amber); outline-offset: 3px; filter: brightness(1.08) saturate(1.05); }
@@ -308,7 +311,7 @@
     .tag-folder-create, .tag-folder-add-line, .tag-bulk-toolbar { grid-template-columns: 1fr; }
     .tag-bulk-list { flex-basis:58vh; min-height:22rem; }
     .card-actions { opacity: 1; }
-    .bookshelf-main { gap: 0.55rem 0.4rem; }
+    .bookshelf-main { gap: 0.95rem 0.45rem; padding: 0.8rem 0.42rem 1.75rem; border-bottom-width: 11px; border-radius: 0.78rem 0.78rem 0.45rem 0.45rem; }
     .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
     .book-group.open .book-spine { height: 16.5rem; }
     .book-spine-title { font-size: var(--title-size, 0.78rem); height: 10rem; width: var(--title-width-mobile, var(--title-width, 2.4rem)); }
@@ -533,7 +536,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v57';
+const APP_VERSION   = 'media-autosave-sync v58';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -4049,7 +4052,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v57';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v58';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
