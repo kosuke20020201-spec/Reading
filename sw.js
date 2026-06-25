@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260626-record-add-click-delegated-1';
+const CACHE_NAME = 'reading-note-pwa-20260626-record-add-bottom-fixed-1';
 const APP_SHELL = [
   './',
   './index.html',
