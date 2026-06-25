@@ -22,7 +22,6 @@
     --stone-50: #fafaf9; --stone-100: #f5f5f4; --stone-200: #e7e5e4;
     --stone-300: #d6d3d1; --stone-400: #a8a29e; --stone-500: #78716c;
     --stone-600: #57534e; --stone-800: #292524;
-    --sticky-controls-offset: 0px;
   }
   body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); min-height: 100vh; color: var(--stone-800); }
   .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(circle at 20% 20%, #fde68a22 0%, transparent 50%), radial-gradient(circle at 80% 80%, #fed7aa22 0%, transparent 50%); }
@@ -145,7 +144,7 @@
   .book-spine-tag, .book-spine-date { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; font-weight: 800; line-height: 1.1; }
   .book-spine-tag { padding: 0.13rem 0.38rem; font-size: 0.58rem; border: 1px solid var(--spine-badge-border, rgba(255,255,255,0.18)); background: var(--spine-badge-bg, rgba(255,255,255,0.13)); color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); }
   .book-spine-date { font-size: 0.52rem; color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); opacity: 0.82; }
-  .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: 100%; min-width: 0; max-width: none; padding-left: 0.65rem; border-left: 2px solid var(--amber-border); overflow: visible; }
+  .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: 100%; min-width: 0; max-width: none; padding-left: 0.65rem; border-left: 2px solid var(--amber-border); overflow: hidden; }
   .book-group.open .book-group-cards { display: flex; }
   .records-list-main { display: flex; flex-direction: column; gap: 0.9rem; padding-bottom: 1.5rem; }
   .record-book-section { border: 1px solid var(--stone-200); border-radius: 1rem; background: rgba(255,255,255,0.82); box-shadow: 0 1px 6px #0000000a; overflow: hidden; }
@@ -156,7 +155,7 @@
   .record-book-count { padding: 0.18rem 0.58rem; border-radius: 999px; border: 1px solid var(--amber-border); background: var(--amber-light); color: #92400e; font-size: 0.7rem; font-weight: 900; white-space: nowrap; }
   .record-book-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.55rem 0.85rem 0; }
   .record-book-cards { display: flex; flex-direction: column; gap: 0.65rem; padding: 0.7rem 0.75rem 0.85rem; }
-  .record-view-controls { position: sticky; top: calc(var(--sticky-controls-offset, 0px) + 0.35rem); z-index: 90; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0.45rem; margin: 0 -0.45rem; border: 1px solid rgba(231,229,228,0.86); border-radius: 0.9rem; background: rgba(255,255,255,0.94); box-shadow: 0 6px 18px rgba(41,37,36,0.08); backdrop-filter: blur(10px); }
+  .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
   .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
   .record-add-btn { margin-left: auto; min-height: 2rem; padding: 0.34rem 0.78rem; border-radius: 999px; border: 1px solid var(--stone-800); background: var(--stone-800); color: white; font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
@@ -547,7 +546,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v63';
+const APP_VERSION   = 'media-autosave-sync v62';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2588,7 +2587,6 @@ function render() {
     b.onclick = () => setTag(tag);
     (expandedWrap || wrap).appendChild(b);
   });
-  scheduleStickyControlsOffsetUpdate();
 
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
   if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
@@ -4048,16 +4046,6 @@ function updateScrollTopButton() {
   btn.classList.toggle('show', window.scrollY > 500);
 }
 
-function updateStickyControlsOffset() {
-  const controls = document.querySelector('.sticky-controls');
-  const height = controls ? Math.ceil(controls.getBoundingClientRect().height) : 0;
-  document.documentElement.style.setProperty('--sticky-controls-offset', height + 'px');
-}
-
-function scheduleStickyControlsOffsetUpdate() {
-  requestAnimationFrame(updateStickyControlsOffset);
-}
-
 function scrollToTop() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -4091,7 +4079,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v63';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v62';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -4132,10 +4120,9 @@ window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('scroll', updateScrollTopButton, {passive:true});
-window.addEventListener('resize', scheduleStickyControlsOffsetUpdate, {passive:true});
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
-load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleStickyControlsOffsetUpdate(); loadFromCloud();
+load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); loadFromCloud();
 </script>
 </body>
 </html>
