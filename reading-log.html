@@ -158,7 +158,8 @@
   .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
   .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
-  .record-add-btn { position: fixed; left: 50%; bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 230; width: min(19rem, calc(100vw - 2rem)); min-height: 2.9rem; padding: 0.58rem 1rem; border-radius: 999px; border: 1px solid var(--stone-800); background: var(--stone-800); color: white; box-shadow: 0 10px 28px rgba(41,37,36,0.24); font: inherit; font-size: 0.86rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .record-add-btn { position: fixed; left: 50%; bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 230; width: min(19rem, calc(100vw - 2rem)); min-height: 2.9rem; padding: 0.58rem 1rem; border-radius: 999px; border: 1px solid var(--stone-800); background: var(--stone-800); color: white; box-shadow: 0 10px 28px rgba(41,37,36,0.24); font: inherit; font-size: 0.86rem; font-weight: 900; cursor: pointer; white-space: nowrap; opacity: 1; transition: opacity 0.16s, transform 0.16s; }
+  .record-add-btn.is-hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 0.45rem); }
   .record-add-btn:hover { filter: brightness(1.08); }
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
@@ -546,7 +547,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v64';
+const APP_VERSION   = 'media-autosave-sync v65';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2589,7 +2590,7 @@ function render() {
   });
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
   if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
-  if(!list.length){container.innerHTML='';empty.style.display='block';return;}
+  if(!list.length){container.innerHTML='';empty.style.display='block';scheduleRecordAddButtonVisibility();return;}
   empty.style.display='none';
 
   let grouped=new Map();
@@ -2601,6 +2602,7 @@ function render() {
   const bookEntries = [...grouped.entries()];
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
+    scheduleRecordAddButtonVisibility();
     return;
   }
   container.innerHTML=`<div class="bookshelf-main theme-${shelfTheme}${shelfReorderMode?' book-reorder-mode':''}${shelfReorderSelectedKey?' has-moving-book':''}">${bookEntries.map(([k,g],gi)=>{
@@ -2626,6 +2628,7 @@ function render() {
   <div class="book-group-cards" id="grp-${gi}-cards">${expandedRecordsHTML(g)}</div>
 </div>`;
   }).join('')}</div>`;
+  scheduleRecordAddButtonVisibility();
 }
 
 function expandedRecordsHTML(group) {
@@ -4045,6 +4048,28 @@ function updateScrollTopButton() {
   btn.classList.toggle('show', window.scrollY > 500);
 }
 
+function updateRecordAddButtonVisibility() {
+  const activeBtn = document.querySelector('.book-group.open .record-add-btn');
+  document.querySelectorAll('.record-add-btn').forEach(function(btn) {
+    if (btn !== activeBtn) btn.classList.add('is-hidden');
+  });
+  if (!activeBtn) return;
+
+  const cards = activeBtn.closest('.book-group-cards');
+  if (!cards) {
+    activeBtn.classList.add('is-hidden');
+    return;
+  }
+  const cardsRect = cards.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  const overlapsOpenRecords = cardsRect.top < btnRect.bottom && cardsRect.bottom > btnRect.top + 12;
+  activeBtn.classList.toggle('is-hidden', !overlapsOpenRecords);
+}
+
+function scheduleRecordAddButtonVisibility() {
+  requestAnimationFrame(updateRecordAddButtonVisibility);
+}
+
 function scrollToTop() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -4078,7 +4103,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v64';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v65';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -4118,10 +4143,11 @@ window.addEventListener('beforeunload',e=>{
 window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
-window.addEventListener('scroll', updateScrollTopButton, {passive:true});
+window.addEventListener('scroll',()=>{ updateScrollTopButton(); updateRecordAddButtonVisibility(); }, {passive:true});
+window.addEventListener('resize', scheduleRecordAddButtonVisibility, {passive:true});
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
-load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); loadFromCloud();
+load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud();
 </script>
 </body>
 </html>
