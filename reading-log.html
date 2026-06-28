@@ -159,7 +159,9 @@
   .records-list-main { display: flex; flex-direction: column; gap: 0.9rem; padding-bottom: 1.5rem; }
   .record-book-section { border: 1px solid var(--stone-200); border-radius: 1rem; background: rgba(255,255,255,0.82); box-shadow: 0 1px 6px #0000000a; overflow: hidden; }
   .record-book-header { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 0.75rem; padding: 0.75rem 0.85rem; background: linear-gradient(90deg, rgba(255,251,235,0.88), rgba(255,255,255,0.82)); border-bottom: 1px solid var(--stone-200); }
-  .record-book-marker { width: 2.4rem; height: 3.2rem; border-radius: 0.35rem 0.25rem 0.18rem 0.18rem; border: 1px solid var(--spine-edge, #4b2e21); background: linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 55%, var(--spine-bottom, #2f1f18)); color: var(--spine-ink, #fff4d6); box-shadow: inset 3px 0 5px rgba(255,255,255,0.18), inset -6px 0 9px rgba(0,0,0,0.3), 0 3px 8px #0000001a; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 900; writing-mode: vertical-rl; overflow: hidden; }
+  .record-book-marker { position: relative; width: 2.4rem; height: 3.2rem; border-radius: 0.35rem 0.25rem 0.18rem 0.18rem; border: 1px solid var(--spine-edge, #4b2e21); background: linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 55%, var(--spine-bottom, #2f1f18)); color: var(--spine-ink, #fff4d6); box-shadow: inset 3px 0 5px rgba(255,255,255,0.18), inset -6px 0 9px rgba(0,0,0,0.3), 0 3px 8px #0000001a; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 900; writing-mode: vertical-rl; overflow: hidden; flex-shrink: 0; }
+  .record-book-marker.has-cover { width: 2.65rem; height: 3.75rem; border-radius: 0.28rem; border-color: rgba(41,37,36,0.18); background: var(--book-cover) center / cover no-repeat, linear-gradient(180deg, var(--stone-100), var(--stone-200)); color: transparent; writing-mode: horizontal-tb; box-shadow: 0 4px 10px rgba(41,37,36,0.18), inset 0 0 0 1px rgba(255,255,255,0.35); }
+  .record-book-marker.has-cover::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(255,255,255,0.28), transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.12), rgba(0,0,0,0.1)); pointer-events: none; }
   .record-book-title { font-size: 0.92rem; font-weight: 900; color: var(--stone-800); line-height: 1.35; overflow-wrap: anywhere; }
   .record-book-meta { margin-top: 0.2rem; font-size: 0.7rem; color: var(--stone-400); font-weight: 700; }
   .record-book-count { padding: 0.18rem 0.58rem; border-radius: 999px; border: 1px solid var(--amber-border); background: var(--amber-light); color: #92400e; font-size: 0.7rem; font-weight: 900; white-space: nowrap; }
@@ -595,7 +597,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v78';
+const APP_VERSION   = 'media-autosave-sync v80';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -615,6 +617,7 @@ const MEDIA_SKETCH_MAX_SIDE = 960;
 const MEDIA_SKETCH_QUALITY = 0.94;
 const MEDIA_SKETCH_MAX_CHARS = 48000;
 const BOOK_META_KEY = 'reading_log_book_meta';
+const BOOK_INFO_FETCH_TIMEOUT_MS = 6500;
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
@@ -652,6 +655,7 @@ let openBookKey = null;
 let openBookOverviewKey = '';
 let autoBookInfoFetchKeys = new Set();
 let autoBookCoverFetchKeys = new Set();
+let bookInfoRefreshKeys = new Set();
 let bookInfoChoiceCandidates = [];
 let bookInfoChoiceResolve = null;
 let expandedRecordSort = 'new';
@@ -2687,6 +2691,16 @@ function cssUrlValue(url) {
   return safe ? 'url("' + safe.replace(/["\\]/g, '') + '")' : '';
 }
 
+async function fetchBookApi(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs || BOOK_INFO_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, {cache:'no-store', signal:controller.signal});
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function stripHtml(value) {
   const div = document.createElement('div');
   div.innerHTML = String(value || '');
@@ -2822,9 +2836,9 @@ function ndlOpenSearchParamSets(book, author) {
 async function fetchNdlBookInfo(book, author) {
   let best = null;
   const parser = new DOMParser();
-  const searches = ndlOpenSearchParamSets(book, author);
+  const searches = ndlOpenSearchParamSets(book, author).slice(0, 3);
   for (const params of searches) {
-    const res = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString(), {cache:'no-store'});
+    const res = await fetchBookApi('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString());
     if (!res.ok) continue;
     const xmlText = await res.text();
     const xml = parser.parseFromString(xmlText, 'application/xml');
@@ -2866,9 +2880,9 @@ async function fetchNdlBookInfo(book, author) {
 async function fetchGoogleBookInfo(book, author) {
   let best = null;
   const queries = bookSearchQueries(book, author);
-  for (const q of queries) {
+  for (const q of queries.slice(0, 3)) {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
-    const response = await fetch(url, {cache:'no-store'});
+    const response = await fetchBookApi(url);
     if (!response.ok) continue;
     const data = await response.json();
     const items = Array.isArray(data.items) ? data.items : [];
@@ -2903,7 +2917,7 @@ async function fetchOpenLibraryBookInfo(book, author) {
   let searchUrl = '';
   if (isbn) {
     searchUrl = 'https://openlibrary.org/api/books?bibkeys=ISBN:' + encodeURIComponent(isbn) + '&jscmd=data&format=json';
-    const res = await fetch(searchUrl, {cache:'no-store'});
+    const res = await fetchBookApi(searchUrl);
     if (res.ok) {
       const data = await res.json();
       const item = data['ISBN:' + isbn];
@@ -2939,8 +2953,8 @@ async function fetchOpenLibraryBookInfo(book, author) {
     params.set('limit', '10');
     searches.push(params);
   });
-  for (const params of searches) {
-    const res = await fetch('https://openlibrary.org/search.json?' + params.toString(), {cache:'no-store'});
+  for (const params of searches.slice(0, 3)) {
+      const res = await fetchBookApi('https://openlibrary.org/search.json?' + params.toString());
     if (!res.ok) continue;
     const data = await res.json();
     const docs = Array.isArray(data.docs) ? data.docs : [];
@@ -2968,7 +2982,7 @@ async function fetchOpenLibraryBookInfo(book, author) {
   }
   if (best && best.workKey && !best.info.description) {
     try {
-      const workRes = await fetch('https://openlibrary.org' + best.workKey + '.json', {cache:'no-store'});
+      const workRes = await fetchBookApi('https://openlibrary.org' + best.workKey + '.json');
       if (workRes.ok) {
         const work = await workRes.json();
         const desc = typeof work.description === 'string' ? work.description : (work.description && work.description.value) || '';
@@ -3085,9 +3099,9 @@ function sortBookInfoCandidates(candidates, book, author) {
 
 async function fetchGoogleBookCandidates(book, author) {
   const list = [];
-  for (const q of bookSearchQueries(book, author)) {
+  for (const q of bookSearchQueries(book, author).slice(0, 3)) {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
-    const response = await fetch(url, {cache:'no-store'});
+    const response = await fetchBookApi(url);
     if (!response.ok) continue;
     const data = await response.json();
     const items = Array.isArray(data.items) ? data.items : [];
@@ -3121,7 +3135,7 @@ async function fetchOpenLibraryBookCandidates(book, author) {
   const list = [];
   const isbn = extractIsbn(book + ' ' + author);
   if (isbn) {
-    const res = await fetch('https://openlibrary.org/api/books?bibkeys=ISBN:' + encodeURIComponent(isbn) + '&jscmd=data&format=json', {cache:'no-store'});
+    const res = await fetchBookApi('https://openlibrary.org/api/books?bibkeys=ISBN:' + encodeURIComponent(isbn) + '&jscmd=data&format=json');
     if (res.ok) {
       const data = await res.json();
       const item = data['ISBN:' + isbn];
@@ -3155,8 +3169,8 @@ async function fetchOpenLibraryBookCandidates(book, author) {
     params.set('limit', '10');
     searches.push(params);
   });
-  for (const params of searches) {
-    const res = await fetch('https://openlibrary.org/search.json?' + params.toString(), {cache:'no-store'});
+  for (const params of searches.slice(0, 3)) {
+    const res = await fetchBookApi('https://openlibrary.org/search.json?' + params.toString());
     if (!res.ok) continue;
     const data = await res.json();
     const docs = Array.isArray(data.docs) ? data.docs : [];
@@ -3187,8 +3201,8 @@ async function fetchOpenLibraryBookCandidates(book, author) {
 async function fetchNdlBookCandidates(book, author) {
   const list = [];
   const parser = new DOMParser();
-  for (const params of ndlOpenSearchParamSets(book, author)) {
-    const res = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString(), {cache:'no-store'});
+  for (const params of ndlOpenSearchParamSets(book, author).slice(0, 3)) {
+    const res = await fetchBookApi('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString());
     if (!res.ok) continue;
     const xmlText = await res.text();
     const xml = parser.parseFromString(xmlText, 'application/xml');
@@ -3235,7 +3249,7 @@ async function fetchBookInfoCandidates(book, author) {
     });
   });
   const candidates = sortBookInfoCandidates(list, book, author).slice(0, 12);
-  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, 3);
+  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, 2);
   for (const info of isbnCandidates) {
     try {
       const extra = await fetchGoogleBookInfo(pickIsbn(info), '');
@@ -3368,7 +3382,7 @@ async function autoFetchBookInfoForOpenedBook(book, author) {
   if (navigator.onLine === false) return;
   if (hasStoredBookInfo(getBookMetaInfo(book))) return;
   autoBookInfoFetchKeys.add(key);
-  showToast('Fetching book info...');
+  showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
     if (!candidates.length || openBookKey !== key) return;
@@ -3425,6 +3439,7 @@ async function toggleBookOverview(book, author) {
     return;
   }
   openBookOverviewKey = key;
+  showToast('本情報を取得中...');
   const current = getBookMetaInfo(book);
   if (hasStoredBookInfo(current)) {
     render();
@@ -3460,25 +3475,47 @@ async function toggleBookOverview(book, author) {
 async function refreshBookInfoChoice(book, author) {
   const key = bookKey(book);
   if (!key) return;
-  if (navigator.onLine === false) {
-    showToast('Offline: book info cannot be fetched');
+  if (bookInfoRefreshKeys.has(key)) {
+    showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d\u3067\u3059');
     return;
   }
+  if (navigator.onLine === false) {
+    showToast('\u30aa\u30f3\u30e9\u30a4\u30f3\u6642\u306b\u672c\u60c5\u5831\u3092\u53d6\u5f97\u3067\u304d\u307e\u3059');
+    return;
+  }
+  const button = document.querySelector(`.book-overview-action-btn[data-book-refresh-key="${CSS.escape(key)}"]`);
+  bookInfoRefreshKeys.add(key);
+  if (button) {
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.textContent = '\u53d6\u5f97\u4e2d...';
+  }
   openBookOverviewKey = key;
-  showToast('譛ｬ諠・ｱ繧貞叙蠕嶺ｸｭ...');
+  showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
     const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
-    if (!info) return;
+    if (!info) {
+      showToast(candidates.length ? '\u5019\u88dc\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f' : '\u672c\u60c5\u5831\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
+      return;
+    }
     setBookMetaInfo(book, info);
     if (applyBookInfoToEntries(book, info)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     }
     persist();
     render();
-    showToast('譛ｬ諠・ｱ繧呈峩譁ｰ縺励∪縺励◆');
+    showToast('\u672c\u60c5\u5831\u3092\u66f4\u65b0\u3057\u307e\u3057\u305f');
   } catch(e) {
-    showToast('譛ｬ諠・ｱ繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆');
+    console.warn('Book info refresh failed:', e);
+    showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f');
+  } finally {
+    bookInfoRefreshKeys.delete(key);
+    if (button) {
+      button.disabled = false;
+      button.textContent = button.dataset.originalText || '\u5019\u88dc\u3092\u9078\u3073\u76f4\u3059';
+      delete button.dataset.originalText;
+    }
   }
 }
 
@@ -3507,7 +3544,7 @@ function bookOverviewHTML(group) {
       </div>
     </div>
     <div class="${info.description ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
-    <div class="book-overview-actions"><button type="button" class="book-overview-action-btn" onclick="refreshBookInfoChoice(${jsArg(group.book)},${jsArg(group.author || authors)})">候補を選び直す</button></div>
+    <div class="book-overview-actions"><button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" onclick="refreshBookInfoChoice(${jsArg(group.book)},${jsArg(group.author || authors)})">候補を選び直す</button></div>
   </div>`;
 }
 
@@ -3682,12 +3719,15 @@ function expandedRecordsHTML(group) {
 function recordsListHTML(bookEntries) {
   return `<div class="records-list-main">${bookEntries.map(function([k,g], gi) {
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
+    const metaInfo = getBookMetaInfo(g.book);
+    const coverVar = cssUrlValue(metaInfo.coverUrl);
+    const markerStyle = spineVars + (coverVar ? ';--book-cover:' + coverVar : '');
     const tags = bookTagSummary(g, 4);
     const latestLabel = bookLatestLabel(g);
     const records = sortExpandedRecords(g.entries || []);
     return `<section class="record-book-section" style="${spineVars}">
       <header class="record-book-header">
-        <div class="record-book-marker" style="${spineVars}">${esc(compactBookTitle(g.book))}</div>
+        <div class="record-book-marker${coverVar ? ' has-cover' : ''}" style="${markerStyle}" aria-label="${esc(g.book || metaInfo.title || '')}">${coverVar ? '' : esc(compactBookTitle(g.book))}</div>
         <div>
           <div class="record-book-title">${esc(g.book || 'タイトル未入力')}</div>
           <div class="record-book-meta">${esc(bookAuthorLabel(g))}${latestLabel ? ' ・ ' + esc(latestLabel) : ''}</div>
@@ -5151,7 +5191,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v78';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v80';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
