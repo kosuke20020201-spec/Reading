@@ -559,7 +559,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v67';
+const APP_VERSION   = 'media-autosave-sync v68';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -765,6 +765,27 @@ function normalizeBookMetaValue(value) {
     infoUrl: String(value.infoUrl || '').trim(),
     fetchedAt: String(value.fetchedAt || '').trim()
   };
+}
+
+function mergeBookMetaValues(primary, fallback) {
+  const left = normalizeBookMetaValue(primary);
+  const right = normalizeBookMetaValue(fallback);
+  return normalizeBookMetaValue({
+    fixedTags: cleanTagList([...(left.fixedTags || []), ...(right.fixedTags || [])]),
+    title: left.title || right.title,
+    authors: left.authors && left.authors.length ? left.authors : right.authors,
+    publisher: left.publisher || right.publisher,
+    publishedDate: left.publishedDate || right.publishedDate,
+    description: left.description || right.description,
+    coverUrl: left.coverUrl || right.coverUrl,
+    isbn10: left.isbn10 || right.isbn10,
+    isbn13: left.isbn13 || right.isbn13,
+    pageCount: left.pageCount || right.pageCount,
+    categories: left.categories && left.categories.length ? left.categories : right.categories,
+    source: left.source || right.source,
+    infoUrl: left.infoUrl || right.infoUrl,
+    fetchedAt: left.fetchedAt || right.fetchedAt
+  });
 }
 
 function getBookMetaInfo(book) {
@@ -1141,7 +1162,7 @@ function migrateOldFixedTags() {
   Object.keys(meta).forEach(function(rawKey) {
     const normalizedKey = bookKey(rawKey);
     if (!normalizedKey || normalizedKey === rawKey) return;
-    meta[normalizedKey] = cleanTagList([...(meta[normalizedKey] || []), ...(meta[rawKey] || [])]);
+    meta[normalizedKey] = mergeBookMetaValues(meta[normalizedKey], meta[rawKey]);
     delete meta[rawKey];
     changed = true;
   });
@@ -1150,9 +1171,10 @@ function migrateOldFixedTags() {
     const book = (e.book || '').trim();
     if (!book) return;
     const key = bookKey(book);
-    const mergedTags = cleanTagList([...(meta[key] || []), ...(e.fixedTags || [])]);
-    if (mergedTags.length && JSON.stringify(meta[key] || []) !== JSON.stringify(mergedTags)) {
-      meta[key] = mergedTags;
+    const currentMeta = normalizeBookMetaValue(meta[key]);
+    const mergedTags = cleanTagList([...(currentMeta.fixedTags || []), ...(e.fixedTags || [])]);
+    if (mergedTags.length && JSON.stringify(currentMeta.fixedTags || []) !== JSON.stringify(mergedTags)) {
+      meta[key] = normalizeBookMetaValue({...currentMeta, fixedTags: mergedTags});
       changed = true;
     }
   });
@@ -4461,7 +4483,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v67';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v68';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
