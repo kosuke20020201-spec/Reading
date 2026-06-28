@@ -591,7 +591,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v74';
+const APP_VERSION   = 'media-autosave-sync v75';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -646,6 +646,7 @@ let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
 let openBookOverviewKey = '';
+let autoBookInfoFetchKeys = new Set();
 let bookInfoChoiceCandidates = [];
 let bookInfoChoiceResolve = null;
 let expandedRecordSort = 'new';
@@ -773,18 +774,42 @@ function authorKeyName(value) {
   return String(value || '')
     .trim()
     .toLocaleLowerCase('ja-JP')
+    .replace(/(?:著者|著|編著|編|訳|監修|editor|author|translator)$/i, '')
     .replace(/[\s　・･,，、.．。:：;；/／|｜()（）\[\]【】「」『』"']/g, '');
+}
+
+function splitAuthorParts(author) {
+  return String(author || '')
+    .split(/\s*(?:、|，|,|;|；|\/|／|\||｜|&|＆|\band\b)\s*/i)
+    .map(v => v.trim())
+    .filter(Boolean);
 }
 
 function cleanAuthorList(authors) {
   const seen = new Set();
   const clean = [];
   (Array.isArray(authors) ? authors : []).forEach(function(author) {
-    const value = String(author || '').trim();
-    const key = authorKeyName(value);
-    if (!value || !key || seen.has(key)) return;
-    seen.add(key);
-    clean.push(value);
+    splitAuthorParts(author).forEach(function(part) {
+      let value = String(part || '').trim().replace(/\s*(?:著者|著|編著|編|訳|監修)$/u, '');
+      let key = authorKeyName(value);
+      if (key && key.length % 2 === 0 && key.slice(0, key.length / 2) === key.slice(key.length / 2)) {
+        key = key.slice(0, key.length / 2);
+        value = [...value].slice(0, Math.ceil([...value].length / 2)).join('').trim();
+      }
+      if (!value || !key) return;
+      const overlappingIndex = [...seen].findIndex(existing => existing === key || existing.includes(key) || key.includes(existing));
+      if (overlappingIndex >= 0) {
+        const existingKey = [...seen][overlappingIndex];
+        if (existingKey.includes(key) && key.length < existingKey.length) {
+          seen.delete(existingKey);
+          clean.splice(overlappingIndex, 1, value);
+          seen.add(key);
+        }
+        return;
+      }
+      seen.add(key);
+      clean.push(value);
+    });
   });
   return clean;
 }
@@ -3294,6 +3319,36 @@ function applyBookInfoToEntries(book, info) {
   return changed;
 }
 
+function hasStoredBookInfo(info) {
+  info = normalizeBookMetaValue(info);
+  return !!(info.source || info.coverUrl || info.description || info.authors.length || info.publisher || info.publishedDate || pickIsbn(info));
+}
+
+async function autoFetchBookInfoForOpenedBook(book, author) {
+  const key = bookKey(book);
+  if (!key || autoBookInfoFetchKeys.has(key)) return;
+  if (navigator.onLine === false) return;
+  if (hasStoredBookInfo(getBookMetaInfo(book))) return;
+  autoBookInfoFetchKeys.add(key);
+  showToast('Fetching book info...');
+  try {
+    const candidates = await fetchBookInfoCandidates(book, author);
+    if (!candidates.length || openBookKey !== key) return;
+    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
+    if (!info) return;
+    setBookMetaInfo(book, info);
+    if (applyBookInfoToEntries(book, info)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+    persist();
+    if (openBookKey === key) render();
+  } catch(e) {
+    console.warn('Auto book info fetch failed:', e);
+  } finally {
+    autoBookInfoFetchKeys.delete(key);
+  }
+}
+
 async function toggleBookOverview(book, author) {
   const key = bookKey(book);
   if (!key) return;
@@ -3304,8 +3359,7 @@ async function toggleBookOverview(book, author) {
   }
   openBookOverviewKey = key;
   const current = getBookMetaInfo(book);
-  const hasEnoughInfo = !!(current.description && (current.coverUrl || current.authors.length || current.publisher || current.publishedDate));
-  if (hasEnoughInfo) {
+  if (hasStoredBookInfo(current)) {
     render();
     return;
   }
@@ -3510,8 +3564,10 @@ function render() {
     const isOpen = openBookKey === k;
     const primaryTag = bookPrimaryTag(g);
     const latestLabel = bookLatestLabel(g);
+    const spineTitle = spineDisplayTitle(g.book || metaInfo.title || 'タイトル未入力');
+    metaInfo.title = spineTitle;
     return `
-<div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" data-book-key="${esc(k)}">
+<div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" data-book-key="${esc(k)}" data-book-name="${esc(g.book || '')}" data-book-author="${esc(g.author || '')}">
   <div class="book-shell" style="${spineVars}">
     <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}"
       data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
@@ -3654,6 +3710,13 @@ function formatSpineText(text) {
   }).join('');
 }
 
+function spineDisplayTitle(title) {
+  const text = String(title || '').trim();
+  const compact = text.replace(/\s*[：:]\s*.{8,}$/u, '').trim() || text;
+  const chars = [...compact];
+  return chars.length > 24 ? chars.slice(0, 23).join('') + '…' : compact;
+}
+
 function toggleBookGroup(index) {
   if (bookOrderJustDragged) return;
   const group = document.getElementById(`grp-${index}`);
@@ -3681,6 +3744,7 @@ function toggleBookGroup(index) {
       window.scrollTo({top:0, behavior:'smooth'});
       updateRecordAddButtonVisibility();
     });
+    autoFetchBookInfoForOpenedBook(group.dataset.bookName || '', group.dataset.bookAuthor || '');
   } else {
     scheduleRecordAddButtonVisibility();
   }
@@ -3940,6 +4004,12 @@ function addTagsToFolder(folderName, tags) {
   const selected = cleanTagList(tags);
   if (!folderName || !selected.length) return;
   const folders = getTagFolders();
+  Object.keys(folders).forEach(function(name) {
+    if (name === folderName) return;
+    if ((folderParts(name)[0] || '').toLocaleLowerCase('en-US') !== 'order') return;
+    folders[name] = cleanTagList(folders[name]).filter(tag => !selected.includes(tag));
+    if (!folders[name].length) delete folders[name];
+  });
   folders[folderName] = cleanTagList([...(folders[folderName] || []), ...selected]);
   setTagFolders(folders);
 }
@@ -5012,7 +5082,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v74';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v75';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
