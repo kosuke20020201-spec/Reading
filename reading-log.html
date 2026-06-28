@@ -559,7 +559,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v66';
+const APP_VERSION   = 'media-autosave-sync v67';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2519,8 +2519,15 @@ function sortExpandedRecords(list) {
       const endDiff = pageA.end - pageB.end;
       if (endDiff !== 0) return expandedRecordSort === 'old' ? endDiff : -endDiff;
     }
-    return Number(a.id || 0) - Number(b.id || 0);
+    return entryCreatedOrderValue(a) - entryCreatedOrderValue(b);
   });
+}
+
+function entryCreatedOrderValue(entry) {
+  const created = Date.parse(entry.createdAt || '');
+  const id = Number(entry.id || 0) || 0;
+  if (created) return created + (id % 86400000) / 86400000;
+  return id;
 }
 
 function entryTimeValue(entry) {
@@ -4454,7 +4461,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v66';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v67';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
