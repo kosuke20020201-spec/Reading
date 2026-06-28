@@ -131,7 +131,7 @@
   .book-spine > * { position: relative; z-index: 1; }
   .book-spine:hover { filter: brightness(1.04) saturate(1.02); transform: translateY(-2px); box-shadow: inset 4px 0 6px rgba(255,255,255,0.2), inset -9px 0 13px rgba(0,0,0,0.38), inset 0 5px 0 rgba(255,255,255,0.14), inset 0 -7px 0 rgba(0,0,0,0.27), 0 11px 20px rgba(41,37,36,0.28); }
   .book-spine { user-select: none; }
-  .book-spine.has-cover { background-image: linear-gradient(90deg, rgba(0,0,0,0.45), rgba(0,0,0,0.08) 35%, rgba(0,0,0,0.48)), var(--book-cover), linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18)); background-size: cover, cover, cover; background-position: center, center, center; }
+  .book-spine.has-cover { --spine-ink:#fffaf0; --spine-badge-ink:#fffaf0; --spine-badge-bg:rgba(0,0,0,0.34); --spine-badge-border:rgba(255,255,255,0.28); --spine-text-shadow:0 2px 4px rgba(0,0,0,0.86), 0 0 2px rgba(0,0,0,0.82); background-image: linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.34) 34%, rgba(0,0,0,0.38) 58%, rgba(0,0,0,0.66)), var(--book-cover), linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18)); background-size: cover, cover, cover; background-position: center, center, center; }
   .book-group.dragging .book-spine { cursor: grabbing; filter: brightness(1.08) saturate(1.05); }
   .book-group.open .book-spine { height: 18rem; }
   .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.16; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; font-feature-settings: "palt"; }
@@ -559,7 +559,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v68';
+const APP_VERSION   = 'media-autosave-sync v70';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2541,7 +2541,8 @@ function sortExpandedRecords(list) {
       const endDiff = pageA.end - pageB.end;
       if (endDiff !== 0) return expandedRecordSort === 'old' ? endDiff : -endDiff;
     }
-    return entryCreatedOrderValue(a) - entryCreatedOrderValue(b);
+    const createdDiff = entryCreatedOrderValue(a) - entryCreatedOrderValue(b);
+    return expandedRecordSort === 'old' ? createdDiff : -createdDiff;
   });
 }
 
@@ -2644,6 +2645,30 @@ function bookSearchQuery(book, author) {
   return parts.join(' ') || String(book || author || '').trim();
 }
 
+function uniqueStrings(values) {
+  const seen = new Set();
+  return (values || []).map(v=>String(v || '').trim()).filter(function(value) {
+    if (!value || seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
+}
+
+function bookSearchQueries(book, author) {
+  const title = String(book || '').trim();
+  const writer = String(author || '').trim();
+  const isbn = extractIsbn(title + ' ' + writer);
+  if (isbn) return ['isbn:' + isbn, isbn];
+  return uniqueStrings([
+    bookSearchQuery(title, writer),
+    [title, writer].filter(Boolean).join(' '),
+    title,
+    title.replace(/[「」『』（）()［］【】]/g, ' ').replace(/\s+/g, ' ').trim(),
+    title.split(/[：:／/｜|・,，、\s]+/).filter(Boolean).slice(0, 3).join(' '),
+    writer ? [writer, title].filter(Boolean).join(' ') : ''
+  ]);
+}
+
 function scoreBookCandidate(title, authors, book, author) {
   const wantedTitle = bookKey(book);
   const wantedAuthor = bookKey(author);
@@ -2657,36 +2682,134 @@ function scoreBookCandidate(title, authors, book, author) {
   return score;
 }
 
-async function fetchGoogleBookInfo(book, author) {
-  const q = bookSearchQuery(book, author);
-  if (!q) return null;
-  const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=5';
-  const response = await fetch(url, {cache:'no-store'});
-  if (!response.ok) return null;
-  const data = await response.json();
-  const items = Array.isArray(data.items) ? data.items : [];
-  let best = null;
-  items.forEach(function(item) {
-    const v = item && item.volumeInfo || {};
-    const authors = Array.isArray(v.authors) ? v.authors : [];
-    const ids = Array.isArray(v.industryIdentifiers) ? v.industryIdentifiers : [];
-    const score = scoreBookCandidate(v.title || '', authors, book, author);
-    const mapped = normalizeFetchedBookInfo({
-      title: v.title || '',
-      authors,
-      publisher: v.publisher || '',
-      publishedDate: v.publishedDate || '',
-      description: stripHtml(v.description || ''),
-      coverUrl: v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail) || '',
-      isbn10: (ids.find(x=>x.type==='ISBN_10') || {}).identifier || '',
-      isbn13: (ids.find(x=>x.type==='ISBN_13') || {}).identifier || '',
-      pageCount: v.pageCount || '',
-      categories: v.categories || [],
-      source: 'Google Books',
-      infoUrl: v.infoLink || item.selfLink || ''
-    });
-    if (!best || score > best.score || (score === best.score && mapped.description && !best.info.description)) best = {score, info:mapped};
+function directChildTextsByLocalName(node, names) {
+  const wanted = new Set(names);
+  return Array.from(node ? node.children || [] : [])
+    .filter(el => wanted.has(el.localName) || wanted.has(el.nodeName))
+    .map(el => (el.textContent || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+
+function firstDirectChildText(node, names) {
+  return directChildTextsByLocalName(node, names)[0] || '';
+}
+
+function ndlOpenSearchParamSets(book, author) {
+  const title = String(book || '').trim();
+  const writer = String(author || '').trim();
+  const isbn = extractIsbn(title + ' ' + writer);
+  const sets = [];
+  function add(params) {
+    const key = params.toString();
+    if (!sets.some(item => item.toString() === key)) sets.push(params);
+  }
+  if (isbn) {
+    const p = new URLSearchParams();
+    p.set('cnt', '10');
+    p.set('isbn', isbn);
+    add(p);
+  }
+  if (title) {
+    const p = new URLSearchParams();
+    p.set('cnt', '10');
+    p.set('title', title);
+    if (writer) p.set('creator', writer);
+    p.set('dpid', 'iss-ndl-opac');
+    add(p);
+  }
+  bookSearchQueries(book, author).forEach(function(q) {
+    if (!q) return;
+    const p = new URLSearchParams();
+    p.set('cnt', '10');
+    p.set('any', q);
+    p.set('dpid', 'iss-ndl-opac');
+    add(p);
   });
+  if (title) {
+    const p = new URLSearchParams();
+    p.set('cnt', '10');
+    p.set('title', title);
+    add(p);
+  }
+  return sets;
+}
+
+async function fetchNdlBookInfo(book, author) {
+  let best = null;
+  const parser = new DOMParser();
+  const searches = ndlOpenSearchParamSets(book, author);
+  for (const params of searches) {
+    const res = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString(), {cache:'no-store'});
+    if (!res.ok) continue;
+    const xmlText = await res.text();
+    const xml = parser.parseFromString(xmlText, 'application/xml');
+    if (xml.getElementsByTagName('parsererror').length) continue;
+    const items = Array.from(xml.getElementsByTagName('item'));
+    items.forEach(function(item) {
+      const title = firstDirectChildText(item, ['title']) || firstDirectChildText(item, ['dc:title']);
+      const creators = directChildTextsByLocalName(item, ['creator', 'author']).filter(v => v !== title);
+      const publisher = firstDirectChildText(item, ['publisher']);
+      const publishedDate = firstDirectChildText(item, ['date', 'issued']);
+      const identifiers = directChildTextsByLocalName(item, ['identifier']);
+      const isbn = extractIsbn(identifiers.join(' '));
+      const link = firstDirectChildText(item, ['link']);
+      const description = firstDirectChildText(item, ['abstract']);
+      const subjects = directChildTextsByLocalName(item, ['subject']).slice(0, 5);
+      const extent = firstDirectChildText(item, ['extent']);
+      const score = scoreBookCandidate(title, creators, book, author) + (isbn ? 8 : 0) + (publisher ? 3 : 0) + (publishedDate ? 2 : 0);
+      const mapped = normalizeFetchedBookInfo({
+        title,
+        authors: creators,
+        publisher,
+        publishedDate,
+        description: stripHtml(description),
+        coverUrl: '',
+        isbn10: isbn && isbn.length === 10 ? isbn : '',
+        isbn13: isbn && isbn.length === 13 ? isbn : '',
+        pageCount: extent,
+        categories: subjects,
+        source: 'NDL Search',
+        infoUrl: link
+      });
+      if (!best || score > best.score) best = {score, info:mapped};
+    });
+    if (best && (pickIsbn(best.info) || best.info.publisher || best.info.authors.length)) break;
+  }
+  return best ? best.info : null;
+}
+
+async function fetchGoogleBookInfo(book, author) {
+  let best = null;
+  const queries = bookSearchQueries(book, author);
+  for (const q of queries) {
+    const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
+    const response = await fetch(url, {cache:'no-store'});
+    if (!response.ok) continue;
+    const data = await response.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    items.forEach(function(item) {
+      const v = item && item.volumeInfo || {};
+      const authors = Array.isArray(v.authors) ? v.authors : [];
+      const ids = Array.isArray(v.industryIdentifiers) ? v.industryIdentifiers : [];
+      const score = scoreBookCandidate(v.title || '', authors, book, author) + (v.description ? 4 : 0) + (v.imageLinks ? 3 : 0);
+      const mapped = normalizeFetchedBookInfo({
+        title: v.title || '',
+        authors,
+        publisher: v.publisher || '',
+        publishedDate: v.publishedDate || '',
+        description: stripHtml(v.description || ''),
+        coverUrl: v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail) || '',
+        isbn10: (ids.find(x=>x.type==='ISBN_10') || {}).identifier || '',
+        isbn13: (ids.find(x=>x.type==='ISBN_13') || {}).identifier || '',
+        pageCount: v.pageCount || '',
+        categories: v.categories || [],
+        source: 'Google Books',
+        infoUrl: v.infoLink || item.selfLink || ''
+      });
+      if (!best || score > best.score || (score === best.score && mapped.description && !best.info.description)) best = {score, info:mapped};
+    });
+    if (best && (best.info.description || best.info.coverUrl)) break;
+  }
   return best ? best.info : null;
 }
 
@@ -2718,35 +2841,46 @@ async function fetchOpenLibraryBookInfo(book, author) {
     }
   }
 
-  const params = new URLSearchParams();
-  if (book) params.set('title', book);
-  if (author) params.set('author', author);
-  params.set('limit', '5');
-  const res = await fetch('https://openlibrary.org/search.json?' + params.toString(), {cache:'no-store'});
-  if (!res.ok) return null;
-  const data = await res.json();
-  const docs = Array.isArray(data.docs) ? data.docs : [];
   let best = null;
-  docs.forEach(function(doc) {
-    const authors = Array.isArray(doc.author_name) ? doc.author_name : [];
-    const score = scoreBookCandidate(doc.title || '', authors, book, author);
-    const cover = doc.cover_i ? 'https://covers.openlibrary.org/b/id/' + doc.cover_i + '-L.jpg' : '';
-    const mapped = normalizeFetchedBookInfo({
-      title: doc.title || '',
-      authors,
-      publisher: (doc.publisher || []).slice(0,1).join(''),
-      publishedDate: doc.first_publish_year || '',
-      description: '',
-      coverUrl: cover,
-      isbn10: (doc.isbn || []).find(x=>String(x).length===10) || '',
-      isbn13: (doc.isbn || []).find(x=>String(x).length===13) || '',
-      pageCount: '',
-      categories: (doc.subject || []).slice(0,5),
-      source: 'Open Library',
-      infoUrl: doc.key ? 'https://openlibrary.org' + doc.key : ''
-    });
-    if (!best || score > best.score) best = {score, info:mapped, workKey: doc.key};
+  const searches = [];
+  const fieldParams = new URLSearchParams();
+  if (book) fieldParams.set('title', book);
+  if (author) fieldParams.set('author', author);
+  fieldParams.set('limit', '10');
+  searches.push(fieldParams);
+  bookSearchQueries(book, author).forEach(function(q) {
+    const params = new URLSearchParams();
+    params.set('q', q);
+    params.set('limit', '10');
+    searches.push(params);
   });
+  for (const params of searches) {
+    const res = await fetch('https://openlibrary.org/search.json?' + params.toString(), {cache:'no-store'});
+    if (!res.ok) continue;
+    const data = await res.json();
+    const docs = Array.isArray(data.docs) ? data.docs : [];
+    docs.forEach(function(doc) {
+      const authors = Array.isArray(doc.author_name) ? doc.author_name : [];
+      const score = scoreBookCandidate(doc.title || '', authors, book, author) + (doc.cover_i ? 3 : 0);
+      const cover = doc.cover_i ? 'https://covers.openlibrary.org/b/id/' + doc.cover_i + '-L.jpg' : '';
+      const mapped = normalizeFetchedBookInfo({
+        title: doc.title || '',
+        authors,
+        publisher: (doc.publisher || []).slice(0,1).join(''),
+        publishedDate: doc.first_publish_year || '',
+        description: '',
+        coverUrl: cover,
+        isbn10: (doc.isbn || []).find(x=>String(x).length===10) || '',
+        isbn13: (doc.isbn || []).find(x=>String(x).length===13) || '',
+        pageCount: '',
+        categories: (doc.subject || []).slice(0,5),
+        source: 'Open Library',
+        infoUrl: doc.key ? 'https://openlibrary.org' + doc.key : ''
+      });
+      if (!best || score > best.score) best = {score, info:mapped, workKey: doc.key};
+    });
+    if (best && best.info.coverUrl) break;
+  }
   if (best && best.workKey && !best.info.description) {
     try {
       const workRes = await fetch('https://openlibrary.org' + best.workKey + '.json', {cache:'no-store'});
@@ -2764,21 +2898,35 @@ async function fetchBookInfo(book, author) {
   if (navigator.onLine === false) return null;
   let google = null;
   let openLibrary = null;
+  let ndl = null;
+  let googleByNdlIsbn = null;
   try { google = await fetchGoogleBookInfo(book, author); } catch(e) { google = null; }
   if (!google || !google.description || !google.coverUrl) {
     try { openLibrary = await fetchOpenLibraryBookInfo(book, author); } catch(e) { openLibrary = null; }
   }
-  if (google && openLibrary) {
-    return normalizeBookMetaValue({
-      ...google,
-      description: google.description || openLibrary.description,
-      coverUrl: google.coverUrl || openLibrary.coverUrl,
-      isbn10: google.isbn10 || openLibrary.isbn10,
-      isbn13: google.isbn13 || openLibrary.isbn13,
-      categories: google.categories && google.categories.length ? google.categories : openLibrary.categories
-    });
+  if (!google || !openLibrary || !pickIsbn(google) || !pickIsbn(openLibrary) || !google.publisher || !google.publishedDate) {
+    try { ndl = await fetchNdlBookInfo(book, author); } catch(e) { ndl = null; }
   }
-  return google || openLibrary;
+  if (ndl && pickIsbn(ndl) && (!google || !google.coverUrl || !google.description)) {
+    try { googleByNdlIsbn = await fetchGoogleBookInfo(pickIsbn(ndl), ''); } catch(e) { googleByNdlIsbn = null; }
+  }
+  const sources = [google, openLibrary, ndl, googleByNdlIsbn].filter(Boolean);
+  if (!sources.length) return null;
+  const merged = normalizeBookMetaValue({
+    title: (ndl && ndl.title) || (google && google.title) || (openLibrary && openLibrary.title) || (googleByNdlIsbn && googleByNdlIsbn.title) || '',
+    authors: (ndl && ndl.authors && ndl.authors.length && ndl.authors) || (google && google.authors && google.authors.length && google.authors) || (openLibrary && openLibrary.authors && openLibrary.authors.length && openLibrary.authors) || (googleByNdlIsbn && googleByNdlIsbn.authors) || [],
+    publisher: (ndl && ndl.publisher) || (google && google.publisher) || (openLibrary && openLibrary.publisher) || (googleByNdlIsbn && googleByNdlIsbn.publisher) || '',
+    publishedDate: (ndl && ndl.publishedDate) || (google && google.publishedDate) || (openLibrary && openLibrary.publishedDate) || (googleByNdlIsbn && googleByNdlIsbn.publishedDate) || '',
+    description: (google && google.description) || (openLibrary && openLibrary.description) || (googleByNdlIsbn && googleByNdlIsbn.description) || (ndl && ndl.description) || '',
+    coverUrl: (google && google.coverUrl) || (openLibrary && openLibrary.coverUrl) || (googleByNdlIsbn && googleByNdlIsbn.coverUrl) || '',
+    isbn10: (ndl && ndl.isbn10) || (google && google.isbn10) || (openLibrary && openLibrary.isbn10) || (googleByNdlIsbn && googleByNdlIsbn.isbn10) || '',
+    isbn13: (ndl && ndl.isbn13) || (google && google.isbn13) || (openLibrary && openLibrary.isbn13) || (googleByNdlIsbn && googleByNdlIsbn.isbn13) || '',
+    pageCount: (google && google.pageCount) || (openLibrary && openLibrary.pageCount) || (ndl && ndl.pageCount) || (googleByNdlIsbn && googleByNdlIsbn.pageCount) || '',
+    categories: (google && google.categories && google.categories.length && google.categories) || (openLibrary && openLibrary.categories && openLibrary.categories.length && openLibrary.categories) || (ndl && ndl.categories && ndl.categories.length && ndl.categories) || (googleByNdlIsbn && googleByNdlIsbn.categories) || [],
+    source: uniqueStrings(sources.map(info => info.source)).join(' + '),
+    infoUrl: (google && google.infoUrl) || (openLibrary && openLibrary.infoUrl) || (ndl && ndl.infoUrl) || (googleByNdlIsbn && googleByNdlIsbn.infoUrl) || ''
+  });
+  return merged;
 }
 
 function applyBookInfoToEntries(book, info) {
@@ -2804,7 +2952,8 @@ async function toggleBookOverview(book, author) {
   }
   openBookOverviewKey = key;
   const current = getBookMetaInfo(book);
-  if (current.description || current.coverUrl || current.authors.length) {
+  const hasEnoughInfo = !!(current.description && (current.coverUrl || current.authors.length || current.publisher || current.publishedDate));
+  if (hasEnoughInfo) {
     render();
     return;
   }
@@ -4483,7 +4632,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v68';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v70';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
