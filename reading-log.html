@@ -597,7 +597,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v80';
+const APP_VERSION   = 'media-autosave-sync v81';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -682,6 +682,7 @@ let tagFolderOrderCacheText = null, tagFolderOrderCacheValue = null;
 let tagFolderNamesCacheKey = '', tagFolderNamesCacheValue = [];
 let assignedTagsCacheKey = '', assignedTagsCacheValue = [];
 let folderTagsCacheKey = '', folderTagsCache = new Map();
+let childFoldersCacheKey = '', childFoldersCache = new Map();
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
@@ -958,6 +959,8 @@ function invalidateTagFolderDerivedCaches() {
   assignedTagsCacheKey = '';
   folderTagsCacheKey = '';
   folderTagsCache = new Map();
+  childFoldersCacheKey = '';
+  childFoldersCache = new Map();
 }
 
 function cleanTagFolderOrder(order, folders) {
@@ -1999,9 +2002,17 @@ function directFolderTags(path) {
 
 function childFolderPaths(path) {
   const current = normalizeFolderPath(path);
-  return tagFolderNames().filter(function(name) {
+  const key = (localStorage.getItem(TAG_FOLDERS_KEY) || '') + '\n' + (localStorage.getItem(TAG_FOLDER_ORDER_KEY) || '');
+  if (key !== childFoldersCacheKey) {
+    childFoldersCacheKey = key;
+    childFoldersCache = new Map();
+  }
+  if (childFoldersCache.has(current)) return childFoldersCache.get(current).slice();
+  const children = tagFolderNames().filter(function(name) {
     return folderParentPath(name) === current;
   });
+  childFoldersCache.set(current, children);
+  return children.slice();
 }
 
 function topFolderPaths() {
@@ -2050,20 +2061,17 @@ function folderPathTrail(root, path) {
 }
 
 function appendFolderButtonRow(paths, host, tagSet, depth) {
-  paths = paths.filter(path => folderTagsForPath(path).some(tag => tagSet.has(tag)));
-  if (!paths.length) return;
+  const items = paths.map(function(path) {
+    const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
+    return {path, count: subTags.length};
+  }).filter(item => item.count);
+  if (!items.length) return;
   const row = document.createElement('span');
   row.className = 'tag-folder-child-row';
   row.style.setProperty('--depth', depth);
-  paths.forEach(function(path) {
-    const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
-    const b = document.createElement('button');
-    b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
-    b.type = 'button';
-    b.textContent = folderLeafName(path) + ' ' + subTags.length;
-    b.onclick = () => setTagFolder(path);
-    row.appendChild(b);
-  });
+  row.innerHTML = items.map(function(item) {
+    return `<button type="button" class="tag-folder-child-btn${activeTagFolder===item.path?' active':''}" data-tag-folder="${esc(item.path)}">${esc(folderLeafName(item.path))} ${item.count}</button>`;
+  }).join('');
   host.appendChild(row);
 }
 
@@ -2077,31 +2085,29 @@ function appendActiveFolderRows(root, host, tagSet) {
 }
 
 function appendFolderChildRows(parent, host, tagSet, depth) {
-  const children = childFolderPaths(parent).filter(path => folderTagsForPath(path).some(tag => tagSet.has(tag)));
-  if (!children.length) return;
+  const childItems = childFolderPaths(parent).map(function(path) {
+    const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
+    return {path, count: subTags.length};
+  }).filter(item => item.count);
+  if (!childItems.length) return;
   const row = document.createElement('span');
   row.className = 'tag-folder-child-row';
   row.style.setProperty('--depth', depth);
-  children.forEach(function(path) {
-    const subTags = folderTagsForPath(path).filter(tag => tagSet.has(tag));
-    const b = document.createElement('button');
-    b.className = 'tag-folder-child-btn' + (activeTagFolder===path?' active':'');
-    b.type = 'button';
-    b.textContent = folderLeafName(path) + ' ' + subTags.length;
-    b.onclick = () => setTagFolder(path);
-    row.appendChild(b);
-  });
+  row.innerHTML = childItems.map(function(item) {
+    return `<button type="button" class="tag-folder-child-btn${activeTagFolder===item.path?' active':''}" data-tag-folder="${esc(item.path)}">${esc(folderLeafName(item.path))} ${item.count}</button>`;
+  }).join('');
   host.appendChild(row);
-  children.forEach(function(path) {
+  childItems.forEach(function(item) {
+    const path = item.path;
     if (activeTagFolder && (activeTagFolder === path || isFolderDescendantOrSelf(activeTagFolder, path))) {
       appendFolderChildRows(path, host, tagSet, depth + 1);
     }
   });
 }
 
-function unfiledTags() {
+function unfiledTags(tagList) {
   const assigned = assignedFolderTags();
-  return allTags().filter(tag => !assigned.has(tag)).sort((a,b)=>a.localeCompare(b,'ja'));
+  return (tagList || allTags()).filter(tag => !assigned.has(tag)).sort((a,b)=>a.localeCompare(b,'ja'));
 }
 
 function currentBookKeys() {
@@ -2591,8 +2597,13 @@ function bookGroups() {
 
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
+  const folderTagList = (!activeTag && activeTagFolder) ? activeFolderTags() : [];
   return entries.filter(e=>{
-    if(!entryMatchesActiveTagFilter(e)) return false;
+    if(activeTag) {
+      if(!entryHasTag(e, activeTag)) return false;
+    } else if(folderTagList.length) {
+      if(!folderTagList.some(tag => entryHasTag(e, tag))) return false;
+    }
     return entryMatchesSearch(e, q);
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
@@ -2688,7 +2699,7 @@ function safeBookImageUrl(url) {
 
 function cssUrlValue(url) {
   const safe = safeBookImageUrl(url);
-  return safe ? 'url("' + safe.replace(/["\\]/g, '') + '")' : '';
+  return safe ? 'url(' + safe.replace(/[()"'\\]/g, '') + ')' : '';
 }
 
 async function fetchBookApi(url, timeoutMs) {
@@ -3555,7 +3566,12 @@ function expandedRecordsForGroup(group) {
     return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
   });
   if (expandedRecordScope === 'activeTag' && (activeTag || activeTagFolder)) {
-    list = list.filter(entryMatchesActiveTagFilter);
+    if (activeTag) {
+      list = list.filter(entry => entryHasTag(entry, activeTag));
+    } else {
+      const folderTagList = activeFolderTags();
+      if (folderTagList.length) list = list.filter(entry => folderTagList.some(tag => entryHasTag(entry, tag)));
+    }
   }
   return sortExpandedRecords(list);
 }
@@ -3626,24 +3642,15 @@ function render() {
     wrap.appendChild(group);
   });
   if (expandedWrap && activeTagFolder) {
-    directFolderTags(activeTagFolder).filter(tag => tagSet.has(tag)).forEach(function(tag) {
-      const b = document.createElement('button');
-      b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
-      b.type = 'button';
-      b.textContent = tag;
-      b.onclick = () => setTag(tag);
-      expandedWrap.appendChild(b);
-    });
+    expandedWrap.insertAdjacentHTML('beforeend', directFolderTags(activeTagFolder)
+      .filter(tag => tagSet.has(tag))
+      .map(tag => `<button type="button" class="tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}" data-tag="${esc(tag)}">${esc(tag)}</button>`)
+      .join(''));
   }
-  const looseTags = unfiledTags();
-  looseTags.forEach(function(tag) {
-    const b = document.createElement('button');
-    b.className = `tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}`;
-    b.type = 'button';
-    b.textContent = tag;
-    b.onclick = () => setTag(tag);
-    (expandedWrap || wrap).appendChild(b);
-  });
+  const looseTags = unfiledTags(tags);
+  const looseHTML = looseTags.map(tag => `<button type="button" class="tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}" data-tag="${esc(tag)}">${esc(tag)}</button>`).join('');
+  if (expandedWrap) expandedWrap.insertAdjacentHTML('beforeend', looseHTML);
+  else wrap.insertAdjacentHTML('beforeend', looseHTML);
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
   if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
   if(!list.length){container.innerHTML='';empty.style.display='block';scheduleRecordAddButtonVisibility();return;}
@@ -5191,7 +5198,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v80';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v81';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -5233,6 +5240,24 @@ window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0)
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('scroll',()=>{ updateScrollTopButton(); updateRecordAddButtonVisibility(); }, {passive:true});
 window.addEventListener('resize', scheduleRecordAddButtonVisibility, {passive:true});
+document.getElementById('tagFilters')?.addEventListener('click', e => {
+  const btn = e.target.closest('[data-tag-folder]');
+  if (btn) {
+    setTagFolder(btn.dataset.tagFolder || '');
+    return;
+  }
+  const tagBtn = e.target.closest('[data-tag]');
+  if (tagBtn) setTag(tagBtn.dataset.tag || '');
+});
+document.getElementById('tagExpandedTags')?.addEventListener('click', e => {
+  const folderBtn = e.target.closest('[data-tag-folder]');
+  if (folderBtn) {
+    setTagFolder(folderBtn.dataset.tagFolder || '');
+    return;
+  }
+  const tagBtn = e.target.closest('[data-tag]');
+  if (tagBtn) setTag(tagBtn.dataset.tag || '');
+});
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
 load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud();
