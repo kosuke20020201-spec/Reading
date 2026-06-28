@@ -32,8 +32,8 @@
   .header-eyebrow { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.25em; color: var(--amber); text-transform: uppercase; margin-bottom: 0.25rem; }
   .header-title { font-family: 'Noto Serif JP', serif; font-size: 2rem; font-weight: 900; line-height: 1.2; }
   .header-meta { font-size: 0.8rem; color: var(--stone-400); margin-top: 0.25rem; }
-  .header-btns { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
-  .header-btns-row { display: flex; gap: 0.4rem; }
+  .header-btns { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; width: 100%; max-width: 100%; }
+  .header-btns-row { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.4rem; width: 100%; max-width: 100%; }
   .btn-add { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(to right, var(--amber), var(--orange)); color: white; font-weight: 600; border: none; cursor: pointer; font-size: 0.82rem; transition: filter 0.1s; font-family: inherit; }
   .btn-add:hover { filter: brightness(1.08); } .btn-add:active { transform: scale(0.97); }
   .btn-sub { display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 0.9rem; border-radius: 999px; background: white; border: 1px solid var(--stone-200); color: var(--stone-600); font-weight: 500; cursor: pointer; font-size: 0.77rem; transition: all 0.1s; font-family: inherit; white-space: nowrap; }
@@ -343,6 +343,10 @@
 
   @media (max-width: 480px) {
     .header-title { font-size: 1.6rem; }
+    .header-btns { align-items: stretch; }
+    .header-btns-row { justify-content: flex-start; }
+    .header-btns-row .btn-sub { flex: 1 1 calc(50% - 0.25rem); justify-content: center; min-width: 0; padding-inline: 0.55rem; font-size: 0.72rem; }
+    .btn-add { align-self: flex-end; }
     .field-row { grid-template-columns: 1fr; }
     .tag-expanded-tags { max-height: 6.5rem; padding: 0.45rem; }
     .view-mode-toggle { width: 100%; }
@@ -602,7 +606,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v83';
+const APP_VERSION   = 'media-autosave-sync v84';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5456,7 +5460,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v83';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v84';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
