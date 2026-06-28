@@ -137,6 +137,10 @@
   .book-spine.has-cover .book-spine-title { padding-inline: 0.12rem; font-weight: 700; font-size: min(var(--title-size, 0.84rem), 0.78rem); line-height: 1.08; letter-spacing: 0; overflow: hidden; }
   .book-spine.has-cover .book-spine-author { opacity: 0.98; }
   .book-spine.has-cover .spine-word-latin { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
+  .book-spine.has-cover .book-group-count,
+  .book-spine.has-cover .book-spine-tag,
+  .book-spine.has-cover .book-spine-date { background: rgba(41,37,36,0.78); color: #fffaf0; border-color: rgba(255,251,235,0.42); text-shadow: 0 1px 2px rgba(0,0,0,0.75); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .book-spine.has-cover .book-spine-date { padding: 0.1rem 0.28rem; }
   .book-group.dragging .book-spine { cursor: grabbing; filter: brightness(1.08) saturate(1.05); }
   .book-group.open .book-spine { height: 18rem; }
   .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.16; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; font-feature-settings: "palt"; }
@@ -591,7 +595,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v75';
+const APP_VERSION   = 'media-autosave-sync v76';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5082,7 +5086,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v75';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v76';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

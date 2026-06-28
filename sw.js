@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260628-auto-book-info-v75';
+const CACHE_NAME = 'reading-note-pwa-20260628-spine-badge-v76';
 const APP_SHELL = [
   './',
   './index.html',
