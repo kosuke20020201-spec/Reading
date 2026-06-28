@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260626-record-add-context-visible-1';
+const CACHE_NAME = 'reading-note-pwa-20260628-book-info-api-1';
 const APP_SHELL = [
   './',
   './index.html',
