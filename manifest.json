@@ -1,15 +1,11 @@
 {
   "name": "読書ノート",
   "short_name": "読書ノート",
-  "description": "読んだ本の内容、教訓、補足、タグを管理する読書記録アプリ",
-  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#fdf8f0",
   "theme_color": "#f59e0b",
-  "lang": "ja",
   "icons": [
     {
       "src": "icon-192.png",
@@ -23,6 +19,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["productivity", "education"]
+  ]
 }
