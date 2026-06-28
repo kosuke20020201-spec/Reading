@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260628-ndl-page-order-1';
+const CACHE_NAME = 'reading-note-pwa-20260628-author-dedupe-v73';
 const APP_SHELL = [
   './',
   './index.html',

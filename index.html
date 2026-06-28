@@ -131,7 +131,11 @@
   .book-spine > * { position: relative; z-index: 1; }
   .book-spine:hover { filter: brightness(1.04) saturate(1.02); transform: translateY(-2px); box-shadow: inset 4px 0 6px rgba(255,255,255,0.2), inset -9px 0 13px rgba(0,0,0,0.38), inset 0 5px 0 rgba(255,255,255,0.14), inset 0 -7px 0 rgba(0,0,0,0.27), 0 11px 20px rgba(41,37,36,0.28); }
   .book-spine { user-select: none; }
-  .book-spine.has-cover { --spine-ink:#fffaf0; --spine-badge-ink:#fffaf0; --spine-badge-bg:rgba(0,0,0,0.34); --spine-badge-border:rgba(255,255,255,0.28); --spine-text-shadow:0 2px 4px rgba(0,0,0,0.86), 0 0 2px rgba(0,0,0,0.82); background-image: linear-gradient(90deg, rgba(0,0,0,0.6), rgba(0,0,0,0.34) 34%, rgba(0,0,0,0.38) 58%, rgba(0,0,0,0.66)), var(--book-cover), linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18)); background-size: cover, cover, cover; background-position: center, center, center; }
+  .book-spine.has-cover { --spine-ink:#292524; --spine-badge-ink:#292524; --spine-badge-bg:rgba(255,251,235,0.88); --spine-badge-border:rgba(120,113,108,0.26); --spine-text-shadow:none; background-image: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(255,255,255,0.04) 22%, rgba(0,0,0,0.12) 58%, rgba(0,0,0,0.38)), var(--book-cover), linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18)); background-size: cover, cover, cover; background-position: center, center, center; }
+  .book-spine.has-cover .book-spine-title,
+  .book-spine.has-cover .book-spine-author { background: rgba(255,251,235,0.9); border: 1px solid rgba(120,113,108,0.24); border-radius: 0.4rem; box-shadow: 0 2px 8px rgba(41,37,36,0.18), inset 0 1px 0 rgba(255,255,255,0.62); color: #292524; padding-block: 0.28rem; }
+  .book-spine.has-cover .book-spine-title { padding-inline: 0.1rem; }
+  .book-spine.has-cover .book-spine-author { opacity: 0.96; }
   .book-group.dragging .book-spine { cursor: grabbing; filter: brightness(1.08) saturate(1.05); }
   .book-group.open .book-spine { height: 18rem; }
   .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.16; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; font-feature-settings: "palt"; }
@@ -173,6 +177,17 @@
   .book-overview-meta { margin-top:0.2rem; font-size:0.68rem; line-height:1.55; color:var(--stone-500); font-weight:700; }
   .book-overview-desc { margin-top:0.65rem; font-size:0.78rem; line-height:1.75; color:var(--stone-600); white-space:pre-wrap; overflow-wrap:anywhere; }
   .book-overview-empty { font-size:0.76rem; color:var(--stone-400); line-height:1.6; }
+  .book-overview-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .book-overview-action-btn { border: 1px solid var(--amber-border); background: #fffbeb; color: #92400e; border-radius: 999px; padding: 0.32rem 0.75rem; font: inherit; font-size: 0.72rem; font-weight: 900; cursor: pointer; }
+  .book-overview-action-btn:hover { border-color: var(--amber); background: #fef3c7; }
+  .book-info-choice-list { display: flex; flex-direction: column; gap: 0.65rem; }
+  .book-info-choice-card { width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0.75rem; text-align: left; padding: 0.75rem; border: 1px solid var(--stone-200); border-radius: 0.85rem; background: white; cursor: pointer; font: inherit; color: inherit; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
+  .book-info-choice-card:hover { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b20; transform: translateY(-1px); }
+  .book-info-choice-cover { width: 3.1rem; height: 4.45rem; object-fit: cover; border: 1px solid var(--stone-200); border-radius: 0.38rem; background: var(--stone-100); box-shadow: 0 4px 10px rgba(41,37,36,0.12); }
+  .book-info-choice-cover.empty { display: flex; align-items: center; justify-content: center; color: var(--stone-300); font-weight: 900; font-size: 1.35rem; }
+  .book-info-choice-title { font-size: 0.85rem; font-weight: 900; color: var(--stone-800); line-height: 1.35; overflow-wrap: anywhere; }
+  .book-info-choice-meta { margin-top: 0.28rem; font-size: 0.7rem; line-height: 1.55; color: var(--stone-500); font-weight: 700; overflow-wrap: anywhere; }
+  .book-info-choice-desc { margin-top: 0.35rem; font-size: 0.7rem; line-height: 1.55; color: var(--stone-400); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
   .card { position: relative; min-width: 0; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; content-visibility: auto; contain-intrinsic-size: 34rem; }
@@ -481,6 +496,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="bookInfoChoiceOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">本情報を選択</h2>
+      <button class="modal-close" onclick="closeBookInfoChoice()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.78rem;color:var(--stone-500);line-height:1.7;margin:0">原書・翻訳版・別版が混ざることがあります。使っている本に一番近い候補を選んでください。</p>
+      <div class="book-info-choice-list" id="bookInfoChoiceList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeBookInfoChoice()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="tagFolderOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -559,7 +590,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v70';
+const APP_VERSION   = 'media-autosave-sync v73';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -614,6 +645,8 @@ let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
 let openBookOverviewKey = '';
+let bookInfoChoiceCandidates = [];
+let bookInfoChoiceResolve = null;
 let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
 let tagFolderSelectedTags = new Set();
@@ -735,6 +768,26 @@ function cleanTagList(tags) {
   return clean;
 }
 
+function authorKeyName(value) {
+  return String(value || '')
+    .trim()
+    .toLocaleLowerCase('ja-JP')
+    .replace(/[\s　・･,，、.．。:：;；/／|｜()（）\[\]【】「」『』"']/g, '');
+}
+
+function cleanAuthorList(authors) {
+  const seen = new Set();
+  const clean = [];
+  (Array.isArray(authors) ? authors : []).forEach(function(author) {
+    const value = String(author || '').trim();
+    const key = authorKeyName(value);
+    if (!value || !key || seen.has(key)) return;
+    seen.add(key);
+    clean.push(value);
+  });
+  return clean;
+}
+
 function getBookMeta() {
   try {
     const stored = localStorage.getItem(BOOK_META_KEY);
@@ -752,7 +805,7 @@ function normalizeBookMetaValue(value) {
   return {
     fixedTags: cleanTagList(value.fixedTags || value.tags || []),
     title: String(value.title || '').trim(),
-    authors: Array.isArray(value.authors) ? value.authors.map(v=>String(v).trim()).filter(Boolean) : cleanTagList(value.author ? [value.author] : []),
+    authors: cleanAuthorList(Array.isArray(value.authors) ? value.authors : (value.author ? [value.author] : [])),
     publisher: String(value.publisher || '').trim(),
     publishedDate: String(value.publishedDate || '').trim(),
     description: String(value.description || '').trim(),
@@ -773,7 +826,7 @@ function mergeBookMetaValues(primary, fallback) {
   return normalizeBookMetaValue({
     fixedTags: cleanTagList([...(left.fixedTags || []), ...(right.fixedTags || [])]),
     title: left.title || right.title,
-    authors: left.authors && left.authors.length ? left.authors : right.authors,
+    authors: cleanAuthorList(left.authors && left.authors.length ? left.authors : right.authors),
     publisher: left.publisher || right.publisher,
     publishedDate: left.publishedDate || right.publishedDate,
     description: left.description || right.description,
@@ -2588,7 +2641,8 @@ function compactBookTitle(title) {
 
 function bookAuthorLabel(group) {
   const info = getBookMetaInfo(group.book);
-  if (info.authors && info.authors.length) return info.authors.join('、');
+  const authors = cleanAuthorList([...(info.authors || []), group.author]);
+  if (authors.length) return authors.join('、');
   return group.author ? group.author : '著者未入力';
 }
 
@@ -2929,6 +2983,280 @@ async function fetchBookInfo(book, author) {
   return merged;
 }
 
+function bookInfoIdentity(info) {
+  const isbn = pickIsbn(info);
+  if (isbn) return 'isbn:' + isbn;
+  return [
+    bookKey(info.title || ''),
+    bookKey((info.authors || []).join(' ')),
+    bookKey(info.publisher || ''),
+    String(info.publishedDate || '').slice(0, 4)
+  ].join('|');
+}
+
+function mergeCandidateInfo(primary, fallback) {
+  primary = normalizeBookMetaValue(primary);
+  fallback = normalizeBookMetaValue(fallback);
+  return normalizeBookMetaValue({
+    title: primary.title || fallback.title,
+    authors: primary.authors && primary.authors.length ? primary.authors : fallback.authors,
+    publisher: primary.publisher || fallback.publisher,
+    publishedDate: primary.publishedDate || fallback.publishedDate,
+    description: primary.description || fallback.description,
+    coverUrl: primary.coverUrl || fallback.coverUrl,
+    isbn10: primary.isbn10 || fallback.isbn10,
+    isbn13: primary.isbn13 || fallback.isbn13,
+    pageCount: primary.pageCount || fallback.pageCount,
+    categories: primary.categories && primary.categories.length ? primary.categories : fallback.categories,
+    source: uniqueStrings([primary.source, fallback.source]).join(' + '),
+    infoUrl: primary.infoUrl || fallback.infoUrl,
+    fetchedAt: primary.fetchedAt || fallback.fetchedAt
+  });
+}
+
+function addBookInfoCandidate(list, info, score) {
+  info = normalizeBookMetaValue(info);
+  if (!info.title && !pickIsbn(info)) return;
+  const identity = bookInfoIdentity(info);
+  const existing = list.find(item => item.identity === identity);
+  if (existing) {
+    existing.info = mergeCandidateInfo(existing.info, info);
+    existing.score = Math.max(existing.score, score || 0);
+    return;
+  }
+  list.push({identity, score: score || 0, info});
+}
+
+function sortBookInfoCandidates(candidates, book, author) {
+  return (candidates || [])
+    .map(item => ({...item, score: (item.score || 0) + scoreBookCandidate(item.info.title, item.info.authors, book, author)}))
+    .sort((a,b) => b.score - a.score || String(a.info.title).localeCompare(String(b.info.title), 'ja'))
+    .map(item => item.info);
+}
+
+async function fetchGoogleBookCandidates(book, author) {
+  const list = [];
+  for (const q of bookSearchQueries(book, author)) {
+    const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
+    const response = await fetch(url, {cache:'no-store'});
+    if (!response.ok) continue;
+    const data = await response.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    items.forEach(function(item) {
+      const v = item && item.volumeInfo || {};
+      const authors = Array.isArray(v.authors) ? v.authors : [];
+      const ids = Array.isArray(v.industryIdentifiers) ? v.industryIdentifiers : [];
+      const info = normalizeFetchedBookInfo({
+        title: v.title || '',
+        authors,
+        publisher: v.publisher || '',
+        publishedDate: v.publishedDate || '',
+        description: stripHtml(v.description || ''),
+        coverUrl: v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail) || '',
+        isbn10: (ids.find(x=>x.type==='ISBN_10') || {}).identifier || '',
+        isbn13: (ids.find(x=>x.type==='ISBN_13') || {}).identifier || '',
+        pageCount: v.pageCount || '',
+        categories: v.categories || [],
+        source: 'Google Books',
+        infoUrl: v.infoLink || item.selfLink || ''
+      });
+      const score = scoreBookCandidate(info.title, info.authors, book, author) + (info.description ? 4 : 0) + (info.coverUrl ? 3 : 0);
+      addBookInfoCandidate(list, info, score);
+    });
+    if (list.length >= 8) break;
+  }
+  return sortBookInfoCandidates(list, book, author);
+}
+
+async function fetchOpenLibraryBookCandidates(book, author) {
+  const list = [];
+  const isbn = extractIsbn(book + ' ' + author);
+  if (isbn) {
+    const res = await fetch('https://openlibrary.org/api/books?bibkeys=ISBN:' + encodeURIComponent(isbn) + '&jscmd=data&format=json', {cache:'no-store'});
+    if (res.ok) {
+      const data = await res.json();
+      const item = data['ISBN:' + isbn];
+      if (item) {
+        addBookInfoCandidate(list, normalizeFetchedBookInfo({
+          title: item.title || '',
+          authors: (item.authors || []).map(a=>a.name).filter(Boolean),
+          publisher: (item.publishers || []).map(p=>p.name).filter(Boolean).join(' / '),
+          publishedDate: item.publish_date || '',
+          description: (item.excerpts && item.excerpts[0] && item.excerpts[0].text) || '',
+          coverUrl: item.cover && (item.cover.large || item.cover.medium || item.cover.small) || '',
+          isbn10: item.identifiers && item.identifiers.isbn_10 && item.identifiers.isbn_10[0] || '',
+          isbn13: item.identifiers && item.identifiers.isbn_13 && item.identifiers.isbn_13[0] || '',
+          pageCount: item.number_of_pages || '',
+          categories: (item.subjects || []).slice(0,5).map(s=>s.name).filter(Boolean),
+          source: 'Open Library',
+          infoUrl: item.url || ''
+        }), 80);
+      }
+    }
+  }
+  const searches = [];
+  const fieldParams = new URLSearchParams();
+  if (book) fieldParams.set('title', book);
+  if (author) fieldParams.set('author', author);
+  fieldParams.set('limit', '10');
+  searches.push(fieldParams);
+  bookSearchQueries(book, author).forEach(function(q) {
+    const params = new URLSearchParams();
+    params.set('q', q);
+    params.set('limit', '10');
+    searches.push(params);
+  });
+  for (const params of searches) {
+    const res = await fetch('https://openlibrary.org/search.json?' + params.toString(), {cache:'no-store'});
+    if (!res.ok) continue;
+    const data = await res.json();
+    const docs = Array.isArray(data.docs) ? data.docs : [];
+    docs.forEach(function(doc) {
+      const authors = Array.isArray(doc.author_name) ? doc.author_name : [];
+      const info = normalizeFetchedBookInfo({
+        title: doc.title || '',
+        authors,
+        publisher: (doc.publisher || []).slice(0,1).join(''),
+        publishedDate: doc.first_publish_year || '',
+        description: '',
+        coverUrl: doc.cover_i ? 'https://covers.openlibrary.org/b/id/' + doc.cover_i + '-L.jpg' : '',
+        isbn10: (doc.isbn || []).find(x=>String(x).length===10) || '',
+        isbn13: (doc.isbn || []).find(x=>String(x).length===13) || '',
+        pageCount: '',
+        categories: (doc.subject || []).slice(0,5),
+        source: 'Open Library',
+        infoUrl: doc.key ? 'https://openlibrary.org' + doc.key : ''
+      });
+      const score = scoreBookCandidate(info.title, info.authors, book, author) + (info.coverUrl ? 3 : 0);
+      addBookInfoCandidate(list, info, score);
+    });
+    if (list.length >= 8) break;
+  }
+  return sortBookInfoCandidates(list, book, author);
+}
+
+async function fetchNdlBookCandidates(book, author) {
+  const list = [];
+  const parser = new DOMParser();
+  for (const params of ndlOpenSearchParamSets(book, author)) {
+    const res = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString(), {cache:'no-store'});
+    if (!res.ok) continue;
+    const xmlText = await res.text();
+    const xml = parser.parseFromString(xmlText, 'application/xml');
+    if (xml.getElementsByTagName('parsererror').length) continue;
+    Array.from(xml.getElementsByTagName('item')).forEach(function(item) {
+      const title = firstDirectChildText(item, ['title']) || firstDirectChildText(item, ['dc:title']);
+      const creators = directChildTextsByLocalName(item, ['creator', 'author']).filter(v => v !== title);
+      const identifiers = directChildTextsByLocalName(item, ['identifier']);
+      const isbn = extractIsbn(identifiers.join(' '));
+      const info = normalizeFetchedBookInfo({
+        title,
+        authors: creators,
+        publisher: firstDirectChildText(item, ['publisher']),
+        publishedDate: firstDirectChildText(item, ['date', 'issued']),
+        description: stripHtml(firstDirectChildText(item, ['abstract'])),
+        coverUrl: '',
+        isbn10: isbn && isbn.length === 10 ? isbn : '',
+        isbn13: isbn && isbn.length === 13 ? isbn : '',
+        pageCount: firstDirectChildText(item, ['extent']),
+        categories: directChildTextsByLocalName(item, ['subject']).slice(0, 5),
+        source: 'NDL Search',
+        infoUrl: firstDirectChildText(item, ['link'])
+      });
+      const score = scoreBookCandidate(info.title, info.authors, book, author) + (pickIsbn(info) ? 8 : 0) + (info.publisher ? 3 : 0);
+      addBookInfoCandidate(list, info, score);
+    });
+    if (list.length >= 8) break;
+  }
+  return sortBookInfoCandidates(list, book, author);
+}
+
+async function fetchBookInfoCandidates(book, author) {
+  if (navigator.onLine === false) return [];
+  const results = await Promise.allSettled([
+    fetchGoogleBookCandidates(book, author),
+    fetchOpenLibraryBookCandidates(book, author),
+    fetchNdlBookCandidates(book, author)
+  ]);
+  const list = [];
+  results.forEach(function(result) {
+    if (result.status !== 'fulfilled') return;
+    (result.value || []).forEach(function(info, index) {
+      addBookInfoCandidate(list, info, 30 - index);
+    });
+  });
+  const candidates = sortBookInfoCandidates(list, book, author).slice(0, 12);
+  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, 3);
+  for (const info of isbnCandidates) {
+    try {
+      const extra = await fetchGoogleBookInfo(pickIsbn(info), '');
+      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 35);
+    } catch(e) {}
+  }
+  return sortBookInfoCandidates(list, book, author).slice(0, 12);
+}
+
+function enrichSelectedBookInfo(selected, candidates) {
+  let info = normalizeBookMetaValue(selected);
+  const isbn = pickIsbn(info);
+  (candidates || []).forEach(function(candidate) {
+    candidate = normalizeBookMetaValue(candidate);
+    const sameIsbn = isbn && pickIsbn(candidate) === isbn;
+    const candidateIsbn = pickIsbn(candidate);
+    const sameTitleNoIsbn = !isbn && !candidateIsbn && bookKey(candidate.title) && bookKey(candidate.title) === bookKey(info.title) && bookKey((candidate.authors || []).join(' ')) === bookKey((info.authors || []).join(' '));
+    if (sameIsbn || sameTitleNoIsbn) info = mergeCandidateInfo(info, candidate);
+  });
+  return info;
+}
+
+function chooseBookInfoCandidate(candidates) {
+  candidates = (candidates || []).map(normalizeBookMetaValue).filter(info => info.title || pickIsbn(info));
+  if (!candidates.length) return Promise.resolve(null);
+  if (candidates.length === 1) return Promise.resolve(candidates[0]);
+  bookInfoChoiceCandidates = candidates;
+  const list = document.getElementById('bookInfoChoiceList');
+  list.innerHTML = candidates.map(function(info, index) {
+    const cover = safeBookImageUrl(info.coverUrl);
+    const isbn = pickIsbn(info);
+    const meta = [
+      info.authors && info.authors.length ? info.authors.join(' / ') : '',
+      info.publisher,
+      info.publishedDate,
+      isbn ? 'ISBN ' + isbn : '',
+      info.source
+    ].filter(Boolean).join(' ・ ');
+    const desc = info.description || '';
+    return `<button type="button" class="book-info-choice-card" onclick="selectBookInfoCandidate(${index})">
+      ${cover ? `<img class="book-info-choice-cover" src="${esc(cover)}" alt="">` : `<span class="book-info-choice-cover empty">本</span>`}
+      <span>
+        <span class="book-info-choice-title">${esc(info.title || 'Untitled')}</span>
+        ${meta ? `<span class="book-info-choice-meta">${esc(meta)}</span>` : ''}
+        ${desc ? `<span class="book-info-choice-desc">${esc(desc)}</span>` : ''}
+      </span>
+    </button>`;
+  }).join('');
+  document.getElementById('bookInfoChoiceOverlay').classList.add('open');
+  return new Promise(resolve => { bookInfoChoiceResolve = resolve; });
+}
+
+function selectBookInfoCandidate(index) {
+  const selected = bookInfoChoiceCandidates[index] || null;
+  const candidates = bookInfoChoiceCandidates.slice();
+  document.getElementById('bookInfoChoiceOverlay').classList.remove('open');
+  bookInfoChoiceCandidates = [];
+  const resolve = bookInfoChoiceResolve;
+  bookInfoChoiceResolve = null;
+  if (resolve) resolve(selected ? enrichSelectedBookInfo(selected, candidates) : null);
+}
+
+function closeBookInfoChoice() {
+  document.getElementById('bookInfoChoiceOverlay').classList.remove('open');
+  bookInfoChoiceCandidates = [];
+  const resolve = bookInfoChoiceResolve;
+  bookInfoChoiceResolve = null;
+  if (resolve) resolve(null);
+}
+
 function applyBookInfoToEntries(book, info) {
   const key = bookKey(book);
   const author = info && info.authors && info.authors[0] || '';
@@ -2964,7 +3292,8 @@ async function toggleBookOverview(book, author) {
   }
   showToast('本情報を取得中...');
   try {
-    const info = await fetchBookInfo(book, author);
+    const candidates = await fetchBookInfoCandidates(book, author);
+    const info = await chooseBookInfoCandidate(candidates);
     if (!info) {
       showToast('本情報が見つかりませんでした');
       return;
@@ -2982,12 +3311,37 @@ async function toggleBookOverview(book, author) {
   }
 }
 
+async function refreshBookInfoChoice(book, author) {
+  const key = bookKey(book);
+  if (!key) return;
+  if (navigator.onLine === false) {
+    showToast('Offline: book info cannot be fetched');
+    return;
+  }
+  openBookOverviewKey = key;
+  showToast('譛ｬ諠・ｱ繧貞叙蠕嶺ｸｭ...');
+  try {
+    const candidates = await fetchBookInfoCandidates(book, author);
+    const info = await chooseBookInfoCandidate(candidates);
+    if (!info) return;
+    setBookMetaInfo(book, info);
+    if (applyBookInfoToEntries(book, info)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+    persist();
+    render();
+    showToast('譛ｬ諠・ｱ繧呈峩譁ｰ縺励∪縺励◆');
+  } catch(e) {
+    showToast('譛ｬ諠・ｱ繧貞叙蠕励〒縺阪∪縺帙ｓ縺ｧ縺励◆');
+  }
+}
+
 function bookOverviewHTML(group) {
   const key = bookKey(group.book);
   if (!key || openBookOverviewKey !== key) return '';
   const info = getBookMetaInfo(group.book);
   const title = info.title || group.book || 'タイトル未入力';
-  const authors = info.authors && info.authors.length ? info.authors.join('、') : (group.author || '');
+  const authors = cleanAuthorList([...(info.authors || []), group.author]).join('、');
   const meta = [
     authors,
     info.publisher,
@@ -3007,6 +3361,7 @@ function bookOverviewHTML(group) {
       </div>
     </div>
     <div class="${info.description ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
+    <div class="book-overview-actions"><button type="button" class="book-overview-action-btn" onclick="refreshBookInfoChoice(${jsArg(group.book)},${jsArg(group.author || authors)})">候補を選び直す</button></div>
   </div>`;
 }
 
@@ -3137,7 +3492,7 @@ function render() {
     <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}"
       data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
       <span class="book-spine-title">${formatSpineText(metaInfo.title||g.book||'タイトル未入力')}</span>
-      ${(metaInfo.authors && metaInfo.authors.length) || g.author ? `<span class="book-spine-author">${formatSpineText((metaInfo.authors && metaInfo.authors[0]) || g.author)}</span>` : ''}
+      ${bookAuthorLabel(g) && bookAuthorLabel(g) !== '著者未入力' ? `<span class="book-spine-author">${formatSpineText(bookAuthorLabel(g).split('、')[0])}</span>` : ''}
       <span class="book-spine-meta">
         <span class="book-group-count">${g.entries.length}件</span>
         <span class="book-group-toggle">▶</span>
@@ -4609,12 +4964,13 @@ document.addEventListener('keydown',e=>{
       closeDrawingModal();
       return;
     }
-    closeModal();closeAiModal();closeBookshelf();closeBookOrder();closeTagFolders();closeViewer();
+    closeModal();closeAiModal();closeBookshelf();closeBookInfoChoice();closeBookOrder();closeTagFolders();closeViewer();
   }
 });
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
+document.getElementById('bookInfoChoiceOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookInfoChoice();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.getElementById('cardsContainer').addEventListener('click', handleShelfClick, true);
@@ -4632,7 +4988,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v70';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v73';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
