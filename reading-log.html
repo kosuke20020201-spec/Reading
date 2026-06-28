@@ -595,7 +595,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v77';
+const APP_VERSION   = 'media-autosave-sync v78';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -651,6 +651,7 @@ let fixedTagEditOnly = false;
 let openBookKey = null;
 let openBookOverviewKey = '';
 let autoBookInfoFetchKeys = new Set();
+let autoBookCoverFetchKeys = new Set();
 let bookInfoChoiceCandidates = [];
 let bookInfoChoiceResolve = null;
 let expandedRecordSort = 'new';
@@ -3240,8 +3241,38 @@ async function fetchBookInfoCandidates(book, author) {
       const extra = await fetchGoogleBookInfo(pickIsbn(info), '');
       if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 35);
     } catch(e) {}
+    try {
+      const extra = await fetchOpenLibraryBookInfo(pickIsbn(info), '');
+      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 34);
+    } catch(e) {}
   }
   return sortBookInfoCandidates(list, book, author).slice(0, 12);
+}
+
+function authorKeysFromInfo(info, fallbackAuthor) {
+  return cleanAuthorList([...(info && info.authors || []), fallbackAuthor || ''])
+    .map(author => bookKey(author))
+    .filter(Boolean);
+}
+
+function authorsOverlapForCover(leftInfo, rightInfo, fallbackAuthor) {
+  const left = authorKeysFromInfo(leftInfo, fallbackAuthor);
+  const right = authorKeysFromInfo(rightInfo, '');
+  if (!left.length || !right.length) return true;
+  return left.some(a => right.some(b => a.includes(b) || b.includes(a)));
+}
+
+function isSafeCoverMatch(target, candidate, fallbackBook, fallbackAuthor) {
+  target = normalizeBookMetaValue(target);
+  candidate = normalizeBookMetaValue(candidate);
+  if (!candidate.coverUrl) return false;
+  const targetIsbn = pickIsbn(target);
+  const candidateIsbn = pickIsbn(candidate);
+  if (targetIsbn && candidateIsbn && targetIsbn === candidateIsbn) return true;
+  const targetTitle = bookKey(target.title || fallbackBook || '');
+  const candidateTitle = bookKey(candidate.title || '');
+  if (!targetTitle || !candidateTitle || targetTitle !== candidateTitle) return false;
+  return authorsOverlapForCover(target, candidate, fallbackAuthor);
 }
 
 function enrichSelectedBookInfo(selected, candidates) {
@@ -3254,6 +3285,9 @@ function enrichSelectedBookInfo(selected, candidates) {
     const candidateIsbn = pickIsbn(candidate);
     const sameTitleNoIsbn = !isbn && !candidateIsbn && bookKey(candidate.title) && bookKey(candidate.title) === bookKey(info.title) && bookKey((candidate.authors || []).join(' ')) === bookKey((info.authors || []).join(' '));
     if (sameIsbn || sameTitleNoIsbn) info = mergeCandidateInfo(info, candidate);
+    else if (!info.coverUrl && isSafeCoverMatch(info, candidate, info.title, (info.authors || []).join(' '))) {
+      info = mergeCandidateInfo(info, {coverUrl: candidate.coverUrl, source: candidate.source, infoUrl: candidate.infoUrl});
+    }
   });
   return info;
 }
@@ -3353,6 +3387,35 @@ async function autoFetchBookInfoForOpenedBook(book, author) {
   }
 }
 
+async function autoFetchMissingBookCover(book, author) {
+  const key = bookKey(book);
+  if (!key || autoBookCoverFetchKeys.has(key)) return;
+  if (navigator.onLine === false) return;
+  const current = getBookMetaInfo(book);
+  if (current.coverUrl) return;
+  autoBookCoverFetchKeys.add(key);
+  try {
+    const title = current.title || book;
+    const writer = author || (current.authors || []).join(' ');
+    const candidates = await fetchBookInfoCandidates(title, writer);
+    const coverInfo = candidates.find(info => isSafeCoverMatch(current, info, book, writer));
+    if (!coverInfo || !coverInfo.coverUrl) return;
+    setBookMetaInfo(book, mergeCandidateInfo(current, {
+      coverUrl: coverInfo.coverUrl,
+      isbn10: current.isbn10 || coverInfo.isbn10,
+      isbn13: current.isbn13 || coverInfo.isbn13,
+      source: coverInfo.source,
+      infoUrl: current.infoUrl || coverInfo.infoUrl,
+      fetchedAt: new Date().toISOString()
+    }));
+    persist();
+    if (openBookKey === key || openBookOverviewKey === key) render();
+    showToast('表紙を追加しました');
+  } catch(e) {
+    console.warn('Cover fetch failed:', e);
+  }
+}
+
 async function toggleBookOverview(book, author) {
   const key = bookKey(book);
   if (!key) return;
@@ -3365,6 +3428,7 @@ async function toggleBookOverview(book, author) {
   const current = getBookMetaInfo(book);
   if (hasStoredBookInfo(current)) {
     render();
+    if (!current.coverUrl) autoFetchMissingBookCover(book, author);
     return;
   }
   render();
@@ -3749,6 +3813,7 @@ function toggleBookGroup(index) {
       updateRecordAddButtonVisibility();
     });
     autoFetchBookInfoForOpenedBook(group.dataset.bookName || '', group.dataset.bookAuthor || '');
+    autoFetchMissingBookCover(group.dataset.bookName || '', group.dataset.bookAuthor || '');
   } else {
     scheduleRecordAddButtonVisibility();
   }
@@ -5086,7 +5151,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v77';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v78';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
