@@ -187,6 +187,7 @@
   .book-overview-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .book-overview-action-btn { border: 1px solid var(--amber-border); background: #fffbeb; color: #92400e; border-radius: 999px; padding: 0.32rem 0.75rem; font: inherit; font-size: 0.72rem; font-weight: 900; cursor: pointer; }
   .book-overview-action-btn:hover { border-color: var(--amber); background: #fef3c7; }
+  .book-cover-input { display: none; }
   .book-info-choice-list { display: flex; flex-direction: column; gap: 0.65rem; }
   .book-info-choice-card { width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 0.75rem; text-align: left; padding: 0.75rem; border: 1px solid var(--stone-200); border-radius: 0.85rem; background: white; cursor: pointer; font: inherit; color: inherit; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
   .book-info-choice-card:hover { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b20; transform: translateY(-1px); }
@@ -393,8 +394,6 @@
       <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
       <div class="header-btns-row">
         <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
-        <button class="btn-sub" onclick="exportData()">📤 エクスポート</button>
-        <label class="btn-sub" style="cursor:pointer">📥 インポート<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
         <button class="btn-sub" onclick="openApiSettings()" type="button">⚙ API設定</button>
       </div>
       <div class="sync-strip">
@@ -606,7 +605,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v84';
+const APP_VERSION   = 'media-autosave-sync v85';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -628,7 +627,11 @@ const MEDIA_IMAGE_MAX_CHARS = 48000;
 const MEDIA_SKETCH_MAX_SIDE = 960;
 const MEDIA_SKETCH_QUALITY = 0.94;
 const MEDIA_SKETCH_MAX_CHARS = 48000;
+const BOOK_COVER_MAX_SIDE = 520;
+const BOOK_COVER_QUALITY = 0.78;
+const BOOK_COVER_MAX_CHARS = 22000;
 const BOOK_META_KEY = 'reading_log_book_meta';
+const BOOK_COVERS_KEY = 'reading_log_book_covers';
 const BOOK_INFO_FETCH_TIMEOUT_MS = 6500;
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
@@ -897,7 +900,15 @@ function getBookMetaInfo(book) {
   if (!key) return normalizeBookMetaValue(null);
   const meta = getBookMeta();
   const value = Object.prototype.hasOwnProperty.call(meta, key) ? meta[key] : meta[(book || '').trim()];
-  return mergeBookMetaValues(normalizeBookMetaValue(value), getCachedBookInfo(book));
+  const merged = mergeBookMetaValues(normalizeBookMetaValue(value), getCachedBookInfo(book));
+  const manualCover = getManualBookCover(book);
+  if (!manualCover.coverUrl || manualCover.deleted) return merged;
+  return normalizeBookMetaValue({
+    ...merged,
+    coverUrl: manualCover.coverUrl,
+    source: uniqueStrings(['Manual cover', merged.source]).join(' + '),
+    fetchedAt: manualCover.updatedAt || merged.fetchedAt
+  });
 }
 
 function setBookMetaInfo(book, patch) {
@@ -942,15 +953,129 @@ function setCachedBookInfo(book, patch) {
   setBookInfoCache(cache);
 }
 
+function normalizeBookCoverRecord(record) {
+  record = record && typeof record === 'object' ? record : {};
+  return {
+    title: String(record.title || '').trim(),
+    coverUrl: safeBookImageUrl(record.coverUrl || ''),
+    updatedAt: String(record.updatedAt || record.fetchedAt || '').trim(),
+    deleted: record.deleted === true || String(record.deleted || '').toLowerCase() === 'true'
+  };
+}
+
+function getBookCoverMap() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(BOOK_COVERS_KEY) || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const clean = {};
+    Object.keys(parsed).forEach(function(key) {
+      const value = normalizeBookCoverRecord(parsed[key]);
+      if (value.coverUrl || value.deleted) clean[key] = value;
+    });
+    return clean;
+  } catch(e) { return {}; }
+}
+
+function setBookCoverMap(map) {
+  const clean = {};
+  Object.keys(map || {}).forEach(function(key) {
+    const normalizedKey = bookKey(key);
+    const value = normalizeBookCoverRecord(map[key]);
+    if (!normalizedKey || (!value.coverUrl && !value.deleted)) return;
+    clean[normalizedKey] = value;
+  });
+  localStorage.setItem(BOOK_COVERS_KEY, JSON.stringify(clean));
+}
+
+function getManualBookCover(book) {
+  const key = bookKey(book);
+  if (!key) return normalizeBookCoverRecord(null);
+  return normalizeBookCoverRecord(getBookCoverMap()[key]);
+}
+
+function setManualBookCover(book, coverUrl) {
+  const key = bookKey(book);
+  if (!key) return false;
+  const map = getBookCoverMap();
+  map[key] = normalizeBookCoverRecord({
+    title: String(book || '').trim(),
+    coverUrl,
+    updatedAt: new Date().toISOString(),
+    deleted: false
+  });
+  setBookCoverMap(map);
+  return true;
+}
+
+function deleteManualBookCover(book) {
+  const key = bookKey(book);
+  if (!key) return false;
+  const map = getBookCoverMap();
+  map[key] = normalizeBookCoverRecord({
+    title: String(book || '').trim(),
+    coverUrl: '',
+    updatedAt: new Date().toISOString(),
+    deleted: true
+  });
+  setBookCoverMap(map);
+  return true;
+}
+
+function buildBookCoverSyncEntries() {
+  const map = getBookCoverMap();
+  return Object.keys(map).map(function(key) {
+    const cover = normalizeBookCoverRecord(map[key]);
+    return {
+      id: BOOK_COVER_SYNC_PREFIX + key,
+      book: cover.title || key,
+      title: '',
+      content: cover.coverUrl || '',
+      lesson: cover.deleted ? 'deleted' : '',
+      supplement: key,
+      tags: [],
+      drawings: [],
+      images: [],
+      createdAt: '1970-01-01',
+      updatedAt: cover.updatedAt || new Date().toISOString(),
+      isBookCover: true
+    };
+  });
+}
+
+function mergeBookCoversFromCloud(cloudEntries, preferLocal) {
+  const local = getBookCoverMap();
+  const merged = {...local};
+  (Array.isArray(cloudEntries) ? cloudEntries : []).forEach(function(entry) {
+    const id = String(entry && entry.id || '');
+    if (!id.startsWith(BOOK_COVER_SYNC_PREFIX)) return;
+    const key = bookKey(id.slice(BOOK_COVER_SYNC_PREFIX.length));
+    if (!key) return;
+    const cloud = normalizeBookCoverRecord({
+      title: entry.book || key,
+      coverUrl: entry.content || '',
+      updatedAt: entry.updatedAt || entry.createdAt || '',
+      deleted: String(entry.lesson || '').toLowerCase() === 'deleted'
+    });
+    const current = normalizeBookCoverRecord(merged[key]);
+    const cloudTime = Date.parse(cloud.updatedAt || '') || 0;
+    const currentTime = Date.parse(current.updatedAt || '') || 0;
+    if (!current.coverUrl && !current.deleted) merged[key] = cloud;
+    else if (cloudTime && currentTime && cloudTime !== currentTime) merged[key] = cloudTime > currentTime ? cloud : current;
+    else if (!preferLocal) merged[key] = cloud;
+  });
+  setBookCoverMap(merged);
+}
+
 // ── 固定タグ(book_meta)をクラウドに同期するための特殊エントリ ──
 // 既存のスプレッドシート側のスキーマを変更せずに済むよう、
 // 通常のエントリと同じ形（idとcontent列）に乗せて book_meta 全体を運ぶ。
 const BOOK_META_SYNC_ID = '__book_meta__';
 const TAG_FOLDER_SYNC_ID = '__tag_folders__';
+const BOOK_COVER_SYNC_PREFIX = '__book_cover__:';
 
 function isSyncMetaEntry(entry) {
   const id = String(entry && entry.id || '');
-  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID;
+  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
 }
 
 function buildBookMetaSyncEntry() {
@@ -1546,7 +1671,7 @@ function buildCloudPayloadBody() {
   migrateImagesIntoDrawings();
   const deletedIds = getDeletedIds();
   const activeEntries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
-  return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry(), buildTagFolderSyncEntry()]);
+  return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), ...buildBookCoverSyncEntries()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -1918,6 +2043,7 @@ async function loadFromCloud(options) {
     const cloudTagFolderEntry = cloudRaw.find(e => e && String(e.id) === TAG_FOLDER_SYNC_ID);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
     mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
+    mergeBookCoversFromCloud(cloudRaw, preferLocal);
     const cloud = cloudRaw.filter(e => e && !isSyncMetaEntry(e));
 
     const {deletedIds, cloudDeletedIds} = mergeCloudDeletedEntries(cloud);
@@ -2744,6 +2870,7 @@ function bookAuthorLabel(group) {
 
 function safeBookImageUrl(url) {
   const value = String(url || '').trim().replace(/^http:\/\//, 'https://');
+  if (/^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=]+$/i.test(value)) return value;
   return /^https:\/\/[^\s"'<>();\\]+$/i.test(value) ? value : '';
 }
 
@@ -3779,6 +3906,8 @@ function bookOverviewHTML(group) {
   const key = bookKey(group.book);
   if (!key || openBookOverviewKey !== key) return '';
   const info = getBookMetaInfo(group.book);
+  const manualCover = getManualBookCover(group.book);
+  const hasManualCover = !!(manualCover.coverUrl && !manualCover.deleted);
   const title = info.title || group.book || 'タイトル未入力';
   const authors = cleanAuthorList([...(info.authors || []), group.author]).join('、');
   const meta = [
@@ -3800,7 +3929,11 @@ function bookOverviewHTML(group) {
       </div>
     </div>
     <div class="${info.description ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
-    <div class="book-overview-actions"><button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" onclick="refreshBookInfoChoice(${jsArg(group.book)},${jsArg(group.author || authors)})">候補を選び直す</button></div>
+    <div class="book-overview-actions">
+      <button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" onclick="refreshBookInfoChoice(${jsArg(group.book)},${jsArg(group.author || authors)})">候補を選び直す</button>
+      <label class="book-overview-action-btn">表紙を登録<input class="book-cover-input" type="file" accept="image/*" onchange="registerBookCover(event,${jsArg(group.book)})"></label>
+      ${hasManualCover ? `<button type="button" class="book-overview-action-btn" onclick="removeBookCover(${jsArg(group.book)})">表紙削除</button>` : ''}
+    </div>
   </div>`;
 }
 
@@ -5004,6 +5137,52 @@ function compressImageFile(file) {
   });
 }
 
+function compressBookCoverFile(file) {
+  return new Promise(function(resolve,reject) {
+    if(!file||!file.type||!file.type.startsWith('image/')) { reject(new Error('Not an image')); return; }
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Cover read failed'));
+    reader.onload=function() {
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Cover load failed'));
+      img.onload=function() {
+        try {
+          resolve(imageToCompressedDataUrl(img, BOOK_COVER_MAX_SIDE, BOOK_COVER_QUALITY, BOOK_COVER_MAX_CHARS));
+        } catch(e) { reject(e); }
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function registerBookCover(ev, book) {
+  const input = ev && ev.target;
+  const file = input && input.files && input.files[0];
+  if (input) input.value = '';
+  if (!file) return;
+  try {
+    showToast('表紙を保存中...');
+    const dataUrl = await compressBookCoverFile(file);
+    if (!setManualBookCover(book, dataUrl)) throw new Error('No book');
+    markSyncPending(true);
+    scheduleCloudSync(0);
+    render();
+    showToast('表紙を登録しました');
+  } catch(e) {
+    console.warn('Book cover registration failed:', e);
+    showToast('表紙を登録できませんでした');
+  }
+}
+
+function removeBookCover(book) {
+  if (!deleteManualBookCover(book)) return;
+  markSyncPending(true);
+  scheduleCloudSync(0);
+  render();
+  showToast('表紙を削除しました');
+}
+
 async function addImageAttachment(ev) {
   const input=ev.target;
   const file=input.files&&input.files[0];
@@ -5460,7 +5639,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v84';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v85';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
