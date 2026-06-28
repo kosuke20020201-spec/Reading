@@ -131,11 +131,12 @@
   .book-spine > * { position: relative; z-index: 1; }
   .book-spine:hover { filter: brightness(1.04) saturate(1.02); transform: translateY(-2px); box-shadow: inset 4px 0 6px rgba(255,255,255,0.2), inset -9px 0 13px rgba(0,0,0,0.38), inset 0 5px 0 rgba(255,255,255,0.14), inset 0 -7px 0 rgba(0,0,0,0.27), 0 11px 20px rgba(41,37,36,0.28); }
   .book-spine { user-select: none; }
-  .book-spine.has-cover { --spine-ink:#292524; --spine-badge-ink:#292524; --spine-badge-bg:rgba(255,251,235,0.88); --spine-badge-border:rgba(120,113,108,0.26); --spine-text-shadow:none; background-image: linear-gradient(90deg, rgba(0,0,0,0.18), rgba(255,255,255,0.04) 22%, rgba(0,0,0,0.12) 58%, rgba(0,0,0,0.38)), var(--book-cover), linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18)); background-size: cover, cover, cover; background-position: center, center, center; }
+  .book-spine.has-cover { --spine-ink:#fffaf0; --spine-badge-ink:#292524; --spine-badge-bg:rgba(255,251,235,0.96); --spine-badge-border:rgba(68,64,60,0.34); --spine-text-shadow:0 1px 2px rgba(0,0,0,0.72); background-image: linear-gradient(90deg, rgba(0,0,0,0.58), rgba(0,0,0,0.22) 28%, rgba(0,0,0,0.2) 58%, rgba(0,0,0,0.62)), var(--book-cover), linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 48%, var(--spine-bottom, #2f1f18)); background-size: cover, cover, cover; background-position: center, center, center; }
   .book-spine.has-cover .book-spine-title,
-  .book-spine.has-cover .book-spine-author { background: rgba(255,251,235,0.9); border: 1px solid rgba(120,113,108,0.24); border-radius: 0.4rem; box-shadow: 0 2px 8px rgba(41,37,36,0.18), inset 0 1px 0 rgba(255,255,255,0.62); color: #292524; padding-block: 0.28rem; }
-  .book-spine.has-cover .book-spine-title { padding-inline: 0.1rem; }
-  .book-spine.has-cover .book-spine-author { opacity: 0.96; }
+  .book-spine.has-cover .book-spine-author { background: rgba(41,37,36,0.58); border: 1px solid rgba(255,251,235,0.34); border-radius: 0.42rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18); color: #fffaf0; padding-block: 0.2rem; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+  .book-spine.has-cover .book-spine-title { padding-inline: 0.12rem; font-weight: 700; font-size: min(var(--title-size, 0.84rem), 0.78rem); line-height: 1.08; letter-spacing: 0; overflow: hidden; }
+  .book-spine.has-cover .book-spine-author { opacity: 0.98; }
+  .book-spine.has-cover .spine-word-latin { white-space: normal; word-break: break-word; overflow-wrap: anywhere; }
   .book-group.dragging .book-spine { cursor: grabbing; filter: brightness(1.08) saturate(1.05); }
   .book-group.open .book-spine { height: 18rem; }
   .book-spine-title { display: block; width: var(--title-width, 2.7rem); height: 11.6rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.16; color: var(--spine-ink, #fff4d6); text-shadow: var(--spine-text-shadow, 0 1px 1px rgba(0,0,0,0.42)); writing-mode: vertical-rl; text-orientation: mixed; word-break: normal; overflow-wrap: normal; overflow: visible; font-feature-settings: "palt"; }
@@ -147,8 +148,8 @@
   .book-group.open .book-group-toggle { transform: rotate(90deg); }
   .book-spine-detail { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; width: 100%; margin-top: 0.1rem; writing-mode: horizontal-tb; }
   .book-spine-tag, .book-spine-date { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 999px; font-weight: 800; line-height: 1.1; }
-  .book-spine-tag { padding: 0.13rem 0.38rem; font-size: 0.58rem; border: 1px solid var(--spine-badge-border, rgba(255,255,255,0.18)); background: var(--spine-badge-bg, rgba(255,255,255,0.13)); color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); }
-  .book-spine-date { font-size: 0.52rem; color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); opacity: 0.82; }
+  .book-spine-tag { padding: 0.16rem 0.42rem; font-size: 0.6rem; border: 1px solid var(--spine-badge-border, rgba(255,255,255,0.18)); background: var(--spine-badge-bg, rgba(255,255,255,0.13)); color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+  .book-spine-date { font-size: 0.54rem; color: var(--spine-badge-ink, var(--spine-ink, #fff4d6)); opacity: 0.94; text-shadow: var(--spine-text-shadow, none); }
   .book-group-cards { display: none; flex-direction: column; gap: 0.75rem; width: 100%; min-width: 0; max-width: none; padding-left: 0.65rem; padding-bottom: 4.5rem; border-left: 2px solid var(--amber-border); overflow: hidden; }
   .book-group.open .book-group-cards { display: flex; }
   .records-list-main { display: flex; flex-direction: column; gap: 0.9rem; padding-bottom: 1.5rem; }
@@ -590,7 +591,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v73';
+const APP_VERSION   = 'media-autosave-sync v74';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -3014,6 +3015,24 @@ function mergeCandidateInfo(primary, fallback) {
   });
 }
 
+function originalBookInfoCandidate(book, author) {
+  return normalizeBookMetaValue({
+    title: String(book || '').trim(),
+    authors: author ? [author] : [],
+    publisher: '',
+    publishedDate: '',
+    description: '',
+    coverUrl: '',
+    isbn10: '',
+    isbn13: '',
+    pageCount: '',
+    categories: [],
+    source: 'Original entry',
+    infoUrl: '',
+    fetchedAt: new Date().toISOString()
+  });
+}
+
 function addBookInfoCandidate(list, info, score) {
   info = normalizeBookMetaValue(info);
   if (!info.title && !pickIsbn(info)) return;
@@ -3198,6 +3217,7 @@ async function fetchBookInfoCandidates(book, author) {
 
 function enrichSelectedBookInfo(selected, candidates) {
   let info = normalizeBookMetaValue(selected);
+  if (info.source === 'Original entry') return info;
   const isbn = pickIsbn(info);
   (candidates || []).forEach(function(candidate) {
     candidate = normalizeBookMetaValue(candidate);
@@ -3209,8 +3229,12 @@ function enrichSelectedBookInfo(selected, candidates) {
   return info;
 }
 
-function chooseBookInfoCandidate(candidates) {
+function chooseBookInfoCandidate(candidates, originalInfo) {
   candidates = (candidates || []).map(normalizeBookMetaValue).filter(info => info.title || pickIsbn(info));
+  const original = normalizeBookMetaValue(originalInfo);
+  if (original.title || original.authors.length) {
+    candidates = [original].concat(candidates.filter(info => bookInfoIdentity(info) !== bookInfoIdentity(original)));
+  }
   if (!candidates.length) return Promise.resolve(null);
   if (candidates.length === 1) return Promise.resolve(candidates[0]);
   bookInfoChoiceCandidates = candidates;
@@ -3223,13 +3247,13 @@ function chooseBookInfoCandidate(candidates) {
       info.publisher,
       info.publishedDate,
       isbn ? 'ISBN ' + isbn : '',
-      info.source
+      info.source === 'Original entry' ? '元の入力情報' : info.source
     ].filter(Boolean).join(' ・ ');
     const desc = info.description || '';
     return `<button type="button" class="book-info-choice-card" onclick="selectBookInfoCandidate(${index})">
-      ${cover ? `<img class="book-info-choice-cover" src="${esc(cover)}" alt="">` : `<span class="book-info-choice-cover empty">本</span>`}
+      ${cover ? `<img class="book-info-choice-cover" src="${esc(cover)}" alt="">` : `<span class="book-info-choice-cover empty">${info.source === 'Original entry' ? '元' : '本'}</span>`}
       <span>
-        <span class="book-info-choice-title">${esc(info.title || 'Untitled')}</span>
+        <span class="book-info-choice-title">${info.source === 'Original entry' ? '元の入力情報に戻す: ' : ''}${esc(info.title || 'Untitled')}</span>
         ${meta ? `<span class="book-info-choice-meta">${esc(meta)}</span>` : ''}
         ${desc ? `<span class="book-info-choice-desc">${esc(desc)}</span>` : ''}
       </span>
@@ -3293,7 +3317,7 @@ async function toggleBookOverview(book, author) {
   showToast('本情報を取得中...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    const info = await chooseBookInfoCandidate(candidates);
+    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
     if (!info) {
       showToast('本情報が見つかりませんでした');
       return;
@@ -3322,7 +3346,7 @@ async function refreshBookInfoChoice(book, author) {
   showToast('譛ｬ諠・ｱ繧貞叙蠕嶺ｸｭ...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    const info = await chooseBookInfoCandidate(candidates);
+    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
     if (!info) return;
     setBookMetaInfo(book, info);
     if (applyBookInfoToEntries(book, info)) {
@@ -3348,7 +3372,7 @@ function bookOverviewHTML(group) {
     info.publishedDate,
     info.pageCount ? info.pageCount + 'ページ' : '',
     pickIsbn(info) ? 'ISBN ' + pickIsbn(info) : '',
-    info.source ? 'Source: ' + info.source : ''
+    info.source && info.source !== 'Original entry' ? 'Source: ' + info.source : ''
   ].filter(Boolean).join(' / ');
   const cover = safeBookImageUrl(info.coverUrl);
   const body = info.description || (navigator.onLine === false ? 'オンライン時に本情報を取得できます。' : '概要はまだ取得されていません。もう一度「この本の概要」を押すと取得します。');
@@ -4988,7 +5012,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v73';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v74';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
