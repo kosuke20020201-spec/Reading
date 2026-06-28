@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260628-tag-folder-fast-cover-v81';
+const CACHE_NAME = 'reading-note-pwa-20260628-openbd-cover-v82';
 const APP_SHELL = [
   './',
   './index.html',

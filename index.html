@@ -597,7 +597,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v81';
+const APP_VERSION   = 'media-autosave-sync v82';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -655,6 +655,9 @@ let openBookKey = null;
 let openBookOverviewKey = '';
 let autoBookInfoFetchKeys = new Set();
 let autoBookCoverFetchKeys = new Set();
+let autoBookCoverAttemptKeys = new Set();
+let coverBackfillQueue = [];
+let coverBackfillTimer = null;
 let bookInfoRefreshKeys = new Set();
 let bookInfoChoiceCandidates = [];
 let bookInfoChoiceResolve = null;
@@ -3004,15 +3007,51 @@ async function fetchOpenLibraryBookInfo(book, author) {
   return best ? best.info : null;
 }
 
+function openBdDescription(item) {
+  const texts = item && item.onix && item.onix.CollateralDetail && item.onix.CollateralDetail.TextContent;
+  const list = Array.isArray(texts) ? texts : [];
+  const found = list.find(t => t && t.Text && (t.TextContentType === '03' || t.TextContentType === '02')) || list.find(t => t && t.Text);
+  return stripHtml(found && found.Text || '');
+}
+
+async function fetchOpenBdBookInfo(book, author) {
+  const isbn = extractIsbn(book + ' ' + author);
+  if (!isbn) return null;
+  const res = await fetchBookApi('https://api.openbd.jp/v1/get?isbn=' + encodeURIComponent(isbn));
+  if (!res.ok) return null;
+  const data = await res.json();
+  const item = Array.isArray(data) ? data[0] : null;
+  if (!item || !item.summary) return null;
+  const summary = item.summary || {};
+  return normalizeFetchedBookInfo({
+    title: summary.title || '',
+    authors: summary.author ? [summary.author] : [],
+    publisher: summary.publisher || '',
+    publishedDate: summary.pubdate || '',
+    description: openBdDescription(item),
+    coverUrl: summary.cover || '',
+    isbn10: isbn.length === 10 ? isbn : '',
+    isbn13: isbn.length === 13 ? isbn : '',
+    pageCount: '',
+    categories: [],
+    source: 'openBD',
+    infoUrl: summary.isbn ? 'https://openbd.jp/' : ''
+  });
+}
+
 async function fetchBookInfo(book, author) {
   if (navigator.onLine === false) return null;
   let google = null;
   let openLibrary = null;
+  let openBd = null;
   let ndl = null;
   let googleByNdlIsbn = null;
   try { google = await fetchGoogleBookInfo(book, author); } catch(e) { google = null; }
   if (!google || !google.description || !google.coverUrl) {
     try { openLibrary = await fetchOpenLibraryBookInfo(book, author); } catch(e) { openLibrary = null; }
+  }
+  if (!google || !google.coverUrl) {
+    try { openBd = await fetchOpenBdBookInfo(book, author); } catch(e) { openBd = null; }
   }
   if (!google || !openLibrary || !pickIsbn(google) || !pickIsbn(openLibrary) || !google.publisher || !google.publishedDate) {
     try { ndl = await fetchNdlBookInfo(book, author); } catch(e) { ndl = null; }
@@ -3020,21 +3059,24 @@ async function fetchBookInfo(book, author) {
   if (ndl && pickIsbn(ndl) && (!google || !google.coverUrl || !google.description)) {
     try { googleByNdlIsbn = await fetchGoogleBookInfo(pickIsbn(ndl), ''); } catch(e) { googleByNdlIsbn = null; }
   }
-  const sources = [google, openLibrary, ndl, googleByNdlIsbn].filter(Boolean);
+  if (ndl && pickIsbn(ndl) && (!openBd || !openBd.coverUrl)) {
+    try { openBd = await fetchOpenBdBookInfo(pickIsbn(ndl), ''); } catch(e) {}
+  }
+  const sources = [google, openLibrary, openBd, ndl, googleByNdlIsbn].filter(Boolean);
   if (!sources.length) return null;
   const merged = normalizeBookMetaValue({
-    title: (ndl && ndl.title) || (google && google.title) || (openLibrary && openLibrary.title) || (googleByNdlIsbn && googleByNdlIsbn.title) || '',
-    authors: (ndl && ndl.authors && ndl.authors.length && ndl.authors) || (google && google.authors && google.authors.length && google.authors) || (openLibrary && openLibrary.authors && openLibrary.authors.length && openLibrary.authors) || (googleByNdlIsbn && googleByNdlIsbn.authors) || [],
-    publisher: (ndl && ndl.publisher) || (google && google.publisher) || (openLibrary && openLibrary.publisher) || (googleByNdlIsbn && googleByNdlIsbn.publisher) || '',
-    publishedDate: (ndl && ndl.publishedDate) || (google && google.publishedDate) || (openLibrary && openLibrary.publishedDate) || (googleByNdlIsbn && googleByNdlIsbn.publishedDate) || '',
-    description: (google && google.description) || (openLibrary && openLibrary.description) || (googleByNdlIsbn && googleByNdlIsbn.description) || (ndl && ndl.description) || '',
-    coverUrl: (google && google.coverUrl) || (openLibrary && openLibrary.coverUrl) || (googleByNdlIsbn && googleByNdlIsbn.coverUrl) || '',
-    isbn10: (ndl && ndl.isbn10) || (google && google.isbn10) || (openLibrary && openLibrary.isbn10) || (googleByNdlIsbn && googleByNdlIsbn.isbn10) || '',
-    isbn13: (ndl && ndl.isbn13) || (google && google.isbn13) || (openLibrary && openLibrary.isbn13) || (googleByNdlIsbn && googleByNdlIsbn.isbn13) || '',
+    title: (ndl && ndl.title) || (google && google.title) || (openBd && openBd.title) || (openLibrary && openLibrary.title) || (googleByNdlIsbn && googleByNdlIsbn.title) || '',
+    authors: (ndl && ndl.authors && ndl.authors.length && ndl.authors) || (google && google.authors && google.authors.length && google.authors) || (openBd && openBd.authors && openBd.authors.length && openBd.authors) || (openLibrary && openLibrary.authors && openLibrary.authors.length && openLibrary.authors) || (googleByNdlIsbn && googleByNdlIsbn.authors) || [],
+    publisher: (ndl && ndl.publisher) || (google && google.publisher) || (openBd && openBd.publisher) || (openLibrary && openLibrary.publisher) || (googleByNdlIsbn && googleByNdlIsbn.publisher) || '',
+    publishedDate: (ndl && ndl.publishedDate) || (google && google.publishedDate) || (openBd && openBd.publishedDate) || (openLibrary && openLibrary.publishedDate) || (googleByNdlIsbn && googleByNdlIsbn.publishedDate) || '',
+    description: (google && google.description) || (openBd && openBd.description) || (openLibrary && openLibrary.description) || (googleByNdlIsbn && googleByNdlIsbn.description) || (ndl && ndl.description) || '',
+    coverUrl: (google && google.coverUrl) || (openBd && openBd.coverUrl) || (openLibrary && openLibrary.coverUrl) || (googleByNdlIsbn && googleByNdlIsbn.coverUrl) || '',
+    isbn10: (ndl && ndl.isbn10) || (google && google.isbn10) || (openBd && openBd.isbn10) || (openLibrary && openLibrary.isbn10) || (googleByNdlIsbn && googleByNdlIsbn.isbn10) || '',
+    isbn13: (ndl && ndl.isbn13) || (google && google.isbn13) || (openBd && openBd.isbn13) || (openLibrary && openLibrary.isbn13) || (googleByNdlIsbn && googleByNdlIsbn.isbn13) || '',
     pageCount: (google && google.pageCount) || (openLibrary && openLibrary.pageCount) || (ndl && ndl.pageCount) || (googleByNdlIsbn && googleByNdlIsbn.pageCount) || '',
     categories: (google && google.categories && google.categories.length && google.categories) || (openLibrary && openLibrary.categories && openLibrary.categories.length && openLibrary.categories) || (ndl && ndl.categories && ndl.categories.length && ndl.categories) || (googleByNdlIsbn && googleByNdlIsbn.categories) || [],
     source: uniqueStrings(sources.map(info => info.source)).join(' + '),
-    infoUrl: (google && google.infoUrl) || (openLibrary && openLibrary.infoUrl) || (ndl && ndl.infoUrl) || (googleByNdlIsbn && googleByNdlIsbn.infoUrl) || ''
+    infoUrl: (google && google.infoUrl) || (openBd && openBd.infoUrl) || (openLibrary && openLibrary.infoUrl) || (ndl && ndl.infoUrl) || (googleByNdlIsbn && googleByNdlIsbn.infoUrl) || ''
   });
   return merged;
 }
@@ -3209,6 +3251,11 @@ async function fetchOpenLibraryBookCandidates(book, author) {
   return sortBookInfoCandidates(list, book, author);
 }
 
+async function fetchOpenBdBookCandidates(book, author) {
+  const info = await fetchOpenBdBookInfo(book, author);
+  return info ? [info] : [];
+}
+
 async function fetchNdlBookCandidates(book, author) {
   const list = [];
   const parser = new DOMParser();
@@ -3250,6 +3297,7 @@ async function fetchBookInfoCandidates(book, author) {
   const results = await Promise.allSettled([
     fetchGoogleBookCandidates(book, author),
     fetchOpenLibraryBookCandidates(book, author),
+    fetchOpenBdBookCandidates(book, author),
     fetchNdlBookCandidates(book, author)
   ]);
   const list = [];
@@ -3269,6 +3317,10 @@ async function fetchBookInfoCandidates(book, author) {
     try {
       const extra = await fetchOpenLibraryBookInfo(pickIsbn(info), '');
       if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 34);
+    } catch(e) {}
+    try {
+      const extra = await fetchOpenBdBookInfo(pickIsbn(info), '');
+      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 36);
     } catch(e) {}
   }
   return sortBookInfoCandidates(list, book, author).slice(0, 12);
@@ -3439,6 +3491,40 @@ async function autoFetchMissingBookCover(book, author) {
   } catch(e) {
     console.warn('Cover fetch failed:', e);
   }
+}
+
+function scheduleBookCoverBackfill(bookEntries) {
+  if (navigator.onLine === false) return;
+  const additions = [];
+  (bookEntries || []).slice(0, 28).forEach(function(pair) {
+    const group = Array.isArray(pair) ? pair[1] : pair;
+    if (!group || !group.book) return;
+    const key = bookKey(group.book);
+    if (!key || autoBookCoverAttemptKeys.has(key) || autoBookCoverFetchKeys.has(key)) return;
+    if (getBookMetaInfo(group.book).coverUrl) return;
+    autoBookCoverAttemptKeys.add(key);
+    additions.push({book: group.book, author: group.author || ''});
+  });
+  if (!additions.length) return;
+  coverBackfillQueue.push(...additions);
+  if (!coverBackfillTimer) runBookCoverBackfillQueue();
+}
+
+function runBookCoverBackfillQueue() {
+  if (coverBackfillTimer) clearTimeout(coverBackfillTimer);
+  const next = coverBackfillQueue.shift();
+  if (!next) {
+    coverBackfillTimer = null;
+    return;
+  }
+  coverBackfillTimer = setTimeout(async function() {
+    try {
+      await autoFetchMissingBookCover(next.book, next.author);
+    } finally {
+      coverBackfillTimer = null;
+      runBookCoverBackfillQueue();
+    }
+  }, 450);
 }
 
 async function toggleBookOverview(book, author) {
@@ -3663,6 +3749,7 @@ function render() {
   currentRenderedBookKeys = [...grouped.keys()];
 
   const bookEntries = [...grouped.entries()];
+  scheduleBookCoverBackfill(bookEntries);
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
     scheduleRecordAddButtonVisibility();
@@ -5198,7 +5285,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v81';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v82';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
