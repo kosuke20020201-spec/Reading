@@ -313,6 +313,9 @@
   .tag-pill-free { }
   .bookshelf-item-tags { display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem; }
   .bookshelf-tag-chip { font-size:0.65rem; padding:0.1rem 0.5rem; border-radius:999px; background:var(--amber-light); color:#92400e; }
+  .bookshelf-item-main { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:0.75rem; cursor:pointer; }
+  .bookshelf-item-cover { width:2.45rem; height:3.45rem; border-radius:0.35rem; border:1px solid var(--stone-200); background:var(--stone-100); box-shadow:0 4px 10px rgba(41,37,36,0.14); object-fit:cover; overflow:hidden; flex-shrink:0; }
+  .bookshelf-item-cover.empty { display:flex; align-items:center; justify-content:center; padding:0.18rem; border-color:var(--amber-border); background:linear-gradient(180deg,#fff7ed,#f5f5f4); color:#92400e; font-size:0.66rem; font-weight:900; line-height:1.12; writing-mode:vertical-rl; text-orientation:mixed; }
   #tagFolderOverlay .modal { max-height: 96vh; }
   #tagFolderOverlay .modal-body { min-height: 0; }
   .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; flex:0 0 auto; }
@@ -605,7 +608,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v86';
+const APP_VERSION   = 'media-autosave-sync v87';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -4634,9 +4637,13 @@ function openBookshelf() {
     // BUGFIX: 本棚表示も book_meta から固定タグを取得
     const dTags = getBookFixedTags(g.book);
     const tagChips = dTags.map(t=>`<span class="bookshelf-tag-chip">${esc(t)}</span>`).join('');
+    const cover = safeBookImageUrl(getBookMetaInfo(g.book).coverUrl);
+    const coverHTML = cover
+      ? `<img class="bookshelf-item-cover" src="${esc(cover)}" alt="">`
+      : `<span class="bookshelf-item-cover empty">${esc(compactBookTitle(g.book))}</span>`;
     return `<div class="bookshelf-item" style="flex-direction:column;align-items:stretch;gap:0.4rem" data-book-idx="${idx}">
-      <div style="display:flex;align-items:center;gap:0.75rem;cursor:pointer" onclick="selectBookFromShelf(${idx})">
-        <span class="bookshelf-item-icon">📖</span>
+      <div class="bookshelf-item-main" onclick="selectBookFromShelf(${idx})">
+        ${coverHTML}
         <div class="bookshelf-item-info">
           <div class="bookshelf-item-title">${esc(g.book)}</div>
           ${g.author?`<div class="bookshelf-item-meta">${esc(g.author)}</div>`:''}
@@ -5639,7 +5646,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v86';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v87';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
