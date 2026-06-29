@@ -608,7 +608,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v87';
+const APP_VERSION   = 'media-autosave-sync v89';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -925,6 +925,44 @@ function setBookMetaInfo(book, patch) {
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
 }
 
+function setBookMetaCover(book, coverUrl) {
+  const key = bookKey(book);
+  if (!key) return false;
+  const meta = getBookMeta();
+  const current = normalizeBookMetaValue(meta[key] || meta[(book || '').trim()]);
+  meta[key] = normalizeBookMetaValue({
+    ...current,
+    coverUrl: safeBookImageUrl(coverUrl),
+    source: uniqueStrings(['Manual cover', current.source]).join(' + '),
+    fetchedAt: new Date().toISOString()
+  });
+  const legacyKey = (book || '').trim();
+  if (legacyKey && legacyKey !== key) delete meta[legacyKey];
+  localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+  return true;
+}
+
+function clearBookMetaCover(book, previousCoverUrl) {
+  const key = bookKey(book);
+  if (!key) return false;
+  const meta = getBookMeta();
+  const legacyKey = (book || '').trim();
+  const raw = meta[key] || meta[legacyKey];
+  const current = normalizeBookMetaValue(raw);
+  const previous = safeBookImageUrl(previousCoverUrl || '');
+  const isManual = current.source === 'Manual cover' || current.source.includes('Manual cover');
+  if (!current.coverUrl || (previous && current.coverUrl !== previous && !isManual)) return false;
+  meta[key] = normalizeBookMetaValue({
+    ...current,
+    coverUrl: '',
+    source: current.source.replace(/\s*\+\s*Manual cover|Manual cover\s*\+\s*|Manual cover/g, '').trim(),
+    fetchedAt: new Date().toISOString()
+  });
+  if (legacyKey && legacyKey !== key) delete meta[legacyKey];
+  localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+  return true;
+}
+
 function getBookInfoCache() {
   try {
     const parsed = JSON.parse(localStorage.getItem(BOOK_INFO_CACHE_KEY) || '{}');
@@ -999,6 +1037,8 @@ function getManualBookCover(book) {
 function setManualBookCover(book, coverUrl) {
   const key = bookKey(book);
   if (!key) return false;
+  coverUrl = safeBookImageUrl(coverUrl);
+  if (!coverUrl) return false;
   const map = getBookCoverMap();
   map[key] = normalizeBookCoverRecord({
     title: String(book || '').trim(),
@@ -1007,12 +1047,14 @@ function setManualBookCover(book, coverUrl) {
     deleted: false
   });
   setBookCoverMap(map);
+  setBookMetaCover(book, coverUrl);
   return true;
 }
 
 function deleteManualBookCover(book) {
   const key = bookKey(book);
   if (!key) return false;
+  const previous = getManualBookCover(book);
   const map = getBookCoverMap();
   map[key] = normalizeBookCoverRecord({
     title: String(book || '').trim(),
@@ -1021,6 +1063,7 @@ function deleteManualBookCover(book) {
     deleted: true
   });
   setBookCoverMap(map);
+  clearBookMetaCover(book, previous.coverUrl);
   return true;
 }
 
@@ -2882,6 +2925,11 @@ function cssUrlValue(url) {
   return safe ? "url('" + safe.replace(/['\\]/g, '') + "')" : '';
 }
 
+function findBookOverviewRefreshButton(key) {
+  return [...document.querySelectorAll('.book-overview-action-btn[data-book-refresh-key]')]
+    .find(button => button.dataset.bookRefreshKey === key) || null;
+}
+
 async function fetchBookApi(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs || BOOK_INFO_FETCH_TIMEOUT_MS);
@@ -3869,7 +3917,7 @@ async function refreshBookInfoChoice(book, author) {
     showToast('\u30aa\u30f3\u30e9\u30a4\u30f3\u6642\u306b\u672c\u60c5\u5831\u3092\u53d6\u5f97\u3067\u304d\u307e\u3059');
     return;
   }
-  const button = document.querySelector(`.book-overview-action-btn[data-book-refresh-key="${CSS.escape(key)}"]`);
+  const button = findBookOverviewRefreshButton(key);
   bookInfoRefreshKeys.add(key);
   if (button) {
     button.disabled = true;
@@ -5646,7 +5694,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v87';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v89';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
