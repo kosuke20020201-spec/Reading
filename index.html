@@ -626,7 +626,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v92';
+const APP_VERSION   = 'media-autosave-sync v93';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1186,6 +1186,48 @@ function mergeBookCoversFromCloud(cloudEntries, preferLocal) {
     else if (!preferLocal) merged[key] = cloud;
   });
   setBookCoverMap(merged);
+  applyBookCoverMapToMeta(merged);
+}
+
+function applyBookCoverMapToMeta(map) {
+  const meta = getBookMeta();
+  let changed = false;
+  Object.keys(map || {}).forEach(function(key) {
+    const cover = normalizeBookCoverRecord(map[key]);
+    if (!key || (!cover.coverUrl && !cover.deleted)) return;
+    const current = normalizeBookMetaValue(meta[key]);
+    if (cover.coverUrl && current.coverUrl !== cover.coverUrl) {
+      meta[key] = normalizeBookMetaValue({
+        ...current,
+        coverUrl: cover.coverUrl,
+        source: uniqueStrings(['Manual cover', current.source]).join(' + '),
+        fetchedAt: cover.updatedAt || current.fetchedAt || new Date().toISOString()
+      });
+      changed = true;
+    } else if (cover.deleted && current.coverUrl && String(current.source || '').includes('Manual cover')) {
+      meta[key] = normalizeBookMetaValue({
+        ...current,
+        coverUrl: '',
+        source: current.source.replace(/\s*\+\s*Manual cover|Manual cover\s*\+\s*|Manual cover/g, '').trim(),
+        fetchedAt: cover.updatedAt || current.fetchedAt || new Date().toISOString()
+      });
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+}
+
+function getBookMetaForSync() {
+  const meta = getBookMeta();
+  const clean = {};
+  Object.keys(meta).forEach(function(key) {
+    const value = normalizeBookMetaValue(meta[key]);
+    // Manual cover data URLs are synced as per-book records. Keeping them inside
+    // the single book_meta cell can exceed Google Sheets' per-cell size limit.
+    if (String(value.coverUrl || '').startsWith('data:image/')) value.coverUrl = '';
+    clean[key] = value;
+  });
+  return clean;
 }
 
 // ── 固定タグ(book_meta)をクラウドに同期するための特殊エントリ ──
@@ -1205,7 +1247,7 @@ function buildBookMetaSyncEntry() {
     id: BOOK_META_SYNC_ID,
     book: '',
     title: '',
-    content: JSON.stringify(getBookMeta()),
+    content: JSON.stringify(getBookMetaForSync()),
     tags: [],
     drawings: [],
     images: [],
@@ -1732,12 +1774,14 @@ async function manualSync() {
 async function showSyncDiagnostics() {
   const localDeleted = sortedDeletedIds(getDeletedIds());
   const localMedia = mediaSummary(entries);
+  const localCovers = bookCoverSummaryFromMap(getBookCoverMap());
   const lastOk = localStorage.getItem(SYNC_LAST_OK_KEY);
   const lastAttempt = localStorage.getItem(SYNC_LAST_ATTEMPT_KEY);
   const lastError = localStorage.getItem(SYNC_LAST_ERROR_KEY);
   let cloudLine = '';
   let cloudMediaLine = 'Cloud media: could not check.';
   let cloudMediaSizeLine = 'Largest cloud image: unknown';
+  let cloudCoverLine = 'Cloud covers: could not check.';
   let mediaMatchLine = '';
   try {
     showSyncStatus('Checking cloud...');
@@ -1745,9 +1789,11 @@ async function showSyncDiagnostics() {
     const active = cloud.filter(e => e && !isSyncMetaEntry(e) && !isDeletedEntry(e)).length;
     const deleted = cloud.filter(isDeletedEntry).length;
     const cloudMedia = mediaSummary(cloud);
+    const cloudCovers = bookCoverSummaryFromCloud(cloud);
     cloudLine = 'Cloud has ' + active + ' notes. Deleted notes remembered: ' + deleted + '.';
     cloudMediaLine = 'Cloud media: ' + cloudMedia.mediaItems + ' images in ' + cloudMedia.entriesWithMedia + ' notes.';
     cloudMediaSizeLine = 'Largest cloud image: ' + formatMediaSize(cloudMedia.maxMediaChars);
+    cloudCoverLine = 'Cloud covers: ' + cloudCovers.active + ' active, ' + cloudCovers.deleted + ' deleted.';
     mediaMatchLine = 'Image sync: ' + (cloudMedia.mediaItems >= localMedia.mediaItems ? 'looks caught up.' : 'cloud is missing images.');
   } catch(e) {
     cloudLine = 'Could not check the cloud right now.';
@@ -1776,8 +1822,10 @@ async function showSyncDiagnostics() {
     cloudLine,
     'This device media: ' + localMedia.mediaItems + ' images in ' + localMedia.entriesWithMedia + ' notes.',
     'Largest image here: ' + formatMediaSize(localMedia.maxMediaChars),
+    'This device covers: ' + localCovers.active + ' active, ' + localCovers.deleted + ' deleted.',
     cloudMediaLine,
     cloudMediaSizeLine,
+    cloudCoverLine,
     mediaMatchLine,
     '',
     'Details:',
@@ -1879,6 +1927,35 @@ function mediaSummary(list) {
     });
   });
   return summary;
+}
+
+function bookCoverSummaryFromMap(map) {
+  const summary = {active:0, deleted:0, maxCoverChars:0};
+  Object.keys(map || {}).forEach(function(key) {
+    const cover = normalizeBookCoverRecord(map[key]);
+    if (cover.coverUrl) {
+      summary.active += 1;
+      summary.maxCoverChars = Math.max(summary.maxCoverChars, cover.coverUrl.length);
+    } else if (cover.deleted) {
+      summary.deleted += 1;
+    }
+  });
+  return summary;
+}
+
+function bookCoverSummaryFromCloud(list) {
+  const map = {};
+  (Array.isArray(list) ? list : []).forEach(function(entry) {
+    const id = String(entry && entry.id || '');
+    if (!id.startsWith(BOOK_COVER_SYNC_PREFIX)) return;
+    map[id.slice(BOOK_COVER_SYNC_PREFIX.length)] = normalizeBookCoverRecord({
+      title: entry.book || '',
+      coverUrl: entry.content || '',
+      updatedAt: entry.updatedAt || entry.createdAt || '',
+      deleted: String(entry.lesson || '').toLowerCase() === 'deleted'
+    });
+  });
+  return bookCoverSummaryFromMap(map);
 }
 
 function formatMediaSize(chars) {
@@ -2090,6 +2167,26 @@ async function verifyCloudMedia(expectedEntries) {
   throw new Error('Cloud did not save images');
 }
 
+async function verifyCloudBookCovers() {
+  const expected = buildBookCoverSyncEntries();
+  if (!expected.length) return true;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cloudRaw = await fetchCloudEntries();
+    const cloudMap = Object.fromEntries((cloudRaw || []).filter(e=>e&&e.id!=null).map(e=>[String(e.id),e]));
+    const ok = expected.every(function(entry) {
+      const cloudEntry = cloudMap[String(entry.id)];
+      if (!cloudEntry) return false;
+      const expectedDeleted = String(entry.lesson || '').toLowerCase() === 'deleted';
+      const cloudDeleted = String(cloudEntry.lesson || '').toLowerCase() === 'deleted';
+      if (expectedDeleted) return cloudDeleted;
+      return safeBookImageUrl(cloudEntry.content || '') === safeBookImageUrl(entry.content || '');
+    });
+    if (ok) return true;
+    await delay(1200);
+  }
+  throw new Error('Cloud did not save book covers');
+}
+
 async function postCloudPayload(body, mode) {
   const response = await fetch(CLOUD_URL, {
     method: 'POST',
@@ -2105,7 +2202,11 @@ async function postCloudPayload(body, mode) {
 
 async function syncToCloud(options) {
   const manual = !options || options.manual !== false;
-  if (syncInFlight) return false;
+  if (syncInFlight) {
+    markSyncPending(true);
+    scheduleCloudSync(SYNC_RETRY_MS);
+    return false;
+  }
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     markSyncPending(true);
     recordSyncError(new Error('Offline'));
@@ -2131,6 +2232,7 @@ async function syncToCloud(options) {
       await postCloudPayload(body, 'no-cors');
     }
     await verifyCloudMedia(expectedEntries);
+    await verifyCloudBookCovers();
     await verifyCloudDeletedIds(deletedIds);
     markSyncPending(false);
     markDeletedIdsSynced(deletedIds);
@@ -5392,21 +5494,21 @@ async function registerBookCover(ev, book) {
     const dataUrl = await compressBookCoverFile(file);
     if (!setManualBookCover(book, dataUrl)) throw new Error('No book');
     markSyncPending(true);
-    scheduleCloudSync(0);
     render();
-    showToast('表紙を登録しました');
+    const synced = await syncToCloud({manual:true});
+    showToast(synced ? '表紙をクラウドに保存しました' : '表紙をこの端末に保存しました。同期待ちです');
   } catch(e) {
     console.warn('Book cover registration failed:', e);
     showToast('表紙を登録できませんでした');
   }
 }
 
-function removeBookCover(book) {
+async function removeBookCover(book) {
   if (!deleteManualBookCover(book)) return;
   markSyncPending(true);
-  scheduleCloudSync(0);
   render();
-  showToast('表紙を削除しました');
+  const synced = await syncToCloud({manual:true});
+  showToast(synced ? '表紙削除をクラウドに保存しました' : '表紙削除をこの端末に保存しました。同期待ちです');
 }
 
 async function addImageAttachment(ev) {
@@ -5869,7 +5971,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v92';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v93';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {

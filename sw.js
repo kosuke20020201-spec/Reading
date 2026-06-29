@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260629-book-wide-lanes-v92';
+const CACHE_NAME = 'reading-note-pwa-20260629-cover-sync-v93';
 const APP_SHELL = [
   './',
   './index.html',
