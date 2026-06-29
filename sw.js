@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260629-force-candidate-choice-v91';
+const CACHE_NAME = 'reading-note-pwa-20260629-book-wide-lanes-v92';
 const APP_SHELL = [
   './',
   './index.html',
