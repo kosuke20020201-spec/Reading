@@ -608,7 +608,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v90';
+const APP_VERSION   = 'media-autosave-sync v91';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -3740,14 +3740,15 @@ function enrichSelectedBookInfo(selected, candidates) {
   return info;
 }
 
-function chooseBookInfoCandidate(candidates, originalInfo) {
+function chooseBookInfoCandidate(candidates, originalInfo, options) {
+  options = options || {};
   candidates = (candidates || []).map(normalizeBookMetaValue).filter(info => info.title || pickIsbn(info));
   const original = normalizeBookMetaValue(originalInfo);
   if (original.title || original.authors.length) {
     candidates = [original].concat(candidates.filter(info => bookInfoIdentity(info) !== bookInfoIdentity(original)));
   }
   if (!candidates.length) return Promise.resolve(null);
-  if (candidates.length === 1) return Promise.resolve(candidates[0]);
+  if (candidates.length === 1 && !options.forceChoice) return Promise.resolve(candidates[0]);
   bookInfoChoiceCandidates = candidates;
   const list = document.getElementById('bookInfoChoiceList');
   list.innerHTML = candidates.map(function(info, index) {
@@ -3961,7 +3962,11 @@ async function refreshBookInfoChoice(book, author) {
   showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
+    if (!candidates.length) {
+      showToast('\u5019\u88dc\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
+      return;
+    }
+    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author), {forceChoice:true});
     if (!info) {
       showToast(candidates.length ? '\u5019\u88dc\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f' : '\u672c\u60c5\u5831\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
       return;
@@ -5728,7 +5733,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v90';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v91';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
