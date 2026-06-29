@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260629-refresh-button-v89';
+const CACHE_NAME = 'reading-note-pwa-20260629-inline-handler-fix-v90';
 const APP_SHELL = [
   './',
   './index.html',

@@ -608,7 +608,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v89';
+const APP_VERSION   = 'media-autosave-sync v90';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -641,6 +641,7 @@ const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
+const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
 const SPINE_THEMES = {
   classic: [
     { base:'#5a3825', top:'#7b5338', bottom:'#2f1f18', edge:'#3a2419', light:'#9f7b58', shadow:'#261912', ink:'#fff3d2', label:'#ead2a8', labelOpacity:'0.16', badgeBg:'rgba(255,244,214,0.16)', badgeInk:'#fff7df', badgeBorder:'rgba(255,244,214,0.22)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
@@ -671,6 +672,7 @@ let currentFixedTags = [];
 let fixedTagEditOnly = false;
 let openBookKey = null;
 let openBookOverviewKey = '';
+let googleBooksCooldownUntil = Number(localStorage.getItem(GOOGLE_BOOKS_COOLDOWN_KEY) || 0) || 0;
 let autoBookInfoFetchKeys = new Set();
 let autoBookCoverFetchKeys = new Set();
 let autoBookCoverAttemptKeys = new Set();
@@ -2753,6 +2755,22 @@ function onShelfBookTap(index, key) {
 }
 
 function handleShelfClick(event) {
+  const refreshBtn = event.target.closest && event.target.closest('[data-book-refresh-book]');
+  if (refreshBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    refreshBookInfoChoice(refreshBtn.dataset.bookRefreshBook || '', refreshBtn.dataset.bookRefreshAuthor || '');
+    return true;
+  }
+
+  const removeCoverBtn = event.target.closest && event.target.closest('[data-book-cover-remove]');
+  if (removeCoverBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    removeBookCover(removeCoverBtn.dataset.bookCoverRemove || '');
+    return true;
+  }
+
   const infoBtn = event.target.closest && event.target.closest('[data-book-info-book]');
   if (infoBtn) {
     event.preventDefault();
@@ -2928,6 +2946,17 @@ function cssUrlValue(url) {
 function findBookOverviewRefreshButton(key) {
   return [...document.querySelectorAll('.book-overview-action-btn[data-book-refresh-key]')]
     .find(button => button.dataset.bookRefreshKey === key) || null;
+}
+
+function googleBooksCooldownActive() {
+  return Date.now() < googleBooksCooldownUntil;
+}
+
+function noteGoogleBooksRateLimit(response) {
+  if (!response || response.status !== 429) return false;
+  googleBooksCooldownUntil = Date.now() + 15 * 60 * 1000;
+  localStorage.setItem(GOOGLE_BOOKS_COOLDOWN_KEY, String(googleBooksCooldownUntil));
+  return true;
 }
 
 async function fetchBookApi(url, timeoutMs) {
@@ -3117,11 +3146,13 @@ async function fetchNdlBookInfo(book, author) {
 }
 
 async function fetchGoogleBookInfo(book, author) {
+  if (googleBooksCooldownActive()) return null;
   let best = null;
   const queries = bookSearchQueries(book, author);
   for (const q of queries.slice(0, 3)) {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
     const response = await fetchBookApi(url);
+    if (noteGoogleBooksRateLimit(response)) break;
     if (!response.ok) continue;
     const data = await response.json();
     const items = Array.isArray(data.items) ? data.items : [];
@@ -3484,10 +3515,12 @@ function sortBookInfoCandidates(candidates, book, author) {
 }
 
 async function fetchGoogleBookCandidates(book, author) {
+  if (googleBooksCooldownActive()) return [];
   const list = [];
   for (const q of bookSearchQueries(book, author).slice(0, 3)) {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
     const response = await fetchBookApi(url);
+    if (noteGoogleBooksRateLimit(response)) break;
     if (!response.ok) continue;
     const data = await response.json();
     const items = Array.isArray(data.items) ? data.items : [];
@@ -3981,9 +4014,9 @@ function bookOverviewHTML(group) {
     </div>
     <div class="${info.description ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
     <div class="book-overview-actions">
-      <button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" onclick="refreshBookInfoChoice(${jsArg(group.book)},${jsArg(group.author || authors)})">候補を選び直す</button>
-      <label class="book-overview-action-btn">表紙を登録<input class="book-cover-input" type="file" accept="image/*" onchange="registerBookCover(event,${jsArg(group.book)})"></label>
-      ${hasManualCover ? `<button type="button" class="book-overview-action-btn" onclick="removeBookCover(${jsArg(group.book)})">表紙削除</button>` : ''}
+      <button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" data-book-refresh-book="${esc(group.book)}" data-book-refresh-author="${esc(group.author || authors)}">候補を選び直す</button>
+      <label class="book-overview-action-btn">表紙を登録<input class="book-cover-input" type="file" accept="image/*" data-book-cover-book="${esc(group.book)}"></label>
+      ${hasManualCover ? `<button type="button" class="book-overview-action-btn" data-book-cover-remove="${esc(group.book)}">表紙削除</button>` : ''}
     </div>
   </div>`;
 }
@@ -4092,7 +4125,6 @@ function render() {
   currentRenderedBookKeys = [...grouped.keys()];
 
   const bookEntries = [...grouped.entries()];
-  scheduleBookCoverBackfill(bookEntries);
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
     scheduleRecordAddButtonVisibility();
@@ -4289,8 +4321,6 @@ function toggleBookGroup(index) {
       window.scrollTo({top:0, behavior:'smooth'});
       updateRecordAddButtonVisibility();
     });
-    autoFetchBookInfoForOpenedBook(group.dataset.bookName || '', group.dataset.bookAuthor || '');
-    autoFetchMissingBookCover(group.dataset.bookName || '', group.dataset.bookAuthor || '');
   } else {
     scheduleRecordAddButtonVisibility();
   }
@@ -4714,10 +4744,10 @@ function renderBookOrderList() {
   const rows = [...bookGroups().entries()];
   list.innerHTML = rows.length ? rows.map(([key, group]) => `
     <div class="book-order-row${bookOrderSelectedKey===key?' selected':''}" draggable="true"
-      onclick="selectBookOrderRow(${jsArg(key)})"
-      ondragstart="onBookOrderDragStart(event,${jsArg(key)})"
-      ondragover="onBookOrderDragOver(event,${jsArg(key)})"
-      ondrop="onBookOrderDrop(event,${jsArg(key)})"
+      onclick='selectBookOrderRow(${jsArg(key)})'
+      ondragstart='onBookOrderDragStart(event,${jsArg(key)})'
+      ondragover='onBookOrderDragOver(event,${jsArg(key)})'
+      ondrop='onBookOrderDrop(event,${jsArg(key)})'
       ondragleave="clearBookOrderDropState()"
       ondragend="onBookOrderDragEnd(event)">
       <button type="button" class="book-order-grip" tabindex="-1" aria-label="ドラッグ">☰</button>
@@ -5680,6 +5710,10 @@ document.getElementById('bookInfoChoiceOverlay').addEventListener('click',e=>{if
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.getElementById('cardsContainer').addEventListener('click', handleShelfClick, true);
+document.getElementById('cardsContainer').addEventListener('change',e=>{
+  const input = e.target.closest && e.target.closest('[data-book-cover-book]');
+  if (input) registerBookCover(e, input.dataset.bookCoverBook || '');
+});
 document.addEventListener('click',e=>{
   if(!e.target.closest('#bookSuggestWrap')) document.getElementById('suggestList').style.display='none';
   if(!e.target.closest('#tagSuggestWrap')) document.getElementById('tagSuggestList').style.display='none';
@@ -5694,7 +5728,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v89';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v90';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
