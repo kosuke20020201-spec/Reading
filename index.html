@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-foldsync-sync v99';
+const APP_VERSION   = 'media-folder-delete v100';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -674,6 +674,7 @@ const BOOK_COVERS_KEY = 'reading_log_book_covers';
 const BOOK_INFO_FETCH_TIMEOUT_MS = 6500;
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
+const TAG_FOLDER_DELETED_KEY = 'reading_log_tag_folder_deleted';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
@@ -746,6 +747,7 @@ let syncInFlight = false, syncRetryTimer = null;
 let entryDraftDirty = false, entryDraftTimer = null, suppressEntryDraft = false;
 let tagFolderCacheText = null, tagFolderCacheValue = null;
 let tagFolderOrderCacheText = null, tagFolderOrderCacheValue = null;
+let tagFolderDeletedCacheText = null, tagFolderDeletedCacheValue = null;
 let tagFolderNamesCacheKey = '', tagFolderNamesCacheValue = [];
 let assignedTagsCacheKey = '', assignedTagsCacheValue = [];
 let folderTagsCacheKey = '', folderTagsCache = new Map();
@@ -1408,6 +1410,67 @@ function isFolderDescendantOrSelf(path, ancestor) {
   return path === ancestor || (!!ancestor && path.startsWith(ancestor + '/'));
 }
 
+function cleanTagFolderDeletedList(list) {
+  const clean = [];
+  (Array.isArray(list) ? list : []).forEach(function(path) {
+    path = normalizeFolderPath(path);
+    if (!path) return;
+    if (clean.some(existing => isFolderDescendantOrSelf(path, existing))) return;
+    for (let i = clean.length - 1; i >= 0; i--) {
+      if (isFolderDescendantOrSelf(clean[i], path)) clean.splice(i, 1);
+    }
+    clean.push(path);
+  });
+  return clean.sort(folderPathSortRaw);
+}
+
+function getDeletedTagFolders() {
+  try {
+    const stored = localStorage.getItem(TAG_FOLDER_DELETED_KEY) || '[]';
+    if (stored !== tagFolderDeletedCacheText || !tagFolderDeletedCacheValue) {
+      const parsed = JSON.parse(stored);
+      tagFolderDeletedCacheValue = cleanTagFolderDeletedList(parsed);
+      tagFolderDeletedCacheText = stored;
+    }
+    return tagFolderDeletedCacheValue.slice();
+  } catch(e) { return []; }
+}
+
+function setDeletedTagFolders(list, options) {
+  const clean = cleanTagFolderDeletedList(list);
+  const text = JSON.stringify(clean);
+  localStorage.setItem(TAG_FOLDER_DELETED_KEY, text);
+  tagFolderDeletedCacheText = text;
+  tagFolderDeletedCacheValue = clean.slice();
+  if (!options || options.sync !== false) {
+    markSyncPending(true);
+    scheduleCloudSync(0);
+  }
+}
+
+function addDeletedTagFolders(paths) {
+  setDeletedTagFolders([...getDeletedTagFolders(), ...(Array.isArray(paths) ? paths : [paths])]);
+}
+
+function clearDeletedTagFolderPath(path) {
+  path = normalizeFolderPath(path);
+  if (!path) return;
+  const next = getDeletedTagFolders().filter(function(item) {
+    return !isFolderDescendantOrSelf(path, item) && !isFolderDescendantOrSelf(item, path);
+  });
+  setDeletedTagFolders(next);
+}
+
+function applyDeletedTagFolders(folders, deleted) {
+  const clean = cloneTagFolders(folders || {});
+  cleanTagFolderDeletedList(deleted).forEach(function(deadPath) {
+    Object.keys(clean).forEach(function(path) {
+      if (isFolderDescendantOrSelf(path, deadPath)) delete clean[path];
+    });
+  });
+  return clean;
+}
+
 function folderPathSortRaw(a,b) {
   const left = folderParts(a);
   const right = folderParts(b);
@@ -1478,7 +1541,7 @@ function buildTagFolderSyncEntry() {
     id: TAG_FOLDER_SYNC_ID,
     book: '',
     title: '',
-    content: JSON.stringify({folders:getTagFolders(), order:getTagFolderOrder()}),
+    content: JSON.stringify({folders:getTagFolders(), order:getTagFolderOrder(), deleted:getDeletedTagFolders()}),
     tags: [],
     drawings: [],
     images: [],
@@ -1498,17 +1561,21 @@ function parseTagFolderPayload(value) {
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.folders) {
     return {
       folders: inheritTagFolders(parsed.folders),
-      order: Array.isArray(parsed.order) ? parsed.order : []
+      order: Array.isArray(parsed.order) ? parsed.order : [],
+      deleted: cleanTagFolderDeletedList(parsed.deleted)
     };
   }
-  return {folders: inheritTagFolders(parsed), order: []};
+  return {folders: inheritTagFolders(parsed), order: [], deleted: []};
 }
 
 function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
   if (!cloudEntry) return;
   const payload = parseTagFolderPayload(cloudEntry.content || '{}');
-  const cloud = payload.folders;
-  const local = getTagFolders();
+  const localDeleted = getDeletedTagFolders();
+  const cloudDeleted = cleanTagFolderDeletedList(payload.deleted);
+  const deleted = cleanTagFolderDeletedList([...localDeleted, ...cloudDeleted]);
+  const cloud = applyDeletedTagFolders(payload.folders, deleted);
+  const local = applyDeletedTagFolders(getTagFolders(), deleted);
   const merged = {};
   Object.keys(cloud).forEach(function(name) {
     merged[name] = cleanTagList(cloud[name]);
@@ -1522,8 +1589,14 @@ function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
   });
   const localOrder = getTagFolderOrder();
   const mergedOrder = cleanTagFolderOrder(preferLocal ? [...localOrder, ...payload.order] : payload.order, merged);
-                    setTagFolders(merged, {sync:false});
+  const mustResyncDeleted = JSON.stringify(deleted) !== JSON.stringify(cloudDeleted) || Object.keys(payload.folders || {}).some(path => deleted.some(dead => isFolderDescendantOrSelf(path, dead)));
+  setTagFolders(merged, {sync:false});
   setTagFolderOrder(mergedOrder, {sync:false});
+  setDeletedTagFolders(deleted, {sync:false});
+  if (mustResyncDeleted) {
+    markSyncPending(true);
+    scheduleCloudSync(0);
+  }
 }
 
 // クラウドから取得した固定タグ情報をローカルのbook_metaへ統合する
@@ -5065,12 +5138,16 @@ function addTagsToFolder(folderName, tags) {
   folderName = normalizeFolderPath(folderName);
   const selected = cleanTagList(tags);
   if (!folderName || !selected.length) return;
+  clearDeletedTagFolderPath(folderName);
   const folders = getTagFolders();
   Object.keys(folders).forEach(function(name) {
     if (name === folderName) return;
     if ((folderParts(name)[0] || '').toLocaleLowerCase('en-US') !== 'order') return;
     folders[name] = cleanTagList(folders[name]).filter(tag => !selected.includes(tag));
-    if (!folders[name].length) delete folders[name];
+    if (!folders[name].length) {
+      addDeletedTagFolders([name]);
+      delete folders[name];
+    }
   });
   folders[folderName] = cleanTagList([...(folders[folderName] || []), ...selected]);
   setTagFolders(folders);
@@ -5107,7 +5184,10 @@ function addSelectedTagToFolder(name, idx) {
 function removeTagFromFolder(name, tag) {
   const folders = getTagFolders();
   folders[name] = cleanTagList(folders[name]).filter(item => item !== tag);
-  if (!folders[name].length) delete folders[name];
+  if (!folders[name].length) {
+    addDeletedTagFolders([name]);
+    delete folders[name];
+  }
   if (activeTagFolder === name && !folders[name]) activeTagFolder = '';
   if (activeTag === tag) activeTag = '';
   setTagFolders(folders);
@@ -5121,6 +5201,7 @@ function deleteTagFolder(name) {
   Object.keys(folders).forEach(function(path) {
     if (isFolderDescendantOrSelf(path, name)) delete folders[path];
   });
+  addDeletedTagFolders([name]);
   if (activeTagFolder === name || isFolderDescendantOrSelf(activeTagFolder, name)) activeTagFolder = '';
   if (tagFolderTargetPath === name || isFolderDescendantOrSelf(tagFolderTargetPath, name)) tagFolderTargetPath = folderParentPath(name);
   setTagFolders(folders);
@@ -5157,6 +5238,8 @@ function renameTagFolderPrompt(name) {
   const nextOrder = getTagFolderOrder().map(path => renamedFolderPath(path, oldName, newName));
   if (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, oldName)) activeTagFolder = renamedFolderPath(activeTagFolder, oldName, newName);
   if (tagFolderTargetPath && isFolderDescendantOrSelf(tagFolderTargetPath, oldName)) tagFolderTargetPath = renamedFolderPath(tagFolderTargetPath, oldName, newName);
+  clearDeletedTagFolderPath(newName);
+  addDeletedTagFolders([oldName]);
   setTagFolders(renamed, {sync:false});
   setTagFolderOrder(nextOrder);
   renderTagFolderManager();
@@ -6429,7 +6512,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_folders_v99';
+const SW_CLEANUP_FLAG = 'reading_log_sw_folder_delete_v100';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
