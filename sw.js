@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260701-uniform-spines-v97';
+const CACHE_NAME = 'reading-note-pwa-20260701-tag-list-drag-rename-v98';
 const APP_SHELL = [
   './',
   './index.html',

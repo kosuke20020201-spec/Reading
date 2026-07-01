@@ -78,6 +78,11 @@
   .tag-expanded-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: min(24vh, 9.5rem); overflow-y: auto; overscroll-behavior: contain; margin: 0.55rem 0 0; padding: 0.55rem 0.6rem; border: 1px solid var(--stone-200); border-radius: 0.9rem; background: rgba(255,255,255,0.76); box-shadow: inset 0 -12px 18px rgba(120,113,108,0.06); }
   .tag-expanded-tags:empty { display: none; }
   .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
+  .tag-filter-drag-row { display:flex; flex-wrap:wrap; gap:0.4rem; width:100%; }
+  .tag-filter-drag-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
+  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; touch-action:manipulation; }
+  .tag-btn[data-folder-tag-chip]:active { cursor:grabbing; }
+  .tag-btn[data-folder-tag-chip].dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
   .view-mode-toggle { display: inline-flex; align-items: center; padding: 0.12rem; border: 1px solid var(--stone-200); border-radius: 999px; background: white; box-shadow: 0 1px 4px #00000008; }
   .view-mode-btn { min-height: 1.85rem; padding: 0.25rem 0.68rem; border: 0; border-radius: 999px; background: transparent; color: var(--stone-500); font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
@@ -638,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v97';
+const APP_VERSION   = 'media-autosave-sync v98';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -746,6 +751,7 @@ let lazyImageObserver = null;
 let searchRenderTimer = null;
 let scrollUpdateQueued = false;
 let tagFolderChipDrag = null;
+let tagFolderDragJustSaved = false;
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
@@ -4345,10 +4351,12 @@ function render() {
     wrap.appendChild(group);
   });
   if (expandedWrap && activeTagFolder) {
-    expandedWrap.insertAdjacentHTML('beforeend', directFolderTags(activeTagFolder)
-      .filter(tag => tagSet.has(tag))
-      .map(tag => `<button type="button" class="tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}" data-tag="${esc(tag)}">${esc(tag)}</button>`)
-      .join(''));
+    const activeFolderDirectTags = directFolderTags(activeTagFolder).filter(tag => tagSet.has(tag));
+    if (activeFolderDirectTags.length) {
+      expandedWrap.insertAdjacentHTML('beforeend', `<span class="tag-filter-drag-row" data-folder-chip-row="${esc(activeTagFolder)}">${
+        activeFolderDirectTags.map(tag => `<button type="button" class="tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}" data-tag="${esc(tag)}" data-folder-tag-chip="1" data-folder-name="${esc(activeTagFolder)}">${esc(tag)}</button>`).join('')
+      }</span>`);
+    }
   }
   const looseTags = unfiledTags(tags);
   const looseHTML = looseTags.map(tag => `<button type="button" class="tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}" data-tag="${esc(tag)}">${esc(tag)}</button>`).join('');
@@ -4793,6 +4801,7 @@ function renderTagFolderManager() {
           <div class="tag-folder-order-actions">
             <button type="button" onclick='moveTagFolderOrder(${jsArg(name)},-1)' ${pos<=0?'disabled':''}>↑</button>
             <button type="button" onclick='moveTagFolderOrder(${jsArg(name)},1)' ${pos>=siblings.length-1?'disabled':''}>↓</button>
+            <button type="button" onclick='renameTagFolderPrompt(${jsArg(name)})' title="フォルダ名を編集">名前</button>
             <button type="button" onclick='deleteTagFolder(${jsArg(name)})'>削除</button>
           </div>
         </div>
@@ -5005,6 +5014,8 @@ function finishTagFolderChipDrag(event) {
   const saved = saveDraggedTagFolderOrder();
   cleanupTagFolderChipDrag();
   if (saved) {
+    tagFolderDragJustSaved = true;
+    setTimeout(() => { tagFolderDragJustSaved = false; }, 250);
     renderTagFolderManager();
     render();
     showToast('タグの順番を保存しました');
@@ -5092,6 +5103,42 @@ function deleteTagFolder(name) {
   setTagFolders(folders);
   renderTagFolderManager();
   render();
+}
+
+function renamedFolderPath(path, oldName, newName) {
+  path = normalizeFolderPath(path);
+  oldName = normalizeFolderPath(oldName);
+  newName = normalizeFolderPath(newName);
+  if (!isFolderDescendantOrSelf(path, oldName)) return path;
+  return normalizeFolderPath(newName + path.slice(oldName.length));
+}
+
+function renameTagFolderPrompt(name) {
+  const oldName = normalizeFolderPath(name);
+  if (!oldName || !tagFolderNames().includes(oldName)) return;
+  const nextValue = prompt('新しいフォルダ名', folderLeafName(oldName));
+  if (nextValue === null) return;
+  const nextLeaf = folderLeafName(normalizeFolderPath(nextValue));
+  if (!nextLeaf) { showToast('フォルダ名を入力してください'); return; }
+  const parent = folderParentPath(oldName);
+  const newName = normalizeFolderPath(parent ? parent + '/' + nextLeaf : nextLeaf);
+  if (newName === oldName) return;
+  const folders = getTagFolders();
+  const paths = folderTreePaths(folders);
+  if (paths.includes(newName)) { showToast('同じ場所に同名のフォルダがあります'); return; }
+  const renamed = {};
+  Object.keys(folders).forEach(function(path) {
+    const targetPath = renamedFolderPath(path, oldName, newName);
+    renamed[targetPath] = cleanTagList([...(renamed[targetPath] || []), ...folders[path]]);
+  });
+  const nextOrder = getTagFolderOrder().map(path => renamedFolderPath(path, oldName, newName));
+  if (activeTagFolder && isFolderDescendantOrSelf(activeTagFolder, oldName)) activeTagFolder = renamedFolderPath(activeTagFolder, oldName, newName);
+  if (tagFolderTargetPath && isFolderDescendantOrSelf(tagFolderTargetPath, oldName)) tagFolderTargetPath = renamedFolderPath(tagFolderTargetPath, oldName, newName);
+  setTagFolders(renamed, {sync:false});
+  setTagFolderOrder(nextOrder);
+  renderTagFolderManager();
+  render();
+  showToast('フォルダ名を変更しました');
 }
 
 function onBookInput(val) {
@@ -6222,6 +6269,7 @@ document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.ta
 document.getElementById('bookInfoChoiceOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookInfoChoice();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
 document.getElementById('tagFolderList')?.addEventListener('pointerdown', onTagFolderChipPointerDown);
+document.getElementById('tagExpandedTags')?.addEventListener('pointerdown', onTagFolderChipPointerDown);
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.getElementById('cardsContainer').addEventListener('click', handleShelfClick, true);
 document.getElementById('cardsContainer').addEventListener('change',e=>{
@@ -6242,7 +6290,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v97';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v98';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -6285,6 +6333,11 @@ document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPe
 window.addEventListener('scroll',handleWindowScroll, {passive:true});
 window.addEventListener('resize', scheduleRecordAddButtonVisibility, {passive:true});
 document.getElementById('tagFilters')?.addEventListener('click', e => {
+  if (tagFolderDragJustSaved) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   const btn = e.target.closest('[data-tag-folder]');
   if (btn) {
     setTagFolder(btn.dataset.tagFolder || '');
@@ -6294,6 +6347,11 @@ document.getElementById('tagFilters')?.addEventListener('click', e => {
   if (tagBtn) setTag(tagBtn.dataset.tag || '');
 });
 document.getElementById('tagExpandedTags')?.addEventListener('click', e => {
+  if (tagFolderDragJustSaved) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   const folderBtn = e.target.closest('[data-tag-folder]');
   if (folderBtn) {
     setTagFolder(folderBtn.dataset.tagFolder || '');
