@@ -329,7 +329,7 @@
   #tagFolderOverlay .modal { max-height: 96vh; }
   #tagFolderOverlay .modal-body { min-height: 0; }
   .tag-folder-list { display:flex; flex-direction:column; gap:0.75rem; flex:0 0 auto; }
-  .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
+  .tag-folder-create { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1.35fr) auto; gap:0.5rem; align-items:start; }
   .tag-bulk-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto auto; gap:0.5rem; align-items:center; }
   .tag-bulk-toolbar input { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
   .tag-bulk-list { display:flex; flex-wrap:wrap; align-content:flex-start; gap:0.4rem; flex:0 0 clamp(24rem, 58vh, 42rem); min-height:24rem; overflow:auto; padding:0.65rem; border:1px solid var(--stone-200); border-radius:0.75rem; background:var(--stone-50); }
@@ -343,6 +343,10 @@
   .tag-folder-order-actions button:disabled { opacity:0.35; cursor:default; }
   .tag-folder-add-line { display:grid; grid-template-columns: minmax(0,1fr) auto; gap:0.5rem; align-items:center; }
   .tag-folder-create input, .tag-folder-create select, .tag-folder-add-line select { width:100%; padding:0.55rem 0.7rem; border-radius:0.65rem; border:1px solid var(--stone-200); background:var(--stone-50); font:inherit; font-size:0.78rem; outline:none; }
+  .tag-folder-path-field { display:flex; flex-direction:column; gap:0.35rem; min-width:0; }
+  .tag-folder-path-picker { display:flex; flex-wrap:wrap; gap:0.35rem; }
+  .tag-folder-path-picker select { flex:1 1 9rem; min-width:0; }
+  .tag-folder-path-current { min-height:1.35rem; font-size:0.68rem; color:var(--stone-500); font-weight:700; line-height:1.45; overflow-wrap:anywhere; }
   .tag-folder-card { border:1px solid var(--stone-200); border-radius:0.75rem; background:white; padding:0.75rem; }
   .tag-folder-card-header { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-bottom:0.55rem; }
   .tag-folder-card-title { font-size:0.84rem; font-weight:800; color:var(--stone-800); }
@@ -558,7 +562,10 @@
     <div class="modal-body">
       <div class="tag-folder-create">
         <input type="text" id="tagFolderName" placeholder="新規フォルダ名">
-        <select id="tagFolderTargetSelect" onchange="onTagFolderTargetChange()"></select>
+        <div class="tag-folder-path-field">
+          <div class="tag-folder-path-picker" id="tagFolderPathPicker"></div>
+          <div class="tag-folder-path-current" id="tagFolderPathCurrent"></div>
+        </div>
         <button type="button" class="btn-sub" onclick="addSelectedTagsToFolderFromForm()">選択をまとめる</button>
       </div>
       <div class="tag-bulk-toolbar">
@@ -631,7 +638,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v95';
+const APP_VERSION   = 'media-autosave-sync v96';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -719,6 +726,7 @@ let shelfReorderMode = false;
 let shelfReorderSelectedKey = '';
 let tagFolderSearchQuery = '';
 let tagFolderUnfiledOnly = false;
+let tagFolderTargetPath = '';
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
 if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
 let displayMode = localStorage.getItem(VIEW_MODE_KEY) === 'list' ? 'list' : 'shelf';
@@ -4689,9 +4697,60 @@ function tagFolderOptions(excludedTags) {
   return '<option value="">タグを選択</option>' + tags.map(tag => `<option value="${esc(tag)}">${esc(tag)}</option>`).join('');
 }
 
-function tagFolderTargetOptions() {
+function normalizeTagFolderTargetPath(path) {
+  path = normalizeFolderPath(path);
   const names = tagFolderNames();
-  return '<option value="">新規フォルダ</option>' + names.map(name => `<option value="${esc(name)}">${esc(folderDisplayName(name))}に追加</option>`).join('');
+  while (path && !names.includes(path)) path = folderParentPath(path);
+  return path;
+}
+
+function childFolderOptionsForParent(parent) {
+  parent = normalizeFolderPath(parent);
+  return tagFolderNames().filter(name => folderParentPath(name) === parent);
+}
+
+function tagFolderTargetLevels(target) {
+  target = normalizeTagFolderTargetPath(target);
+  const levels = [];
+  const parts = folderParts(target);
+  let parent = '';
+  for (let depth = 0; depth < 12; depth++) {
+    const children = childFolderOptionsForParent(parent);
+    if (!children.length) break;
+    const selected = parts.slice(0, depth + 1).join('/');
+    const safeSelected = children.includes(selected) ? selected : '';
+    levels.push({parent, children, selected: safeSelected});
+    if (!safeSelected) break;
+    parent = safeSelected;
+  }
+  return levels;
+}
+
+function renderTagFolderTargetPicker() {
+  tagFolderTargetPath = normalizeTagFolderTargetPath(tagFolderTargetPath);
+  const picker = document.getElementById('tagFolderPathPicker');
+  const current = document.getElementById('tagFolderPathCurrent');
+  if (!picker) return;
+  const levels = tagFolderTargetLevels(tagFolderTargetPath);
+  if (!levels.length) {
+    picker.innerHTML = '<span class="tag-folder-empty" style="width:100%;padding:0.55rem 0.7rem">フォルダなし</span>';
+  } else {
+    picker.innerHTML = levels.map(function(level, index) {
+      const label = index === 0 ? '親フォルダ' : '子フォルダ';
+      const blankLabel = level.parent ? 'ここに追加' : '最上位';
+      return `<select data-folder-parent="${esc(level.parent)}" onchange="onTagFolderTargetLevelChange(this)" aria-label="${label}">
+        <option value="">${blankLabel}</option>
+        ${level.children.map(name => `<option value="${esc(name)}"${name===level.selected?' selected':''}>${esc(folderLeafName(name))}</option>`).join('')}
+      </select>`;
+    }).join('');
+  }
+  if (current) current.textContent = tagFolderTargetPath ? '選択中: ' + folderDisplayName(tagFolderTargetPath) : '選択中: 最上位';
+}
+
+function onTagFolderTargetLevelChange(select) {
+  const parent = normalizeFolderPath(select && select.dataset ? select.dataset.folderParent : '');
+  tagFolderTargetPath = normalizeFolderPath(select && select.value ? select.value : parent);
+  onTagFolderTargetChange();
 }
 
 function openTagFolders() {
@@ -4704,8 +4763,7 @@ function closeTagFolders() {
 }
 
 function renderTagFolderManager() {
-  const targetSelect = document.getElementById('tagFolderTargetSelect');
-  if (targetSelect) targetSelect.innerHTML = tagFolderTargetOptions();
+  renderTagFolderTargetPicker();
   const unfiledBtn = document.getElementById('tagFolderUnfiledBtn');
   if (unfiledBtn) unfiledBtn.classList.toggle('active', tagFolderUnfiledOnly);
   renderTagBulkList();
@@ -4750,7 +4808,7 @@ function renderTagFolderManager() {
 
 function visibleBulkTags() {
   const q = tagFolderSearchQuery.trim().toLocaleLowerCase('ja-JP');
-  const target = normalizeFolderPath(document.getElementById('tagFolderTargetSelect')?.value || '');
+  const target = normalizeTagFolderTargetPath(tagFolderTargetPath);
   const assigned = assignedFolderTags();
   let base = allTags();
   if (tagFolderUnfiledOnly && !target) base = base.filter(tag => !assigned.has(tag));
@@ -4801,10 +4859,12 @@ function clearTagFolderSelection() {
 }
 
 function onTagFolderTargetChange() {
-  const target = document.getElementById('tagFolderTargetSelect').value;
+  const target = normalizeTagFolderTargetPath(tagFolderTargetPath);
+  tagFolderTargetPath = target;
   const input = document.getElementById('tagFolderName');
   if (target) tagFolderUnfiledOnly = false;
   input.placeholder = target ? 'サブフォルダ名（空なら既存へ追加）' : '新規フォルダ名 / 親/子';
+  renderTagFolderTargetPicker();
   renderTagBulkList();
   const unfiledBtn = document.getElementById('tagFolderUnfiledBtn');
   if (unfiledBtn) unfiledBtn.classList.toggle('active', tagFolderUnfiledOnly);
@@ -4813,8 +4873,7 @@ function onTagFolderTargetChange() {
 function toggleTagFolderUnfiledOnly() {
   tagFolderUnfiledOnly = !tagFolderUnfiledOnly;
   if (tagFolderUnfiledOnly) {
-    const target = document.getElementById('tagFolderTargetSelect');
-    if (target) target.value = '';
+    tagFolderTargetPath = '';
   }
   renderTagFolderManager();
 }
@@ -4959,7 +5018,7 @@ function cancelTagFolderChipDrag(event) {
 }
 
 function selectedFolderNameFromForm() {
-  const target = document.getElementById('tagFolderTargetSelect').value;
+  const target = normalizeTagFolderTargetPath(tagFolderTargetPath);
   const name = (document.getElementById('tagFolderName').value || '').trim();
   if (target && name) return normalizeFolderPath(target + '/' + name);
   return normalizeFolderPath(target || name);
@@ -4986,12 +5045,12 @@ function addTagsToFolder(folderName, tags) {
 
 function addSelectedTagsToFolderFromForm() {
   const nameInput = document.getElementById('tagFolderName');
-  const targetSelect = document.getElementById('tagFolderTargetSelect');
   const name = selectedFolderNameFromForm();
   const selected = cleanTagList([...tagFolderSelectedTags]);
   if (!name) { showToast('フォルダ名を入力するか既存フォルダを選んでください'); return; }
   if (!selected.length) { showToast('まとめるタグを選んでください'); return; }
   moveTagsIntoFolder(name, selected);
+  tagFolderTargetPath = name;
   tagFolderSelectedTags.clear();
   if (nameInput) nameInput.value = '';
   renderTagFolderManager();
@@ -5030,6 +5089,7 @@ function deleteTagFolder(name) {
     if (isFolderDescendantOrSelf(path, name)) delete folders[path];
   });
   if (activeTagFolder === name || isFolderDescendantOrSelf(activeTagFolder, name)) activeTagFolder = '';
+  if (tagFolderTargetPath === name || isFolderDescendantOrSelf(tagFolderTargetPath, name)) tagFolderTargetPath = folderParentPath(name);
   setTagFolders(folders);
   renderTagFolderManager();
   render();
@@ -6183,7 +6243,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v95';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v96';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
