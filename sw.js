@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260629-cover-sync-v93';
+const CACHE_NAME = 'reading-note-pwa-20260701-tag-drag-order-v95';
 const APP_SHELL = [
   './',
   './index.html',

@@ -171,7 +171,7 @@
   .record-book-lane { min-width: 0; overflow: hidden; }
   .record-book-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.65rem 0.85rem 0; }
   .record-book-cards { display: flex; flex-direction: row; gap: 0.75rem; padding: 0.75rem 0.85rem 0.9rem; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: thin; }
-  .record-book-cards .card { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; content-visibility: visible; contain-intrinsic-size: auto; }
+  .record-book-cards .card { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; content-visibility: auto; contain-intrinsic-size: 34rem; }
   .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
   .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -233,6 +233,7 @@
   /* スケッチ（カード内） */
   .sketch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.5rem; }
   .sketch-grid img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 0.4rem; border: 1px solid var(--stone-200); cursor: pointer; display: block; transition: opacity 0.1s; }
+  .sketch-grid img[data-lazy-src] { background: linear-gradient(135deg, var(--stone-100), #fff7ed); }
   .sketch-grid img:hover { opacity: 0.85; }
 
   /* スケッチサムネイル（フォーム内） */
@@ -346,8 +347,12 @@
   .tag-folder-card-header { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-bottom:0.55rem; }
   .tag-folder-card-title { font-size:0.84rem; font-weight:800; color:var(--stone-800); }
   .tag-folder-chip-row { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.65rem; min-height:1.65rem; }
-  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.25rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.18rem 0.55rem; font-size:0.7rem; font-weight:600; }
+  .tag-folder-chip-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0.45rem; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
+  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; touch-action:manipulation; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
+  .tag-folder-chip:active { cursor:grabbing; }
+  .tag-folder-chip.dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .tag-folder-chip button { border:0; background:none; cursor:pointer; color:var(--stone-400); font:inherit; line-height:1; padding:0; }
+  .tag-folder-chip-remove { width:1.1rem; height:1.1rem; border-radius:999px !important; color:var(--stone-400) !important; font-weight:900 !important; cursor:pointer !important; }
   .tag-folder-empty { font-size:0.78rem; color:var(--stone-400); padding:0.8rem; border:1px dashed var(--stone-200); border-radius:0.75rem; }
 
   .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
@@ -626,7 +631,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v93';
+const APP_VERSION   = 'media-autosave-sync v95';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -651,6 +656,7 @@ const MEDIA_SKETCH_MAX_CHARS = 48000;
 const BOOK_COVER_MAX_SIDE = 520;
 const BOOK_COVER_QUALITY = 0.78;
 const BOOK_COVER_MAX_CHARS = 22000;
+const LAZY_IMAGE_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 const BOOK_META_KEY = 'reading_log_book_meta';
 const BOOK_COVERS_KEY = 'reading_log_book_covers';
 const BOOK_INFO_FETCH_TIMEOUT_MS = 6500;
@@ -726,6 +732,12 @@ let tagFolderNamesCacheKey = '', tagFolderNamesCacheValue = [];
 let assignedTagsCacheKey = '', assignedTagsCacheValue = [];
 let folderTagsCacheKey = '', folderTagsCache = new Map();
 let childFoldersCacheKey = '', childFoldersCache = new Map();
+let bookFixedTagsCache = new Map();
+let tagClassCache = new Map();
+let lazyImageObserver = null;
+let searchRenderTimer = null;
+let scrollUpdateQueued = false;
+let tagFolderChipDrag = null;
 
 // ── 削除ID管理 ─────────────────────────────────────
 function getDeletedIds() { try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]')); } catch { return new Set(); } }
@@ -939,6 +951,7 @@ function getBookMetaInfo(book) {
 function setBookMetaInfo(book, patch) {
   const key = bookKey(book);
   if (!key) return;
+  bookFixedTagsCache.clear();
   const meta = getBookMeta();
   const current = normalizeBookMetaValue(meta[key] || meta[(book || '').trim()]);
   meta[key] = normalizeBookMetaValue({...current, ...(patch || {}), fixedTags: current.fixedTags});
@@ -950,6 +963,7 @@ function setBookMetaInfo(book, patch) {
 function setBookMetaCover(book, coverUrl) {
   const key = bookKey(book);
   if (!key) return false;
+  bookFixedTagsCache.clear();
   const meta = getBookMeta();
   const current = normalizeBookMetaValue(meta[key] || meta[(book || '').trim()]);
   meta[key] = normalizeBookMetaValue({
@@ -967,6 +981,7 @@ function setBookMetaCover(book, coverUrl) {
 function clearBookMetaCover(book, previousCoverUrl) {
   const key = bookKey(book);
   if (!key) return false;
+  bookFixedTagsCache.clear();
   const meta = getBookMeta();
   const legacyKey = (book || '').trim();
   const raw = meta[key] || meta[legacyKey];
@@ -1496,6 +1511,7 @@ function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
 // （クラウド側の値を優先しつつ、ローカルにしかないキーは保持する）
 function mergeBookMetaFromCloud(cloudMetaEntry, preferLocal) {
   if (!cloudMetaEntry) return;
+  bookFixedTagsCache.clear();
   let cloudMeta;
   try {
     cloudMeta = JSON.parse(cloudMetaEntry.content || '{}');
@@ -1525,25 +1541,35 @@ function mergeBookMetaFromCloud(cloudMetaEntry, preferLocal) {
 function getBookFixedTags(book) {
   const key = bookKey(book);
   if (!key) return [];
+  if (bookFixedTagsCache.has(key)) return bookFixedTagsCache.get(key).slice();
   const meta = getBookMeta();
   const storedTags = normalizeBookMetaValue(meta[key]).fixedTags;
-  if (storedTags.length) return storedTags;
+  if (storedTags.length) {
+    bookFixedTagsCache.set(key, storedTags);
+    return storedTags.slice();
+  }
 
   // v3-FIXED以前は本タイトルそのものをキーにしていたため、旧キーも拾う。
   const legacyKey = (book || '').trim();
   const legacyTags = normalizeBookMetaValue(meta[legacyKey]).fixedTags;
-  if (legacyTags.length) return legacyTags;
+  if (legacyTags.length) {
+    bookFixedTagsCache.set(key, legacyTags);
+    return legacyTags.slice();
+  }
 
   const fromEntries = [];
   entries.forEach(function(entry) {
     if (bookKey(entry.book) === key) fromEntries.push(...cleanTagList(entry.fixedTags));
   });
-  return cleanTagList(fromEntries);
+  const clean = cleanTagList(fromEntries);
+  bookFixedTagsCache.set(key, clean);
+  return clean.slice();
 }
 
 function setBookFixedTags(book, tags) {
   const key = bookKey(book);
   if (!key) return;
+  bookFixedTagsCache.clear();
   const meta = getBookMeta();
   const cleanTags = cleanTagList(tags);
   meta[key] = normalizeBookMetaValue({...normalizeBookMetaValue(meta[key]), fixedTags: cleanTags});
@@ -1582,6 +1608,7 @@ function syncEntryFixedTags() {
 
 // 旧形式（e.fixedTags）→ BOOK_META_KEY へ自動マイグレーション
 function migrateOldFixedTags() {
+  bookFixedTagsCache.clear();
   const meta = getBookMeta();
   let changed = false;
 
@@ -1646,6 +1673,7 @@ function repairMissingIds(list) {
 }
 
 function load() {
+  bookFixedTagsCache.clear();
   try {
     const r=localStorage.getItem(STORAGE_KEY);
     entries=r?JSON.parse(r):SAMPLE;
@@ -1671,6 +1699,7 @@ function load() {
 }
 
 function persist() {
+  bookFixedTagsCache.clear();
   migrateImagesIntoDrawings();
   syncEntryFixedTags();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -2322,7 +2351,20 @@ function getRakutenAccessKey() { return localStorage.getItem(RAKUTEN_ACCESS_KEY_
 function setRakutenAccessKey(k) { k ? localStorage.setItem(RAKUTEN_ACCESS_KEY_KEY,k) : localStorage.removeItem(RAKUTEN_ACCESS_KEY_KEY); }
 
 // ── Helpers ────────────────────────────────────────
-function tagClass(t) { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%6; return `tc-${h}`; }
+function resetRenderCaches() {
+  bookFixedTagsCache.clear();
+  tagClassCache.clear();
+}
+
+function tagClass(t) {
+  const text = String(t || '');
+  if (tagClassCache.has(text)) return tagClassCache.get(text);
+  let h=0;
+  for(let i=0;i<text.length;i++) h=(h*31+text.charCodeAt(i))%6;
+  const cls = `tc-${h}`;
+  tagClassCache.set(text, cls);
+  return cls;
+}
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function allTags() {
@@ -2388,7 +2430,7 @@ function folderTagsForPath(path) {
   if (folderTagsCache.has(path)) return folderTagsCache.get(path).slice();
   const folders = getTagFolders();
   const merged = [];
-  Object.keys(folders).forEach(function(name) {
+  folderTreePaths(folders).forEach(function(name) {
     if (isFolderDescendantOrSelf(name, path)) merged.push(...cleanTagList(folders[name]));
   });
   const clean = cleanTagList(merged);
@@ -4230,6 +4272,7 @@ function expandedRecordsForGroup(group) {
 
 // ── Render ─────────────────────────────────────────
 function render() {
+  resetRenderCaches();
   const tags=allTags(),groups=bookGroups();
   const folders = getTagFolders();
   if (displayMode === 'list' && shelfReorderMode) {
@@ -4317,6 +4360,7 @@ function render() {
   const bookEntries = [...grouped.entries()];
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
+    observeLazyImages();
     scheduleRecordAddButtonVisibility();
     return;
   }
@@ -4348,6 +4392,7 @@ function render() {
   <div class="book-group-cards" id="grp-${gi}-cards">${expandedRecordsHTML(g)}</div>
 </div>`;
   }).join('')}</div>`;
+  observeLazyImages();
   scheduleRecordAddButtonVisibility();
 }
 
@@ -4524,7 +4569,6 @@ function cardHTML(e) {
   let fixedTags = getBookFixedTags(e.book);
   if (fixedTags.length === 0 && Array.isArray(e.fixedTags) && e.fixedTags.length > 0) {
     fixedTags = e.fixedTags.filter(Boolean);
-    console.log('[Card fallback] "' + (e.book||'') + '" using e.fixedTags:', JSON.stringify(fixedTags));
   }
   const fixedPills = fixedTags.map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
   const freePills  = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
@@ -4535,7 +4579,7 @@ function cardHTML(e) {
   const sketchHTML=media.length?`
     <div class="section-block" style="background:var(--stone-50)">
       <div class="section-label">🎨 スケッチ・画像</div>
-      <div class="sketch-grid">${media.map((d,i)=>`<img src="${d}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="annotateEntryMedia('${e.id}','${i}')">`).join('')}</div>
+      <div class="sketch-grid">${media.map((d,i)=>`<img src="${LAZY_IMAGE_PLACEHOLDER}" data-lazy-src="${esc(d)}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="annotateEntryMedia('${e.id}','${i}')">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
@@ -4568,6 +4612,30 @@ function cardHTML(e) {
 </div>`;
 }
 
+function loadLazyImage(img) {
+  if (!img || !img.dataset || !img.dataset.lazySrc) return;
+  img.src = img.dataset.lazySrc;
+  delete img.dataset.lazySrc;
+  if (lazyImageObserver) lazyImageObserver.unobserve(img);
+}
+
+function observeLazyImages() {
+  const images = [...document.querySelectorAll('img[data-lazy-src]')];
+  if (!images.length) return;
+  if (!('IntersectionObserver' in window)) {
+    images.forEach(loadLazyImage);
+    return;
+  }
+  if (!lazyImageObserver) {
+    lazyImageObserver = new IntersectionObserver(function(items) {
+      items.forEach(function(item) {
+        if (item.isIntersecting) loadLazyImage(item.target);
+      });
+    }, {rootMargin:'700px 700px'});
+  }
+  images.forEach(img => lazyImageObserver.observe(img));
+}
+
 function openViewer(entryId, idx, kind) {
   const entry=entries.find(e=>String(e.id)===String(entryId));
   if(!entry)return;
@@ -4580,8 +4648,23 @@ function openViewer(entryId, idx, kind) {
 }
 function closeViewer() { document.getElementById('viewerOverlay').classList.remove('open'); }
 
-function onSearch(v) { searchQuery=v; document.getElementById('searchClear').style.display=v?'block':'none'; render(); }
-function clearSearch() { document.getElementById('searchInput').value=''; onSearch(''); }
+function onSearch(v) {
+  searchQuery=v;
+  document.getElementById('searchClear').style.display=v?'block':'none';
+  if (searchRenderTimer) clearTimeout(searchRenderTimer);
+  searchRenderTimer = setTimeout(function() {
+    searchRenderTimer = null;
+    render();
+  }, 140);
+}
+function clearSearch() {
+  document.getElementById('searchInput').value='';
+  searchQuery='';
+  document.getElementById('searchClear').style.display='none';
+  if (searchRenderTimer) clearTimeout(searchRenderTimer);
+  searchRenderTimer = null;
+  render();
+}
 function setTag(t) {
   const keepFolder = t && activeFolderTags().includes(t);
   activeTag=t;
@@ -4637,8 +4720,8 @@ function renderTagFolderManager() {
   list.innerHTML = names.map(function(name, idx) {
     const tags = directFolderTags(name);
     const chips = tags.map(tag => `
-      <span class="tag-folder-chip">${esc(tag)}
-        <button type="button" onclick='removeTagFromFolder(${jsArg(name)},${jsArg(tag)})'>×</button>
+      <span class="tag-folder-chip" data-folder-tag-chip="1" data-folder-name="${esc(name)}" data-tag="${esc(tag)}">${esc(tag)}
+        <button class="tag-folder-chip-remove" type="button" data-tag-remove="1" onclick='removeTagFromFolder(${jsArg(name)},${jsArg(tag)})' title="外す">×</button>
       </span>`).join('');
     const addOptions = tagFolderOptions(tags);
     const children = childFolderPaths(name).length;
@@ -4656,7 +4739,7 @@ function renderTagFolderManager() {
             <button type="button" onclick='deleteTagFolder(${jsArg(name)})'>削除</button>
           </div>
         </div>
-        <div class="tag-folder-chip-row">${chips || '<span style="font-size:0.72rem;color:var(--stone-400)">直接入っているタグなし</span>'}</div>
+        <div class="tag-folder-chip-row" data-folder-chip-row="${esc(name)}">${chips || '<span style="font-size:0.72rem;color:var(--stone-400)">直接入っているタグなし</span>'}</div>
         <div class="tag-folder-add-line">
           <select id="tagFolderAdd${idx}">${addOptions}</select>
           <button type="button" class="btn-sub" onclick='addSelectedTagToFolder(${jsArg(name)},${idx})'>タグ追加</button>
@@ -4755,6 +4838,124 @@ function moveTagFolderOrder(name, direction) {
   setTagFolderOrder(rest);
   renderTagFolderManager();
   render();
+}
+
+function startTagFolderChipDrag() {
+  if (!tagFolderChipDrag || tagFolderChipDrag.dragging || tagFolderChipDrag.canceled) return;
+  tagFolderChipDrag.dragging = true;
+  tagFolderChipDrag.chip.classList.add('dragging');
+  tagFolderChipDrag.row.classList.add('is-dragging');
+  try { tagFolderChipDrag.chip.setPointerCapture(tagFolderChipDrag.pointerId); } catch {}
+}
+
+function tagFolderDropBeforeNode(row, draggingChip, x, y) {
+  const chips = [...row.querySelectorAll('[data-folder-tag-chip]')].filter(chip => chip !== draggingChip);
+  if (!chips.length) return null;
+  const sameLine = chips.filter(function(chip) {
+    const rect = chip.getBoundingClientRect();
+    return y >= rect.top - 8 && y <= rect.bottom + 8;
+  });
+  const candidates = sameLine.length ? sameLine : chips;
+  for (const chip of candidates) {
+    const rect = chip.getBoundingClientRect();
+    if (sameLine.length) {
+      if (x < rect.left + rect.width / 2) return chip;
+    } else if (y < rect.top + rect.height / 2) {
+      return chip;
+    }
+  }
+  if (sameLine.length) {
+    const last = sameLine[sameLine.length - 1];
+    return last.nextElementSibling === draggingChip ? draggingChip.nextElementSibling : last.nextElementSibling;
+  }
+  return null;
+}
+
+function onTagFolderChipPointerDown(event) {
+  const chip = event.target.closest && event.target.closest('[data-folder-tag-chip]');
+  if (!chip || event.target.closest('[data-tag-remove]')) return;
+  const row = chip.closest('[data-folder-chip-row]');
+  if (!row) return;
+  tagFolderChipDrag = {
+    chip,
+    row,
+    folder: chip.dataset.folderName || '',
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    originalOrder: [...row.querySelectorAll('[data-folder-tag-chip]')].map(item => item.dataset.tag || '').filter(Boolean),
+    dragging: false,
+    canceled: false,
+    longPressTimer: null
+  };
+  tagFolderChipDrag.longPressTimer = setTimeout(startTagFolderChipDrag, event.pointerType === 'mouse' ? 70 : 220);
+  document.addEventListener('pointermove', onTagFolderChipPointerMove, {passive:false});
+  document.addEventListener('pointerup', finishTagFolderChipDrag, {passive:false});
+  document.addEventListener('pointercancel', cancelTagFolderChipDrag, {passive:false});
+}
+
+function onTagFolderChipPointerMove(event) {
+  if (!tagFolderChipDrag || event.pointerId !== tagFolderChipDrag.pointerId) return;
+  const dx = event.clientX - tagFolderChipDrag.startX;
+  const dy = event.clientY - tagFolderChipDrag.startY;
+  if (!tagFolderChipDrag.dragging) {
+    if (event.pointerType === 'mouse' && Math.hypot(dx, dy) > 4) {
+      startTagFolderChipDrag();
+      return;
+    }
+    if (Math.hypot(dx, dy) > 12) {
+      tagFolderChipDrag.canceled = true;
+      cancelTagFolderChipDrag(event);
+    }
+    return;
+  }
+  event.preventDefault();
+  const before = tagFolderDropBeforeNode(tagFolderChipDrag.row, tagFolderChipDrag.chip, event.clientX, event.clientY);
+  if (before !== tagFolderChipDrag.chip && before !== tagFolderChipDrag.chip.nextElementSibling) {
+    tagFolderChipDrag.row.insertBefore(tagFolderChipDrag.chip, before);
+  }
+}
+
+function saveDraggedTagFolderOrder() {
+  if (!tagFolderChipDrag || !tagFolderChipDrag.dragging) return false;
+  const folder = normalizeFolderPath(tagFolderChipDrag.folder);
+  const orderedTags = [...tagFolderChipDrag.row.querySelectorAll('[data-folder-tag-chip]')]
+    .map(chip => chip.dataset.tag || '')
+    .filter(Boolean);
+  const folders = getTagFolders();
+  if (!folder || !folders[folder] || !orderedTags.length) return false;
+  if (JSON.stringify(orderedTags) === JSON.stringify(tagFolderChipDrag.originalOrder || [])) return false;
+  folders[folder] = cleanTagList(orderedTags);
+  setTagFolders(folders);
+  return true;
+}
+
+function cleanupTagFolderChipDrag() {
+  if (!tagFolderChipDrag) return;
+  clearTimeout(tagFolderChipDrag.longPressTimer);
+  tagFolderChipDrag.chip.classList.remove('dragging');
+  tagFolderChipDrag.row.classList.remove('is-dragging');
+  try { tagFolderChipDrag.chip.releasePointerCapture(tagFolderChipDrag.pointerId); } catch {}
+  document.removeEventListener('pointermove', onTagFolderChipPointerMove);
+  document.removeEventListener('pointerup', finishTagFolderChipDrag);
+  document.removeEventListener('pointercancel', cancelTagFolderChipDrag);
+  tagFolderChipDrag = null;
+}
+
+function finishTagFolderChipDrag(event) {
+  if (tagFolderChipDrag && event && event.pointerId !== tagFolderChipDrag.pointerId) return;
+  const saved = saveDraggedTagFolderOrder();
+  cleanupTagFolderChipDrag();
+  if (saved) {
+    renderTagFolderManager();
+    render();
+    showToast('タグの順番を保存しました');
+  }
+}
+
+function cancelTagFolderChipDrag(event) {
+  if (tagFolderChipDrag && event && event.pointerId !== undefined && event.pointerId !== tagFolderChipDrag.pointerId) return;
+  cleanupTagFolderChipDrag();
 }
 
 function selectedFolderNameFromForm() {
@@ -5933,6 +6134,16 @@ function scheduleRecordAddButtonVisibility() {
   requestAnimationFrame(updateRecordAddButtonVisibility);
 }
 
+function handleWindowScroll() {
+  if (scrollUpdateQueued) return;
+  scrollUpdateQueued = true;
+  requestAnimationFrame(function() {
+    scrollUpdateQueued = false;
+    updateScrollTopButton();
+    updateRecordAddButtonVisibility();
+  });
+}
+
 function scrollToTop() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -5951,6 +6162,7 @@ document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('bookInfoChoiceOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookInfoChoice();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
+document.getElementById('tagFolderList')?.addEventListener('pointerdown', onTagFolderChipPointerDown);
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
 document.getElementById('cardsContainer').addEventListener('click', handleShelfClick, true);
 document.getElementById('cardsContainer').addEventListener('change',e=>{
@@ -5971,7 +6183,7 @@ entryFieldIds().forEach(function(id) {
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v93';
+const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v95';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -6011,7 +6223,7 @@ window.addEventListener('beforeunload',e=>{
 window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
-window.addEventListener('scroll',()=>{ updateScrollTopButton(); updateRecordAddButtonVisibility(); }, {passive:true});
+window.addEventListener('scroll',handleWindowScroll, {passive:true});
 window.addEventListener('resize', scheduleRecordAddButtonVisibility, {passive:true});
 document.getElementById('tagFilters')?.addEventListener('click', e => {
   const btn = e.target.closest('[data-tag-folder]');
