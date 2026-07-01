@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-autosave-sync v98';
+const APP_VERSION   = 'media-foldsync-sync v99';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -719,6 +719,11 @@ let coverBackfillTimer = null;
 let bookInfoRefreshKeys = new Set();
 let bookInfoChoiceCandidates = [];
 let bookInfoChoiceResolve = null;
+let autoAuthorTimer = null;
+let autoAuthorInFlightKey = '';
+let autoAuthorTriedKeys = new Set();
+let autoAuthorAppliedKey = '';
+let autoAuthorAppliedValue = '';
 let expandedRecordSort = 'new';
 let expandedRecordScope = 'all';
 let tagFolderSelectedTags = new Set();
@@ -1508,16 +1513,16 @@ function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
   Object.keys(cloud).forEach(function(name) {
     merged[name] = cleanTagList(cloud[name]);
   });
-  Object.keys(local).forEach(function(name) {
-    if (preferLocal || !Object.prototype.hasOwnProperty.call(merged, name)) {
+  if (preferLocal) Object.keys(local).forEach(function(name) {
+    if (!Object.prototype.hasOwnProperty.call(merged, name)) {
       merged[name] = cleanTagList(local[name]);
     } else {
       merged[name] = cleanTagList([...(merged[name] || []), ...(local[name] || [])]);
     }
   });
   const localOrder = getTagFolderOrder();
-  const mergedOrder = cleanTagFolderOrder(preferLocal ? [...localOrder, ...payload.order] : [...payload.order, ...localOrder], merged);
-  setTagFolders(merged, {sync:false});
+  const mergedOrder = cleanTagFolderOrder(preferLocal ? [...localOrder, ...payload.order] : payload.order, merged);
+                    setTagFolders(merged, {sync:false});
   setTagFolderOrder(mergedOrder, {sync:false});
 }
 
@@ -3937,6 +3942,24 @@ async function fetchBookInfoCandidates(book, author) {
   return sortBookInfoCandidates(list, book, author).slice(0, 12);
 }
 
+async function fetchAuthorLookupCandidates(book) {
+  if (navigator.onLine === false) return [];
+  const results = await Promise.allSettled([
+    fetchNdlBookCandidates(book, ''),
+    fetchOpenBdBookCandidates(book, ''),
+    fetchRakutenBookCandidates(book, ''),
+    fetchOpenLibraryBookCandidates(book, '')
+  ]);
+  const list = [];
+  results.forEach(function(result) {
+    if (result.status !== 'fulfilled') return;
+    (result.value || []).forEach(function(info, index) {
+      addBookInfoCandidate(list, info, 30 - index);
+    });
+  });
+  return sortBookInfoCandidates(list, book, '').slice(0, 8);
+}
+
 function authorKeysFromInfo(info, fallbackAuthor) {
   return cleanAuthorList([...(info && info.authors || []), fallbackAuthor || ''])
     .map(author => bookKey(author))
@@ -5143,6 +5166,7 @@ function renameTagFolderPrompt(name) {
 
 function onBookInput(val) {
   const list=document.getElementById('suggestList');
+  scheduleAutoAuthorLookup(val);
   if(!val.trim()){list.style.display='none';currentFixedTags=[];renderFixedTagChips();return;}
   const q=bookKey(val);
   const allGroups=[...bookGroups().values()];
@@ -5157,6 +5181,116 @@ function onBookInput(val) {
   list._matches = matches;
   list.innerHTML=matches.map((g,i)=>`<div class="suggest-item" onclick="selectSuggestion(${i})"><div class="suggest-title">${esc(g.book)}</div>${g.author?`<div class="suggest-author">${esc(g.author)}</div>`:''}</div>`).join('');
   list.style.display='block';
+}
+
+function clearAutoAuthorTimer() {
+  if (autoAuthorTimer) clearTimeout(autoAuthorTimer);
+  autoAuthorTimer = null;
+}
+
+function resetAutoAuthorState() {
+  clearAutoAuthorTimer();
+  autoAuthorInFlightKey = '';
+  autoAuthorAppliedKey = '';
+  autoAuthorAppliedValue = '';
+}
+
+function authorTextFromInfo(info) {
+  return cleanAuthorList(info && info.authors || []).join('、');
+}
+
+function localAuthorForBook(book) {
+  const key = bookKey(book);
+  if (!key) return '';
+  const group = [...bookGroups().values()].find(g => bookKey(g.book) === key);
+  if (group && group.author) return cleanAuthorList([group.author]).join('、');
+  return authorTextFromInfo(getBookMetaInfo(book));
+}
+
+function clearAutoAuthorIfBookChanged(nextKey) {
+  const authorEl = document.getElementById('fAuthor');
+  if (!authorEl || !autoAuthorAppliedKey || autoAuthorAppliedKey === nextKey) return;
+  if (authorEl.value.trim() === autoAuthorAppliedValue) {
+    authorEl.value = '';
+    queueEntryDraftSave();
+  }
+  autoAuthorAppliedKey = '';
+  autoAuthorAppliedValue = '';
+}
+
+function applyAutoAuthor(book, author, options) {
+  const key = bookKey(book);
+  const authorText = cleanAuthorList(Array.isArray(author) ? author : [author]).join('、');
+  const bookEl = document.getElementById('fBook');
+  const authorEl = document.getElementById('fAuthor');
+  if (!key || !authorText || !bookEl || !authorEl) return false;
+  if (bookKey(bookEl.value) !== key) return false;
+  const currentAuthor = authorEl.value.trim();
+  if (currentAuthor && currentAuthor !== autoAuthorAppliedValue) return false;
+  authorEl.value = authorText;
+  autoAuthorAppliedKey = key;
+  autoAuthorAppliedValue = authorText;
+  queueEntryDraftSave();
+  if (!options || !options.silent) showToast('著者名を自動入力しました');
+  return true;
+}
+
+function isStrongAutoAuthorTitleMatch(book, info) {
+  const wanted = bookKey(book);
+  const candidate = bookKey(info && info.title || '');
+  if (!wanted || !candidate) return false;
+  if (candidate === wanted) return true;
+  return wanted.length >= 5 && candidate.includes(wanted) || candidate.length >= 5 && wanted.includes(candidate);
+}
+
+function pickAutoAuthorInfo(book, candidates) {
+  return (candidates || []).find(function(info) {
+    return authorTextFromInfo(info) && isStrongAutoAuthorTitleMatch(book, info);
+  }) || null;
+}
+
+function scheduleAutoAuthorLookup(book) {
+  clearAutoAuthorTimer();
+  const title = String(book || '').trim();
+  const key = bookKey(title);
+  clearAutoAuthorIfBookChanged(key);
+  const authorEl = document.getElementById('fAuthor');
+  if (!title || !authorEl) return;
+  if (authorEl.value.trim()) return;
+  const localAuthor = localAuthorForBook(title);
+  if (localAuthor && applyAutoAuthor(title, localAuthor, {silent:true})) return;
+  if (navigator.onLine === false || autoAuthorTriedKeys.has(key) || [...title].length < 2) return;
+  autoAuthorTimer = setTimeout(() => autoLookupAuthorForBook(title, key), 1100);
+}
+
+async function autoLookupAuthorForBook(book, key) {
+  if (!key || autoAuthorInFlightKey === key) return;
+  const bookEl = document.getElementById('fBook');
+  const authorEl = document.getElementById('fAuthor');
+  if (!bookEl || !authorEl || bookKey(bookEl.value) !== key || authorEl.value.trim()) return;
+  autoAuthorTriedKeys.add(key);
+  autoAuthorInFlightKey = key;
+  try {
+    const candidates = await fetchAuthorLookupCandidates(book);
+    if (bookKey(bookEl.value) !== key || authorEl.value.trim()) return;
+    const info = pickAutoAuthorInfo(book, candidates);
+    if (!info) return;
+    setCachedBookInfo(book, info);
+    applyAutoAuthor(book, info.authors, {silent:false});
+  } catch(e) {
+    console.warn('Auto author lookup failed:', e);
+  } finally {
+    if (autoAuthorInFlightKey === key) autoAuthorInFlightKey = '';
+  }
+}
+
+function onAuthorInput() {
+  const authorEl = document.getElementById('fAuthor');
+  if (!authorEl) return;
+  if (!autoAuthorAppliedValue || authorEl.value.trim() !== autoAuthorAppliedValue) {
+    autoAuthorAppliedKey = '';
+    autoAuthorAppliedValue = '';
+  }
 }
 
 function selectSuggestion(index) {
@@ -5200,6 +5334,7 @@ function selectTagSuggestion(index) {
 }
 
 function selectBook(book, author) {
+  resetAutoAuthorState();
   document.getElementById('fBook').value = book;
   document.getElementById('fAuthor').value = author;
   document.getElementById('suggestList').style.display = 'none';
@@ -5306,6 +5441,7 @@ function openBookWideEdit(book, author) {
 
 function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   options = options || {};
+  resetAutoAuthorState();
   id = id || null;
   presetBook = presetBook || '';
   presetAuthor = presetAuthor || '';
@@ -5353,12 +5489,14 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   entryDraftDirty = false;
   setEntryDraftStatus('');
   if (!options.skipDraft) maybeRestoreEntryDraft();
+  scheduleAutoAuthorLookup(document.getElementById('fBook').value);
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
 }
 function closeModal(force) {
   if (!force && entryDraftDirty && !confirm('保存していない記録があります。閉じますか？')) return false;
+  resetAutoAuthorState();
   if (force || entryDraftDirty) clearEntryDraft();
   document.getElementById('modalOverlay').classList.remove('open');
   document.getElementById('modalOverlay').classList.remove('book-wide-edit');
@@ -6285,12 +6423,13 @@ entryFieldIds().forEach(function(id) {
   if (!el) return;
   el.addEventListener('input', queueEntryDraftSave);
 });
+document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_cleanup_v98';
+const SW_CLEANUP_FLAG = 'reading_log_sw_folders_v99';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
