@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v103';
+const APP_VERSION   = 'tag-auto-folder v104';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2552,15 +2552,26 @@ function activeFolderTags() {
   return folderTagsForPath(activeTagFolder).filter(tag => tags.has(tag));
 }
 
+function folderLeafTagIfUsed(path, availableTags) {
+  const tag = folderLeafName(path);
+  return tag && availableTags.has(tag) ? tag : '';
+}
+
+function firstAvailableChildFolderTags(path, availableTags) {
+  const found = [];
+  childFolderPaths(path).forEach(function(childPath) {
+    const childTag = folderLeafTagIfUsed(childPath, availableTags);
+    if (childTag) found.push(childTag);
+    else found.push(...firstAvailableChildFolderTags(childPath, availableTags));
+  });
+  return cleanTagList(found);
+}
+
 function activeFolderFilterTags() {
   if (!activeTagFolder) return [];
   const availableTags = allTagSet();
-  const folderTag = folderLeafName(activeTagFolder);
-  if (folderTag && availableTags.has(folderTag)) return [folderTag];
-  return cleanTagList(folderTreePaths(getTagFolders())
-    .filter(path => path !== activeTagFolder && isFolderDescendantOrSelf(path, activeTagFolder))
-    .map(folderLeafName)
-    .filter(tag => tag && availableTags.has(tag)));
+  const folderTag = folderLeafTagIfUsed(activeTagFolder, availableTags);
+  return folderTag ? [folderTag] : firstAvailableChildFolderTags(activeTagFolder, availableTags);
 }
 
 function entryMatchesActiveTagFilter(entry) {
@@ -4880,12 +4891,14 @@ function setTag(t) {
   const keepFolder = t && activeFolderTags().includes(t);
   activeTag=t;
   if (!keepFolder) activeTagFolder='';
+  expandedRecordScope = t ? 'activeTag' : 'all';
   render();
 }
 
 function setTagFolder(name) {
   activeTag = '';
   activeTagFolder = activeTagFolder === name ? '' : name;
+  expandedRecordScope = activeTagFolder ? 'activeTag' : 'all';
   render();
 }
 
@@ -6621,7 +6634,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v103';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v104';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
