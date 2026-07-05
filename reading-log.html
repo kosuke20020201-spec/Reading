@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v107';
+const APP_VERSION   = 'tag-auto-folder v108';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -720,6 +720,7 @@ let autoBookCoverAttemptKeys = new Set();
 let coverBackfillQueue = [];
 let coverBackfillTimer = null;
 let bookInfoRefreshKeys = new Set();
+let bookOverviewSummaryRefreshKeys = new Set();
 let bookInfoChoiceCandidates = [];
 let bookInfoChoiceResolve = null;
 let autoAuthorTimer = null;
@@ -3175,6 +3176,14 @@ function handleShelfClick(event) {
     return true;
   }
 
+  const summaryBtn = event.target.closest && event.target.closest('[data-book-summary-book]');
+  if (summaryBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    regenerateBookOverviewDescription(summaryBtn.dataset.bookSummaryBook || '', summaryBtn.dataset.bookSummaryAuthor || '');
+    return true;
+  }
+
   const removeCoverBtn = event.target.closest && event.target.closest('[data-book-cover-remove]');
   if (removeCoverBtn) {
     event.preventDefault();
@@ -3358,6 +3367,11 @@ function cssUrlValue(url) {
 function findBookOverviewRefreshButton(key) {
   return [...document.querySelectorAll('.book-overview-action-btn[data-book-refresh-key]')]
     .find(button => button.dataset.bookRefreshKey === key) || null;
+}
+
+function findBookOverviewSummaryButton(key) {
+  return [...document.querySelectorAll('.book-overview-action-btn[data-book-summary-key]')]
+    .find(button => button.dataset.bookSummaryKey === key) || null;
 }
 
 function googleBooksCooldownActive() {
@@ -4276,7 +4290,8 @@ function hasStoredBookInfo(info) {
   return !!(info.source || info.coverUrl || info.description || info.authors.length || info.publisher || info.publishedDate || pickIsbn(info));
 }
 
-function bookOverviewPrompt(book, author, info) {
+function bookOverviewPrompt(book, author, info, options) {
+  options = options || {};
   info = normalizeBookMetaValue(info);
   const title = info.title || book || 'タイトル未入力';
   const authors = cleanAuthorList([...(info.authors || []), author]).join('、') || '不明';
@@ -4286,11 +4301,14 @@ function bookOverviewPrompt(book, author, info) {
     pickIsbn(info) ? 'ISBN: ' + pickIsbn(info) : '',
     info.categories && info.categories.length ? '分類・カテゴリ: ' + info.categories.join('、') : ''
   ].filter(Boolean).join('\n');
+  const retryNote = options.force && info.description
+    ? `\n前回の概要:\n${info.description}\n\n今回は前回と同じ文章や言い回しを避け、読書ノートで本を見分けやすくなる別案として作り直してください。`
+    : '';
   return `次の本について、読書ノートアプリに表示する「本全体の概要」を日本語で作成してください。
 
 タイトル: ${title}
 著者: ${authors}
-${details}
+${details}${retryNote}
 
 条件:
 - 120〜220字程度
@@ -4311,13 +4329,14 @@ async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
 }
 
 async function ensureBookOverviewDescription(book, author, info, options) {
+  options = options || {};
   info = normalizeBookMetaValue(info);
-  if (info.description) return info;
+  if (info.description && !options.force) return info;
   if (navigator.onLine === false) return info;
   const key = getApiKey();
   if (!key) {
-    if (options && options.promptForKey) {
-      pendingBookOverviewRequest = {book, author, info};
+    if (options.promptForKey) {
+      pendingBookOverviewRequest = {book, author, info, force: !!options.force};
       openApiSettings();
       showToast('Gemini APIキーを保存すると本概要を作成します');
     }
@@ -4325,7 +4344,7 @@ async function ensureBookOverviewDescription(book, author, info, options) {
   }
   if (!options || options.quiet !== true) showToast('Geminiで本概要を作成中...');
   try {
-    const description = await fetchGeminiText(bookOverviewPrompt(book, author, info), key, 900);
+    const description = await fetchGeminiText(bookOverviewPrompt(book, author, info, options), key, 900);
     if (!description) return info;
     return normalizeBookMetaValue({
       ...info,
@@ -4340,11 +4359,12 @@ async function ensureBookOverviewDescription(book, author, info, options) {
   }
 }
 
-async function applyGeminiBookOverview(book, author, baseInfo) {
+async function applyGeminiBookOverview(book, author, baseInfo, options) {
+  options = options || {};
   const key = bookKey(book);
   if (!key) return;
   const current = getBookMetaInfo(book);
-  const info = await ensureBookOverviewDescription(book, author, mergeCandidateInfo(normalizeBookMetaValue(baseInfo), current), {quiet:false});
+  const info = await ensureBookOverviewDescription(book, author, mergeCandidateInfo(normalizeBookMetaValue(baseInfo), current), {quiet:false, force: !!options.force});
   if (!info.description) return;
   setBookMetaInfo(book, info);
   if (applyBookInfoToEntries(book, info)) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -4352,7 +4372,7 @@ async function applyGeminiBookOverview(book, author, baseInfo) {
   openBookOverviewKey = key;
   bookOverviewClosedKey = '';
   render();
-  showToast('Geminiで本概要を作成しました');
+  showToast(options.force ? '概要を作り直しました' : 'Geminiで本概要を作成しました');
 }
 
 async function autoFetchBookInfoForOpenedBook(book, author) {
@@ -4558,6 +4578,58 @@ async function refreshBookInfoChoice(book, author) {
   }
 }
 
+async function regenerateBookOverviewDescription(book, author) {
+  const key = bookKey(book);
+  if (!key) return;
+  if (bookOverviewSummaryRefreshKeys.has(key)) {
+    showToast('概要を作成中です');
+    return;
+  }
+  if (navigator.onLine === false) {
+    showToast('オンライン時に概要を作成できます');
+    return;
+  }
+  const button = findBookOverviewSummaryButton(key);
+  bookOverviewSummaryRefreshKeys.add(key);
+  if (button) {
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.textContent = '作成中...';
+  }
+  openBookOverviewKey = key;
+  bookOverviewClosedKey = '';
+  showToast('Geminiで概要を作り直しています...');
+  try {
+    const current = getBookMetaInfo(book);
+    const previousDescription = current.description || '';
+    let info = mergeCandidateInfo(current, originalBookInfoCandidate(book, author));
+    info = await ensureBookOverviewDescription(book, author, info, {promptForKey:true, force:true});
+    const waitingForKey = pendingBookOverviewRequest && bookKey(pendingBookOverviewRequest.book) === key && pendingBookOverviewRequest.force;
+    if (waitingForKey) return;
+    if (!info.description || info.description === previousDescription) {
+      showToast('概要を作成できませんでした');
+      return;
+    }
+    setBookMetaInfo(book, info);
+    if (applyBookInfoToEntries(book, info)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+    persist();
+    render();
+    showToast('概要を作り直しました');
+  } catch(e) {
+    console.warn('Book overview regeneration failed:', e);
+    showToast('概要を作り直せませんでした');
+  } finally {
+    bookOverviewSummaryRefreshKeys.delete(key);
+    if (button) {
+      button.disabled = false;
+      button.textContent = button.dataset.originalText || '概要を作り直す';
+      delete button.dataset.originalText;
+    }
+  }
+}
+
 function bookOverviewHTML(group) {
   const key = bookKey(group.book);
   if (!key || openBookOverviewKey !== key) return '';
@@ -4588,6 +4660,7 @@ function bookOverviewHTML(group) {
     <div class="book-overview-actions">
       <button type="button" class="book-overview-action-btn" data-book-wide-edit-book="${esc(group.book)}" data-book-wide-edit-author="${esc(group.author || authors)}">本全体を編集</button>
       <button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" data-book-refresh-book="${esc(group.book)}" data-book-refresh-author="${esc(group.author || authors)}">候補を選び直す</button>
+      <button type="button" class="book-overview-action-btn" data-book-summary-key="${esc(key)}" data-book-summary-book="${esc(group.book)}" data-book-summary-author="${esc(group.author || authors)}">概要を作り直す</button>
       <label class="book-overview-action-btn">表紙を登録<input class="book-cover-input" type="file" accept="image/*" data-book-cover-book="${esc(group.book)}"></label>
       ${hasManualCover ? `<button type="button" class="book-overview-action-btn" data-book-cover-remove="${esc(group.book)}">表紙削除</button>` : ''}
     </div>
@@ -6640,7 +6713,7 @@ function confirmApiKey() {
   render();
   showToast('\u8a2d\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f');
   if(pendingAiId!==null && k){const btn=document.querySelector(`#card-${pendingAiId} .btn-ai`);runAI(pendingAiId,btn,k);}
-  if(pendingBook && k) applyGeminiBookOverview(pendingBook.book, pendingBook.author, pendingBook.info);
+  if(pendingBook && k) applyGeminiBookOverview(pendingBook.book, pendingBook.author, pendingBook.info, {force: !!pendingBook.force});
   pendingAiId=null;
 }
 async function runAI(id,btn,key) {
@@ -6763,7 +6836,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v107';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v108';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
