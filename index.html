@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'media-folder-delete v100';
+const APP_VERSION   = 'tag-auto-folder v102';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -854,6 +854,57 @@ function cleanTagList(tags) {
     clean.push(value);
   });
   return clean;
+}
+
+function tagKeyName(tag) {
+  return String(tag || '').trim().toLocaleLowerCase('ja-JP');
+}
+
+function entryAllTags(entry) {
+  if (!entry) return [];
+  return cleanTagList([
+    ...(entry.tags || []),
+    ...(entry.fixedTags || []),
+    ...getBookFixedTags(entry.book)
+  ]);
+}
+
+function autoAssignTagFoldersFromEntries(targetFolders) {
+  const folders = getTagFolders();
+  const folderNames = cleanTagList(targetFolders && targetFolders.length ? targetFolders : tagFolderNames())
+    .map(normalizeFolderPath)
+    .filter(name => name && Object.prototype.hasOwnProperty.call(folders, name));
+  if (!folderNames.length) return 0;
+
+  const triggerMap = new Map();
+  folderNames.forEach(function(name) {
+    const key = tagKeyName(folderLeafName(name));
+    if (!key) return;
+    if (!triggerMap.has(key)) triggerMap.set(key, []);
+    triggerMap.get(key).push(name);
+  });
+  if (!triggerMap.size) return 0;
+
+  let added = 0;
+  (Array.isArray(entries) ? entries : []).forEach(function(entry) {
+    const tags = entryAllTags(entry);
+    if (!tags.length) return;
+    cleanTagList(tags.map(tagKeyName)).forEach(function(key) {
+      const matches = triggerMap.get(key);
+      if (!matches) return;
+      matches.forEach(function(folderName) {
+        const before = cleanTagList(folders[folderName] || []);
+        const after = cleanTagList([...before, ...tags]);
+        if (after.length !== before.length) {
+          added += after.length - before.length;
+          folders[folderName] = after;
+        }
+      });
+    });
+  });
+
+  if (added) setTagFolders(folders);
+  return added;
 }
 
 function authorKeyName(value) {
@@ -1518,7 +1569,7 @@ function cleanTagFolders(folders) {
   Object.keys(folders).forEach(function(name) {
     const folderName = normalizeFolderPath(name);
     const tags = cleanTagList(folders[name]);
-    if (folderName && tags.length) clean[folderName] = tags;
+    if (folderName) clean[folderName] = cleanTagList([...(clean[folderName] || []), ...tags]);
   });
   return clean;
 }
@@ -1593,6 +1644,7 @@ function mergeTagFoldersFromCloud(cloudEntry, preferLocal) {
   setTagFolders(merged, {sync:false});
   setTagFolderOrder(mergedOrder, {sync:false});
   setDeletedTagFolders(deleted, {sync:false});
+  autoAssignTagFoldersFromEntries();
   if (mustResyncDeleted) {
     markSyncPending(true);
     scheduleCloudSync(0);
@@ -1794,6 +1846,7 @@ function persist() {
   bookFixedTagsCache.clear();
   migrateImagesIntoDrawings();
   syncEntryFixedTags();
+  autoAssignTagFoldersFromEntries();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   markSyncPending(true);
   scheduleCloudSync(0);
@@ -2499,9 +2552,15 @@ function activeFolderTags() {
   return folderTagsForPath(activeTagFolder).filter(tag => tags.has(tag));
 }
 
+function activeFolderFilterTags() {
+  if (!activeTagFolder) return [];
+  const folderTag = folderLeafName(activeTagFolder);
+  return folderTag ? [folderTag] : [];
+}
+
 function entryMatchesActiveTagFilter(entry) {
   if (activeTag) return entryHasTag(entry, activeTag);
-  const folderTags = activeFolderTags();
+  const folderTags = activeFolderFilterTags();
   if (folderTags.length) return folderTags.some(tag => entryHasTag(entry, tag));
   return true;
 }
@@ -3155,7 +3214,7 @@ function bookGroups() {
 
 function getFiltered() {
   const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
-  const folderTagList = (!activeTag && activeTagFolder) ? activeFolderTags() : [];
+  const folderTagList = (!activeTag && activeTagFolder) ? activeFolderFilterTags() : [];
   return entries.filter(e=>{
     if(activeTag) {
       if(!entryHasTag(e, activeTag)) return false;
@@ -4373,7 +4432,7 @@ function expandedRecordsForGroup(group) {
     if (activeTag) {
       list = list.filter(entry => entryHasTag(entry, activeTag));
     } else {
-      const folderTagList = activeFolderTags();
+      const folderTagList = activeFolderFilterTags();
       if (folderTagList.length) list = list.filter(entry => folderTagList.some(tag => entryHasTag(entry, tag)));
     }
   }
@@ -5131,15 +5190,22 @@ function selectedFolderNameFromForm() {
 }
 
 function moveTagsIntoFolder(folderName, tags) {
-  addTagsToFolder(folderName, tags);
+  return addTagsToFolder(folderName, tags);
 }
 
 function addTagsToFolder(folderName, tags) {
   folderName = normalizeFolderPath(folderName);
   const selected = cleanTagList(tags);
-  if (!folderName || !selected.length) return;
+  if (!folderName) return 0;
   clearDeletedTagFolderPath(folderName);
   const folders = getTagFolders();
+  if (!selected.length) {
+    if (!Object.prototype.hasOwnProperty.call(folders, folderName)) {
+      folders[folderName] = [];
+      setTagFolders(folders);
+    }
+    return autoAssignTagFoldersFromEntries([folderName]);
+  }
   Object.keys(folders).forEach(function(name) {
     if (name === folderName) return;
     if ((folderParts(name)[0] || '').toLocaleLowerCase('en-US') !== 'order') return;
@@ -5151,6 +5217,7 @@ function addTagsToFolder(folderName, tags) {
   });
   folders[folderName] = cleanTagList([...(folders[folderName] || []), ...selected]);
   setTagFolders(folders);
+  return autoAssignTagFoldersFromEntries([folderName]);
 }
 
 function addSelectedTagsToFolderFromForm() {
@@ -5158,14 +5225,14 @@ function addSelectedTagsToFolderFromForm() {
   const name = selectedFolderNameFromForm();
   const selected = cleanTagList([...tagFolderSelectedTags]);
   if (!name) { showToast('フォルダ名を入力するか既存フォルダを選んでください'); return; }
-  if (!selected.length) { showToast('まとめるタグを選んでください'); return; }
-  moveTagsIntoFolder(name, selected);
+  const autoAdded = moveTagsIntoFolder(name, selected) || 0;
   tagFolderTargetPath = name;
   tagFolderSelectedTags.clear();
   if (nameInput) nameInput.value = '';
   renderTagFolderManager();
   render();
-  showToast(selected.length + '個のタグをまとめました');
+  if (selected.length) showToast(selected.length + '個のタグをまとめました' + (autoAdded ? '（関連タグも自動追加）' : ''));
+  else showToast(autoAdded ? '関連タグを自動でまとめました' : 'フォルダを作成しました');
 }
 
 function addTagFolderFromForm() {
@@ -5242,6 +5309,7 @@ function renameTagFolderPrompt(name) {
   addDeletedTagFolders([oldName]);
   setTagFolders(renamed, {sync:false});
   setTagFolderOrder(nextOrder);
+  autoAssignTagFoldersFromEntries([newName]);
   renderTagFolderManager();
   render();
   showToast('フォルダ名を変更しました');
@@ -6512,7 +6580,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_folder_delete_v100';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v102';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
