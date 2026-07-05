@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v105';
+const APP_VERSION   = 'tag-auto-folder v106';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -711,6 +711,7 @@ let bookWideEditOriginalBook = '';
 let bookWideEditOriginalKey = '';
 let openBookKey = null;
 let openBookOverviewKey = '';
+let bookOverviewClosedKey = '';
 let googleBooksCooldownUntil = Number(localStorage.getItem(GOOGLE_BOOKS_COOLDOWN_KEY) || 0) || 0;
 let autoBookInfoFetchKeys = new Set();
 let autoBookCoverFetchKeys = new Set();
@@ -3021,6 +3022,7 @@ function toggleShelfReorderMode() {
   shelfReorderSelectedKey = '';
   bookOrderSelectedKey = '';
   openBookKey = null;
+  bookOverviewClosedKey = '';
   render();
   showToast(shelfReorderMode ? '本移動モード' : '本移動を終了');
 }
@@ -4365,10 +4367,12 @@ async function toggleBookOverview(book, author) {
   if (!key) return;
   if (openBookOverviewKey === key) {
     openBookOverviewKey = '';
+    bookOverviewClosedKey = key;
     render();
     return;
   }
   openBookOverviewKey = key;
+  bookOverviewClosedKey = '';
   showToast('本情報を取得中...');
   const current = getBookMetaInfo(book);
   if (hasStoredBookInfo(current)) {
@@ -4517,6 +4521,15 @@ function render() {
   }
   if (activeTag && !tags.includes(activeTag)) activeTag = '';
   if (activeTagFolder && !folderTagsForPath(activeTagFolder).some(tag => tags.includes(tag))) activeTagFolder = '';
+  if (!openBookKey) {
+    openBookOverviewKey = '';
+    bookOverviewClosedKey = '';
+  } else if (!openBookOverviewKey && bookOverviewClosedKey !== openBookKey) {
+    openBookOverviewKey = openBookKey;
+  } else if (openBookOverviewKey && openBookOverviewKey !== openBookKey) {
+    openBookOverviewKey = openBookKey;
+    bookOverviewClosedKey = '';
+  }
   const folderCount = tagFolderNames().length;
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
   const themeSelect = document.getElementById('shelfThemeSelect');
@@ -4692,6 +4705,7 @@ function setDisplayMode(mode) {
     shelfReorderMode = false;
     shelfReorderSelectedKey = '';
     openBookKey = null;
+    bookOverviewClosedKey = '';
   }
   render();
 }
@@ -4785,6 +4799,7 @@ function toggleBookGroup(index) {
   });
   openBookKey = nextOpenKey;
   openBookOverviewKey = shouldOpen ? (nextOpenKey || '') : '';
+  bookOverviewClosedKey = '';
   if (shouldOpen) group.classList.add('open');
   const button = group.querySelector('.book-spine');
   if (button) {
@@ -5772,6 +5787,7 @@ function saveBookWideEdit() {
   migrateBookSupportData(bookWideEditOriginalBook || affected[0].book || nextBook, nextBook, nextAuthor, cleanTags);
   openBookKey = nextKey;
   openBookOverviewKey = nextKey;
+  bookOverviewClosedKey = '';
   shelfReorderSelectedKey = shelfReorderSelectedKey === originalKey ? nextKey : shelfReorderSelectedKey;
   bookOrderSelectedKey = bookOrderSelectedKey === originalKey ? nextKey : bookOrderSelectedKey;
   persist();
@@ -6650,7 +6666,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v105';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v106';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
