@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v102';
+const APP_VERSION   = 'tag-auto-folder v103';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -977,7 +977,7 @@ function normalizeBookMetaValue(value) {
     isbn13: String(value.isbn13 || '').trim(),
     pageCount: value.pageCount ? String(value.pageCount).trim() : '',
     categories: cleanTagList(value.categories || []),
-    source: String(value.source || '').trim(),
+    source: cleanSourceText(value.source || ''),
     infoUrl: String(value.infoUrl || '').trim(),
     fetchedAt: String(value.fetchedAt || '').trim()
   };
@@ -998,7 +998,7 @@ function mergeBookMetaValues(primary, fallback) {
     isbn13: left.isbn13 || right.isbn13,
     pageCount: left.pageCount || right.pageCount,
     categories: left.categories && left.categories.length ? left.categories : right.categories,
-    source: left.source || right.source,
+    source: mergeSourceText([left.source, right.source]),
     infoUrl: left.infoUrl || right.infoUrl,
     fetchedAt: left.fetchedAt || right.fetchedAt
   });
@@ -1015,7 +1015,7 @@ function getBookMetaInfo(book) {
   return normalizeBookMetaValue({
     ...merged,
     coverUrl: manualCover.coverUrl,
-    source: uniqueStrings(['Manual cover', merged.source]).join(' + '),
+    source: mergeSourceText(['Manual cover', merged.source]),
     fetchedAt: manualCover.updatedAt || merged.fetchedAt
   });
 }
@@ -1041,7 +1041,7 @@ function setBookMetaCover(book, coverUrl) {
   meta[key] = normalizeBookMetaValue({
     ...current,
     coverUrl: safeBookImageUrl(coverUrl),
-    source: uniqueStrings(['Manual cover', current.source]).join(' + '),
+    source: mergeSourceText(['Manual cover', current.source]),
     fetchedAt: new Date().toISOString()
   });
   const legacyKey = (book || '').trim();
@@ -1064,7 +1064,7 @@ function clearBookMetaCover(book, previousCoverUrl) {
   meta[key] = normalizeBookMetaValue({
     ...current,
     coverUrl: '',
-    source: current.source.replace(/\s*\+\s*Manual cover|Manual cover\s*\+\s*|Manual cover/g, '').trim(),
+    source: removeSourceText(current.source, 'Manual cover'),
     fetchedAt: new Date().toISOString()
   });
   if (legacyKey && legacyKey !== key) delete meta[legacyKey];
@@ -1287,7 +1287,7 @@ function applyBookCoverMapToMeta(map) {
       meta[key] = normalizeBookMetaValue({
         ...current,
         coverUrl: cover.coverUrl,
-        source: uniqueStrings(['Manual cover', current.source]).join(' + '),
+        source: mergeSourceText(['Manual cover', current.source]),
         fetchedAt: cover.updatedAt || current.fetchedAt || new Date().toISOString()
       });
       changed = true;
@@ -1295,7 +1295,7 @@ function applyBookCoverMapToMeta(map) {
       meta[key] = normalizeBookMetaValue({
         ...current,
         coverUrl: '',
-        source: current.source.replace(/\s*\+\s*Manual cover|Manual cover\s*\+\s*|Manual cover/g, '').trim(),
+        source: removeSourceText(current.source, 'Manual cover'),
         fetchedAt: cover.updatedAt || current.fetchedAt || new Date().toISOString()
       });
       changed = true;
@@ -2554,8 +2554,13 @@ function activeFolderTags() {
 
 function activeFolderFilterTags() {
   if (!activeTagFolder) return [];
+  const availableTags = allTagSet();
   const folderTag = folderLeafName(activeTagFolder);
-  return folderTag ? [folderTag] : [];
+  if (folderTag && availableTags.has(folderTag)) return [folderTag];
+  return cleanTagList(folderTreePaths(getTagFolders())
+    .filter(path => path !== activeTagFolder && isFolderDescendantOrSelf(path, activeTagFolder))
+    .map(folderLeafName)
+    .filter(tag => tag && availableTags.has(tag)));
 }
 
 function entryMatchesActiveTagFilter(entry) {
@@ -3398,6 +3403,41 @@ function uniqueStrings(values) {
   });
 }
 
+function sourceParts(value) {
+  return String(value || '').split(/\s*\+\s*/).map(function(part) {
+    const text = part.trim();
+    if (/^(manual|macual)\s+cover$/i.test(text)) return 'Manual cover';
+    return text;
+  }).filter(Boolean);
+}
+
+function cleanSourceList(values) {
+  const seen = new Set();
+  const clean = [];
+  (Array.isArray(values) ? values : [values]).forEach(function(value) {
+    sourceParts(value).forEach(function(part) {
+      const key = part.toLocaleLowerCase('en-US');
+      if (!part || seen.has(key)) return;
+      seen.add(key);
+      clean.push(part);
+    });
+  });
+  return clean;
+}
+
+function cleanSourceText(value) {
+  return cleanSourceList([value]).join(' + ');
+}
+
+function mergeSourceText(values) {
+  return cleanSourceList(values).join(' + ');
+}
+
+function removeSourceText(value, source) {
+  const remove = new Set(cleanSourceList([source]).map(part => part.toLocaleLowerCase('en-US')));
+  return cleanSourceList([value]).filter(part => !remove.has(part.toLocaleLowerCase('en-US'))).join(' + ');
+}
+
 function bookSearchQueries(book, author) {
   const title = String(book || '').trim();
   const writer = String(author || '').trim();
@@ -3816,7 +3856,7 @@ async function fetchBookInfo(book, author) {
     isbn13: (ndl && ndl.isbn13) || (google && google.isbn13) || (rakuten && rakuten.isbn13) || (rakutenByNdlIsbn && rakutenByNdlIsbn.isbn13) || (openBd && openBd.isbn13) || (openLibrary && openLibrary.isbn13) || (googleByNdlIsbn && googleByNdlIsbn.isbn13) || '',
     pageCount: (google && google.pageCount) || (rakuten && rakuten.pageCount) || (rakutenByNdlIsbn && rakutenByNdlIsbn.pageCount) || (openLibrary && openLibrary.pageCount) || (ndl && ndl.pageCount) || (googleByNdlIsbn && googleByNdlIsbn.pageCount) || '',
     categories: (google && google.categories && google.categories.length && google.categories) || (rakuten && rakuten.categories && rakuten.categories.length && rakuten.categories) || (rakutenByNdlIsbn && rakutenByNdlIsbn.categories && rakutenByNdlIsbn.categories.length && rakutenByNdlIsbn.categories) || (openLibrary && openLibrary.categories && openLibrary.categories.length && openLibrary.categories) || (ndl && ndl.categories && ndl.categories.length && ndl.categories) || (googleByNdlIsbn && googleByNdlIsbn.categories) || [],
-    source: uniqueStrings(sources.map(info => info.source)).join(' + '),
+    source: mergeSourceText(sources.map(info => info.source)),
     infoUrl: (google && google.infoUrl) || (rakuten && rakuten.infoUrl) || (rakutenByNdlIsbn && rakutenByNdlIsbn.infoUrl) || (openBd && openBd.infoUrl) || (openLibrary && openLibrary.infoUrl) || (ndl && ndl.infoUrl) || (googleByNdlIsbn && googleByNdlIsbn.infoUrl) || ''
   });
   return merged;
@@ -3847,7 +3887,7 @@ function mergeCandidateInfo(primary, fallback) {
     isbn13: primary.isbn13 || fallback.isbn13,
     pageCount: primary.pageCount || fallback.pageCount,
     categories: primary.categories && primary.categories.length ? primary.categories : fallback.categories,
-    source: uniqueStrings([primary.source, fallback.source]).join(' + '),
+    source: mergeSourceText([primary.source, fallback.source]),
     infoUrl: primary.infoUrl || fallback.infoUrl,
     fetchedAt: primary.fetchedAt || fallback.fetchedAt
   });
@@ -4154,7 +4194,7 @@ function chooseBookInfoCandidate(candidates, originalInfo, options) {
       info.publisher,
       info.publishedDate,
       isbn ? 'ISBN ' + isbn : '',
-      info.source === 'Original entry' ? '元の入力情報' : info.source
+      info.source === 'Original entry' ? '元の入力情報' : cleanSourceText(info.source)
     ].filter(Boolean).join(' ・ ');
     const desc = info.description || '';
     return `<button type="button" class="book-info-choice-card" onclick="selectBookInfoCandidate(${index})">
@@ -4400,7 +4440,7 @@ function bookOverviewHTML(group) {
     info.publishedDate,
     info.pageCount ? info.pageCount + 'ページ' : '',
     pickIsbn(info) ? 'ISBN ' + pickIsbn(info) : '',
-    info.source && info.source !== 'Original entry' ? 'Source: ' + info.source : ''
+    cleanSourceText(info.source) && cleanSourceText(info.source) !== 'Original entry' ? 'Source: ' + cleanSourceText(info.source) : ''
   ].filter(Boolean).join(' / ');
   const cover = safeBookImageUrl(info.coverUrl);
   const body = info.description || (meta ? '取得できた本情報を表示しています。概要文は見つかった場合だけ表示されます。' : (navigator.onLine === false ? 'オンライン時に本情報を取得できます。' : '本情報はまだ取得されていません。本を開くと自動取得します。'));
@@ -4717,7 +4757,7 @@ function toggleBookGroup(index) {
     }
   });
   openBookKey = nextOpenKey;
-  if (!shouldOpen || openBookOverviewKey !== nextOpenKey) openBookOverviewKey = '';
+  openBookOverviewKey = shouldOpen ? (nextOpenKey || '') : '';
   if (shouldOpen) group.classList.add('open');
   const button = group.querySelector('.book-spine');
   if (button) {
@@ -4725,6 +4765,7 @@ function toggleBookGroup(index) {
     button.setAttribute('aria-label', button.dataset.bookTitle + 'の記録を' + (shouldOpen ? '閉じる' : '開く'));
   }
   if (shouldOpen) {
+    autoFetchBookInfoForOpenedBook(group.dataset.bookName || '', group.dataset.bookAuthor || '');
     requestAnimationFrame(function() {
       window.scrollTo({top:0, behavior:'smooth'});
       updateRecordAddButtonVisibility();
@@ -6580,7 +6621,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v102';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v103';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
