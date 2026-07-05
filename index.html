@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v106';
+const APP_VERSION   = 'tag-auto-folder v107';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -712,6 +712,7 @@ let bookWideEditOriginalKey = '';
 let openBookKey = null;
 let openBookOverviewKey = '';
 let bookOverviewClosedKey = '';
+let pendingBookOverviewRequest = null;
 let googleBooksCooldownUntil = Number(localStorage.getItem(GOOGLE_BOOKS_COOLDOWN_KEY) || 0) || 0;
 let autoBookInfoFetchKeys = new Set();
 let autoBookCoverFetchKeys = new Set();
@@ -4275,18 +4276,108 @@ function hasStoredBookInfo(info) {
   return !!(info.source || info.coverUrl || info.description || info.authors.length || info.publisher || info.publishedDate || pickIsbn(info));
 }
 
+function bookOverviewPrompt(book, author, info) {
+  info = normalizeBookMetaValue(info);
+  const title = info.title || book || 'タイトル未入力';
+  const authors = cleanAuthorList([...(info.authors || []), author]).join('、') || '不明';
+  const details = [
+    info.publisher ? '出版社: ' + info.publisher : '',
+    info.publishedDate ? '出版年: ' + info.publishedDate : '',
+    pickIsbn(info) ? 'ISBN: ' + pickIsbn(info) : '',
+    info.categories && info.categories.length ? '分類・カテゴリ: ' + info.categories.join('、') : ''
+  ].filter(Boolean).join('\n');
+  return `次の本について、読書ノートアプリに表示する「本全体の概要」を日本語で作成してください。
+
+タイトル: ${title}
+著者: ${authors}
+${details}
+
+条件:
+- 120〜220字程度
+- 箇条書きではなく自然な文章
+- 内容を断定しすぎず、一般に知られている範囲で説明
+- 書誌情報だけで内容が特定しにくい場合は、その分野・目的・読者が分かる控えめな概要にする`;
+}
+
+async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
+    body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 1000}})
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || 'Gemini API error');
+  return d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim() || '';
+}
+
+async function ensureBookOverviewDescription(book, author, info, options) {
+  info = normalizeBookMetaValue(info);
+  if (info.description) return info;
+  if (navigator.onLine === false) return info;
+  const key = getApiKey();
+  if (!key) {
+    if (options && options.promptForKey) {
+      pendingBookOverviewRequest = {book, author, info};
+      openApiSettings();
+      showToast('Gemini APIキーを保存すると本概要を作成します');
+    }
+    return info;
+  }
+  if (!options || options.quiet !== true) showToast('Geminiで本概要を作成中...');
+  try {
+    const description = await fetchGeminiText(bookOverviewPrompt(book, author, info), key, 900);
+    if (!description) return info;
+    return normalizeBookMetaValue({
+      ...info,
+      description: description.replace(/^概要[:：]\s*/u, '').trim(),
+      source: mergeSourceText([removeSourceText(info.source, 'Original entry'), 'Gemini overview']),
+      fetchedAt: new Date().toISOString()
+    });
+  } catch(e) {
+    console.warn('Gemini book overview failed:', e);
+    if (!options || options.quiet !== true) showToast('Geminiで概要を作成できませんでした');
+    return info;
+  }
+}
+
+async function applyGeminiBookOverview(book, author, baseInfo) {
+  const key = bookKey(book);
+  if (!key) return;
+  const current = getBookMetaInfo(book);
+  const info = await ensureBookOverviewDescription(book, author, mergeCandidateInfo(normalizeBookMetaValue(baseInfo), current), {quiet:false});
+  if (!info.description) return;
+  setBookMetaInfo(book, info);
+  if (applyBookInfoToEntries(book, info)) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  persist();
+  openBookOverviewKey = key;
+  bookOverviewClosedKey = '';
+  render();
+  showToast('Geminiで本概要を作成しました');
+}
+
 async function autoFetchBookInfoForOpenedBook(book, author) {
   const key = bookKey(book);
   if (!key || autoBookInfoFetchKeys.has(key)) return;
   if (navigator.onLine === false) return;
-  if (hasStoredBookInfo(getBookMetaInfo(book))) return;
+  const stored = getBookMetaInfo(book);
+  if (stored.description) return;
+  if (hasStoredBookInfo(stored)) {
+    const enriched = await ensureBookOverviewDescription(book, author, stored, {quiet:true});
+    if (enriched.description && enriched.description !== stored.description) {
+      setBookMetaInfo(book, enriched);
+      persist();
+      if (openBookKey === key) render();
+    }
+    return;
+  }
   autoBookInfoFetchKeys.add(key);
   showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    if (!candidates.length || openBookKey !== key) return;
-    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
+    if (openBookKey !== key) return;
+    let info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
     if (!info) return;
+    info = await ensureBookOverviewDescription(book, author, info, {quiet:true});
     setBookMetaInfo(book, info);
     if (applyBookInfoToEntries(book, info)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -4377,6 +4468,16 @@ async function toggleBookOverview(book, author) {
   const current = getBookMetaInfo(book);
   if (hasStoredBookInfo(current)) {
     render();
+    if (!current.description) {
+      const enriched = await ensureBookOverviewDescription(book, author, current, {promptForKey:true});
+      if (enriched.description && enriched.description !== current.description) {
+        setBookMetaInfo(book, enriched);
+        if (applyBookInfoToEntries(book, enriched)) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        persist();
+        render();
+        showToast('Geminiで本概要を作成しました');
+      }
+    }
     if (!current.coverUrl) autoFetchMissingBookCover(book, author);
     return;
   }
@@ -4388,11 +4489,12 @@ async function toggleBookOverview(book, author) {
   showToast('本情報を取得中...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
+    let info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author));
     if (!info) {
       showToast('本情報が見つかりませんでした');
       return;
     }
+    info = await ensureBookOverviewDescription(book, author, info, {promptForKey:true});
     setBookMetaInfo(book, info);
     if (applyBookInfoToEntries(book, info)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -4428,15 +4530,14 @@ async function refreshBookInfoChoice(book, author) {
   showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    if (!candidates.length) {
-      showToast('\u5019\u88dc\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
-      return;
-    }
-    const info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author), {forceChoice:true});
+    let info = candidates.length
+      ? await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author), {forceChoice:true})
+      : originalBookInfoCandidate(book, author);
     if (!info) {
       showToast(candidates.length ? '\u5019\u88dc\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f' : '\u672c\u60c5\u5831\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
       return;
     }
+    info = await ensureBookOverviewDescription(book, author, info, {promptForKey:true});
     setBookMetaInfo(book, info);
     if (applyBookInfoToEntries(book, info)) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
@@ -6529,6 +6630,8 @@ function openApiSettings() {
 function confirmApiKey() {
   const k=document.getElementById('apiKeyInput').value.trim();
   if (k) setApiKey(k);
+  const pendingBook = pendingBookOverviewRequest;
+  pendingBookOverviewRequest = null;
   const appInput = document.getElementById('rakutenAppIdInput');
   const accessInput = document.getElementById('rakutenAccessKeyInput');
   if (appInput) setRakutenAppId(appInput.value.trim());
@@ -6537,6 +6640,7 @@ function confirmApiKey() {
   render();
   showToast('\u8a2d\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f');
   if(pendingAiId!==null && k){const btn=document.querySelector(`#card-${pendingAiId} .btn-ai`);runAI(pendingAiId,btn,k);}
+  if(pendingBook && k) applyGeminiBookOverview(pendingBook.book, pendingBook.author, pendingBook.info);
   pendingAiId=null;
 }
 async function runAI(id,btn,key) {
@@ -6544,14 +6648,7 @@ async function runAI(id,btn,key) {
   btn.disabled=true; btn.textContent='要約中…';
   try {
     const prompt=`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`;
-    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-goog-api-key':key},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1000}})
-    });
-    const d=await r.json();
-    if(!r.ok) throw new Error(d.error?.message||'Gemini API error');
-    e.aiSummary=d.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('').trim()||'要約を取得できませんでした。';
+    e.aiSummary = await fetchGeminiText(prompt, key, 1000) || '要約を取得できませんでした。';
     persist(); render(); showToast('✨ AI要約完了');
   } catch { showToast('エラーが発生しました。'); }
   finally { btn.disabled=false; btn.textContent=e.aiSummary?'✨ 再要約':'✨ AI要約'; }
@@ -6666,7 +6763,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v106';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v107';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
