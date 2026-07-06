@@ -252,7 +252,8 @@
   .card-sections { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .section-block { border-radius: 0.6rem; padding: 0.6rem 0.75rem; }
   .section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.2rem; }
-  .section-text { font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .section-text { font-size: 0.82rem; line-height: 1.65; white-space: normal; overflow-wrap: anywhere; }
+  .record-line { display: block; min-height: 1.65em; padding-left: calc(var(--indent, 0) * 1em); white-space: pre-wrap; }
   .section-text strong { font-weight: 900; color: var(--stone-800); }
   .section-text mark { background: linear-gradient(transparent 42%, #fde68a 42%); color: inherit; padding: 0 0.08em; border-radius: 0.12rem; }
   .content-bg { background: var(--stone-50); } .content-bg .section-text { color: var(--stone-600); }
@@ -686,7 +687,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v126';
+const APP_VERSION   = 'tag-auto-folder v127';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -6723,6 +6724,34 @@ function handleTextareaTab(event) {
 }
 
 function formatRecordText(text) {
+  return String(text || '').replace(/\r\n?/g, '\n').split('\n').map(function(line) {
+    const indent = recordLineIndent(line);
+    const body = line.slice(indent.chars);
+    const html = formatRecordInlineText(body);
+    const indentStyle = indent.em ? ` style="--indent:${indent.em}"` : '';
+    return `<span class="record-line"${indentStyle}>${html}</span>`;
+  }).join('');
+}
+
+function recordLineIndent(line) {
+  let chars = 0;
+  let em = 0;
+  while (chars < line.length) {
+    const ch = line[chars];
+    if (ch === TEXTAREA_INDENT || ch === '\t') {
+      chars++;
+      em += 1;
+    } else if (ch === ' ') {
+      chars++;
+      em += 0.5;
+    } else {
+      break;
+    }
+  }
+  return { chars, em: Math.min(12, Math.round(em * 100) / 100) };
+}
+
+function formatRecordInlineText(text) {
   let html = esc(text);
   html = html.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/==([\s\S]+?)==/g, '<mark>$1</mark>');
@@ -7641,7 +7670,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v126';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v127';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
