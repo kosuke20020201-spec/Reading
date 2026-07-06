@@ -643,11 +643,13 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v111';
+const APP_VERSION   = 'tag-auto-folder v112';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
+const GEMINI_MODEL  = 'gemini-3.5-flash';
+const GEMINI_TIMEOUT_MS = 45000;
 const RAKUTEN_APP_ID_KEY = 'reading_log_rakuten_application_id';
 const RAKUTEN_ACCESS_KEY_KEY = 'reading_log_rakuten_access_key';
 const BOOK_INFO_CACHE_KEY = 'reading_log_book_info_cache_v1';
@@ -4365,12 +4367,24 @@ ${details}${retryNote}
 }
 
 async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
-  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
-    body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 1000}})
-  });
-  const d = await r.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  let r;
+  let d = {};
+  try {
+    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
+      body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 1000}}),
+      signal: controller.signal
+    });
+    d = await r.json().catch(() => ({}));
+  } catch(e) {
+    if (e && e.name === 'AbortError') throw new Error('Gemini API timed out');
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   if (!r.ok) throw new Error(d.error?.message || 'Gemini API error');
   return d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim() || '';
 }
@@ -6909,7 +6923,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v111';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v112';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
