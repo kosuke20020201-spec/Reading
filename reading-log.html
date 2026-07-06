@@ -77,6 +77,10 @@
   .tag-folder-child-btn.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
   .tag-expanded-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: min(24vh, 9.5rem); overflow-y: auto; overscroll-behavior: contain; margin: 0.55rem 0 0; padding: 0.55rem 0.6rem; border: 1px solid var(--stone-200); border-radius: 0.9rem; background: rgba(255,255,255,0.76); box-shadow: inset 0 -12px 18px rgba(120,113,108,0.06); }
   .tag-expanded-tags:empty { display: none; }
+  .note-type-filter-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 0; }
+  .note-type-filter-pill { border: 1px solid var(--stone-200); background: rgba(255,255,255,0.92); color: var(--stone-600); border-radius: 999px; padding: 0.22rem 0.7rem; font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; }
+  .note-type-filter-pill:hover { border-color: var(--amber-border); background: #fffbeb; color: #92400e; }
+  .note-type-filter-pill.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
   .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
   .tag-filter-drag-row { display:flex; flex-wrap:wrap; gap:0.4rem; width:100%; }
   .tag-filter-drag-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
@@ -213,6 +217,11 @@
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
   .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-note-meta { display: flex; flex-wrap: wrap; gap: 0.28rem; align-items: center; margin-bottom: 0.22rem; }
+  .note-type-badge { display: inline-flex; align-items: center; border: 1px solid transparent; border-radius: 999px; padding: 0.12rem 0.52rem; font-size: 0.66rem; font-weight: 900; line-height: 1.25; white-space: nowrap; }
+  .note-type-chapter { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
+  .note-type-knowledge { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .note-type-quote { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
   .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
   .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
@@ -267,8 +276,8 @@
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-  .field input, .field textarea { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
-  .field input:focus, .field textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
+  .field input, .field textarea, .field select { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
   .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
   .book-wide-edit-note { display: none; margin: -0.2rem 0 0; padding: 0.65rem 0.75rem; border: 1px solid var(--amber-border); border-radius: 0.75rem; background: #fffbeb; color: #92400e; font-size: 0.74rem; line-height: 1.65; font-weight: 700; }
   .modal-overlay.book-wide-edit .book-wide-edit-note { display: block; }
@@ -468,6 +477,7 @@
     </div>
   </div>
   <div class="tag-expanded-tags" id="tagExpandedTags"></div>
+  <div class="note-type-filter-row" id="noteTypeFilter" aria-label="ノート種別フィルター"></div>
   </div>
 
   <p class="results-count" id="resultsCount" style="display:none"></p>
@@ -495,6 +505,14 @@
       <div class="field-row">
         <div class="field"><label>著者</label><input type="text" id="fAuthor" placeholder="著者名"></div>
         <div class="field entry-only-field"><label>ページ</label><input type="text" id="fPage" placeholder="42-55" inputmode="numeric" pattern="[0-9-]*" autocomplete="off" onfocus="preparePageFieldForEdit()" oninput="sanitizePageField()" onblur="normalizePageField()"></div>
+      </div>
+      <div class="field entry-only-field">
+        <label>ノート種別</label>
+        <select id="fNoteType">
+          <option value="chapter_summary">章まとめ</option>
+          <option value="knowledge_memo" selected>知識メモ</option>
+          <option value="quote_expression">引用・表現メモ</option>
+        </select>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
       <div class="field entry-only-field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
@@ -643,7 +661,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v117';
+const APP_VERSION   = 'tag-auto-folder v118';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -683,6 +701,13 @@ const BOOK_ORDER_KEY = 'reading_log_book_order';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
+const NOTE_TYPE_DEFAULT = 'knowledge_memo';
+const NOTE_TYPES = [
+  { value: 'chapter_summary', label: '章まとめ', className: 'chapter' },
+  { value: 'knowledge_memo', label: '知識メモ', className: 'knowledge' },
+  { value: 'quote_expression', label: '引用・表現メモ', className: 'quote' }
+];
+const NOTE_TYPE_MAP = new Map(NOTE_TYPES.map(type => [type.value, type]));
 const SPINE_THEMES = {
   classic: [
     { base:'#5a3825', top:'#7b5338', bottom:'#2f1f18', edge:'#3a2419', light:'#9f7b58', shadow:'#261912', ink:'#fff3d2', label:'#ead2a8', labelOpacity:'0.16', badgeBg:'rgba(255,244,214,0.16)', badgeInk:'#fff7df', badgeBorder:'rgba(255,244,214,0.22)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
@@ -707,7 +732,7 @@ const SPINE_THEMES = {
   ]
 };
 
-let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', editingId = null, pendingAiId = null;
+let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', activeNoteType = '', editingId = null, pendingAiId = null;
 let currentDrawings = [], currentImages = [], currentMediaKinds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
@@ -794,6 +819,19 @@ function isDeletedEntry(entry) {
   const value = entry.deleted;
   return value === true || value === 1 || String(value).toLowerCase() === 'true' || String(value) === '1' || !!entry.deletedAt;
 }
+function normalizeNoteType(value) {
+  const key = String(value || '').trim();
+  return NOTE_TYPE_MAP.has(key) ? key : NOTE_TYPE_DEFAULT;
+}
+function noteTypeLabel(value) {
+  return NOTE_TYPE_MAP.get(normalizeNoteType(value)).label;
+}
+function noteTypeClass(value) {
+  return 'note-type-' + NOTE_TYPE_MAP.get(normalizeNoteType(value)).className;
+}
+function normalizeEntryForApp(entry) {
+  return { ...(entry || {}), noteType: normalizeNoteType(entry && entry.noteType) };
+}
 function normalizeTombstone(entry) {
   const now = new Date().toISOString();
   const clone = {...(entry || {})};
@@ -805,6 +843,7 @@ function normalizeTombstone(entry) {
   clone.lesson = clone.lesson || '';
   clone.supplement = clone.supplement || '';
   clone.title = clone.title || '';
+  clone.noteType = normalizeNoteType(clone.noteType);
   clone.tags = Array.isArray(clone.tags) ? clone.tags : [];
   clone.drawings = Array.isArray(clone.drawings) ? clone.drawings : [];
   clone.images = [];
@@ -1863,12 +1902,14 @@ function load() {
   entries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
   const idRepair = repairMissingIds(entries);
   entries = idRepair.list;
+  entries = entries.map(normalizeEntryForApp);
   const mediaMigrated = migrateImagesIntoDrawings();
   if (idRepair.changed || mediaMigrated) persist();
 }
 
 function persist() {
   bookFixedTagsCache.clear();
+  entries = entries.map(normalizeEntryForApp);
   migrateImagesIntoDrawings();
   syncEntryFixedTags();
   autoAssignTagFoldersFromEntries();
@@ -2482,7 +2523,7 @@ async function loadFromCloud(options) {
       const drawings = mergeEntryMedia(c, l);
       const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
-      return {...chosen, drawings, images: [], mediaKinds, mediaUpdatedAt};
+      return normalizeEntryForApp({...chosen, drawings, images: [], mediaKinds, mediaUpdatedAt});
     });
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -3332,6 +3373,7 @@ function getFiltered() {
     } else if(folderTagList.length) {
       if(!folderTagList.some(tag => entryHasTag(e, tag))) return false;
     }
+    if(activeNoteType && normalizeNoteType(e.noteType) !== activeNoteType) return false;
     return entryMatchesSearch(e, q);
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
@@ -3344,7 +3386,7 @@ function entryHasTag(entry, tag) {
 function entryMatchesSearch(entry, query) {
   if (!query) return true;
   const fixedTags = getBookFixedTags(entry.book);
-  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,...(entry.tags||[]),...fixedTags]
+  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,noteTypeLabel(entry.noteType),...(entry.tags||[]),...fixedTags]
     .some(s=>(s||'').toLowerCase().includes(query));
 }
 
@@ -5016,6 +5058,9 @@ function expandedRecordsForGroup(group) {
   let list = entries.filter(function(entry) {
     return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
   });
+  if (activeNoteType) {
+    list = list.filter(entry => normalizeNoteType(entry.noteType) === activeNoteType);
+  }
   if (expandedRecordScope === 'activeTag' && (activeTag || activeTagFolder)) {
     if (activeTag) {
       list = list.filter(entry => entryHasTag(entry, activeTag));
@@ -5038,6 +5083,7 @@ function render() {
   }
   if (activeTag && !tags.includes(activeTag)) activeTag = '';
   if (activeTagFolder && !folderTagsForPath(activeTagFolder).some(tag => tags.includes(tag))) activeTagFolder = '';
+  if (activeNoteType && !NOTE_TYPE_MAP.has(activeNoteType)) activeNoteType = '';
   if (!openBookKey) {
     openBookOverviewKey = '';
     bookOverviewClosedKey = '';
@@ -5114,8 +5160,13 @@ function render() {
   const looseHTML = looseTags.map(tag => `<button type="button" class="tag-btn ${tagClass(tag)}${activeTag===tag?' active':''}" data-tag="${esc(tag)}">${esc(tag)}</button>`).join('');
   if (expandedWrap) expandedWrap.insertAdjacentHTML('beforeend', looseHTML);
   else wrap.insertAdjacentHTML('beforeend', looseHTML);
+  const noteTypeFilter = document.getElementById('noteTypeFilter');
+  if (noteTypeFilter) {
+    const noteTypeOptions = [{ value: '', label: 'すべて' }, ...NOTE_TYPES];
+    noteTypeFilter.innerHTML = noteTypeOptions.map(type => `<button type="button" class="note-type-filter-pill${activeNoteType===type.value?' active':''}" onclick="setNoteTypeFilter('${esc(type.value)}')">${esc(type.label)}</button>`).join('');
+  }
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
-  if(searchQuery||activeTag||activeTagFolder){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
+  if(searchQuery||activeTag||activeTagFolder||activeNoteType){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
   if(!list.length){container.innerHTML='';empty.style.display='block';scheduleRecordAddButtonVisibility();return;}
   empty.style.display='none';
 
@@ -5357,6 +5408,7 @@ function cardHTML(e) {
   <div class="card-body">
     <div class="card-header">
       <div>
+        <div class="card-note-meta"><span class="note-type-badge ${noteTypeClass(e.noteType)}">${esc(noteTypeLabel(e.noteType))}</span></div>
         ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
         ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
         ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
@@ -5440,6 +5492,11 @@ function setTag(t) {
   activeTag=t;
   if (!keepFolder) activeTagFolder='';
   expandedRecordScope = t ? 'activeTag' : 'all';
+  render();
+}
+
+function setNoteTypeFilter(value) {
+  activeNoteType = NOTE_TYPE_MAP.has(value) ? value : '';
   render();
 }
 
@@ -6204,6 +6261,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
 
   // フォームをリセット
   ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
+  document.getElementById('fNoteType').value = NOTE_TYPE_DEFAULT;
   currentFixedTags = [];
   currentDrawings  = [];
   currentImages    = [];
@@ -6217,6 +6275,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
       document.getElementById('fAuthor').value     = e.author||'';
       document.getElementById('fPage').value       = e.page||'';
       document.getElementById('fTitle').value      = e.title||'';
+      document.getElementById('fNoteType').value   = normalizeNoteType(e.noteType);
       document.getElementById('fContent').value    = e.content||'';
       document.getElementById('fLesson').value     = e.lesson||'';
       document.getElementById('fSupplement').value = e.supplement||'';
@@ -6333,6 +6392,7 @@ async function saveEntry() {
     author:     document.getElementById('fAuthor').value,
     page:       formatPageValue(document.getElementById('fPage').value),
     title:      document.getElementById('fTitle').value,
+    noteType:   normalizeNoteType(document.getElementById('fNoteType').value),
     content:    document.getElementById('fContent').value,
     lesson:     document.getElementById('fLesson').value,
     supplement: document.getElementById('fSupplement').value,
@@ -6392,7 +6452,7 @@ function entryDraftContext() {
 }
 
 function entryFieldIds() {
-  return ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'];
+  return ['fBook','fAuthor','fPage','fNoteType','fTitle','fContent','fLesson','fSupplement','fTags'];
 }
 
 function collectEntryDraftData() {
@@ -6411,6 +6471,7 @@ function applyEntryDraftData(data) {
     const el = document.getElementById(id);
     if (el && Object.prototype.hasOwnProperty.call(data, id)) el.value = data[id] || '';
   });
+  document.getElementById('fNoteType').value = normalizeNoteType(document.getElementById('fNoteType').value);
   currentFixedTags = getBookFixedTags(document.getElementById('fBook').value || '');
   renderFixedTagChips();
   suppressEntryDraft = false;
@@ -7193,6 +7254,7 @@ entryFieldIds().forEach(function(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener('input', queueEntryDraftSave);
+  el.addEventListener('change', queueEntryDraftSave);
 });
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 
@@ -7200,7 +7262,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v117';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v118';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
