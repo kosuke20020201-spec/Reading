@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v110';
+const APP_VERSION   = 'tag-auto-folder v111';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -4359,6 +4359,8 @@ ${details}${retryNote}
 - 120〜220字程度
 - 箇条書きではなく自然な文章
 - 内容を断定しすぎず、一般に知られている範囲で説明
+- 本のタイトル・副題・著者情報・説明文に含まれる国名、政府名、政党名、組織名、人名は、曖昧な表現に言い換えず、そのまま明記
+- 批判的・政治的な内容は事実として断定せず、「本書は〜と論じる」「著者は〜と主張する」という形で書く
 - 書誌情報だけで内容が特定しにくい場合は、その分野・目的・読者が分かる控えめな概要にする`;
 }
 
@@ -6907,7 +6909,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v110';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v111';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
