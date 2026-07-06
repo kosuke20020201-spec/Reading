@@ -687,11 +687,12 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v128';
+const APP_VERSION   = 'tag-auto-folder v129';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const LAST_GOOD_ENTRIES_KEY = 'reading_log_last_good_entries_v1';
+const NOTE_TYPES_LOCAL_KEY = 'reading_log_note_types_map_v1';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
 const GEMINI_MODEL  = 'gemini-2.5-flash-lite';
 const GEMINI_SUMMARY_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
@@ -851,52 +852,108 @@ function isDeletedEntry(entry) {
   return value === true || value === 1 || String(value).toLowerCase() === 'true' || String(value) === '1' || !!entry.deletedAt;
 }
 function normalizeNoteType(value) {
-  const key = String(value || '').trim();
+  const key = noteTypeKeyFromAny(value);
   return NOTE_TYPE_MAP.has(key) ? key : NOTE_TYPE_DEFAULT;
 }
-function normalizeNoteTypes(value) {
-  const source = Array.isArray(value) ? value : (value ? [value] : []);
+function noteTypeKeyFromAny(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (NOTE_TYPE_MAP.has(raw)) return raw;
+  const compact = raw.replace(/\s+/g, '').toLocaleLowerCase('ja-JP');
+  if (compact === '章まとめ' || compact === '章要約' || compact === 'chapter' || compact === 'chaptersummary') return 'chapter_summary';
+  if (compact === '知識' || compact === '知識メモ' || compact === 'knowledge' || compact === 'knowledgememo') return 'knowledge_memo';
+  if (compact === '引用' || compact === '表現' || compact === '引用表現' || compact === '引用・表現メモ' || compact === 'quote' || compact === 'quoteexpression') return 'quote_expression';
+  return raw;
+}
+function noteTypeSourceItems(value) {
+  if (Array.isArray(value)) return value.flatMap(noteTypeSourceItems);
+  if (value == null) return [];
+  const text = String(value).trim();
+  if (!text) return [];
+  if ((text.startsWith('[') && text.endsWith(']')) || (text.startsWith('"') && text.endsWith('"'))) {
+    try {
+      return noteTypeSourceItems(JSON.parse(text));
+    } catch {}
+  }
+  return text.split(/\s*(?:,|，|、|\/|／|\||｜|;|；)\s*/).filter(Boolean);
+}
+function parseNoteTypesStrict(value) {
   const clean = [];
-  source.forEach(function(item) {
-    const key = String(item || '').trim();
+  noteTypeSourceItems(value).forEach(function(item) {
+    const key = noteTypeKeyFromAny(item);
     if (NOTE_TYPE_MAP.has(key) && !clean.includes(key)) clean.push(key);
   });
+  return clean;
+}
+function normalizeNoteTypes(value) {
+  const clean = parseNoteTypesStrict(value);
   return clean.length ? clean : NOTE_TYPE_DEFAULTS.slice();
 }
 function entryNoteTypes(entry) {
   if (!entry) return NOTE_TYPE_DEFAULTS.slice();
-  return normalizeNoteTypes(Array.isArray(entry.noteTypes) ? entry.noteTypes : entry.noteType);
+  const explicit = explicitEntryNoteTypes(entry);
+  if (explicit.length) return explicit;
+  const stored = noteTypesFromLocalMap(entry.id);
+  return stored.length ? stored : NOTE_TYPE_DEFAULTS.slice();
 }
 function explicitEntryNoteTypes(entry) {
   if (!entry || typeof entry !== 'object') return [];
-  if (Array.isArray(entry.noteTypes)) {
-    return entry.noteTypes.map(item => String(item || '').trim()).filter(type => NOTE_TYPE_MAP.has(type));
-  }
+  const fromNoteTypes = parseNoteTypesStrict(entry.noteTypes);
+  if (fromNoteTypes.length) return fromNoteTypes;
   if (Object.prototype.hasOwnProperty.call(entry, 'noteType')) {
-    const type = String(entry.noteType || '').trim();
-    return NOTE_TYPE_MAP.has(type) ? [type] : [];
+    return parseNoteTypesStrict(entry.noteType);
   }
   return [];
 }
 function noteTypesFromSyncMap(map, id) {
   if (!map || id == null || !Object.prototype.hasOwnProperty.call(map, String(id))) return [];
-  return normalizeNoteTypes(map[String(id)]);
+  return parseNoteTypesStrict(map[String(id)]);
+}
+function getLocalNoteTypesMap() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(NOTE_TYPES_LOCAL_KEY) || '{}');
+    return normalizeNoteTypesSyncMap(parsed);
+  } catch {
+    return {};
+  }
+}
+function setLocalNoteTypesMap(map) {
+  localStorage.setItem(NOTE_TYPES_LOCAL_KEY, JSON.stringify(normalizeNoteTypesSyncMap(map)));
+}
+function noteTypesFromLocalMap(id) {
+  return noteTypesFromSyncMap(getLocalNoteTypesMap(), id);
+}
+function updateLocalNoteTypes(id, types) {
+  if (id == null) return;
+  const parsed = parseNoteTypesStrict(types);
+  if (!parsed.length) return;
+  const map = getLocalNoteTypesMap();
+  map[String(id)] = parsed;
+  setLocalNoteTypesMap(map);
+}
+function removeLocalNoteTypes(id) {
+  if (id == null) return;
+  const map = getLocalNoteTypesMap();
+  delete map[String(id)];
+  setLocalNoteTypesMap(map);
 }
 function getEntryNoteTypesForSync(source) {
-  const map = {};
+  const map = getLocalNoteTypesMap();
   (Array.isArray(source) ? source : entries)
     .filter(e => e && e.id != null && !isSyncMetaEntry(e) && !isDeletedEntry(e))
     .sort((a,b)=>String(a.id).localeCompare(String(b.id)))
     .forEach(function(entry) {
-      map[String(entry.id)] = entryNoteTypes(entry);
+      const explicit = explicitEntryNoteTypes(entry);
+      map[String(entry.id)] = explicit.length ? explicit : entryNoteTypes(entry);
     });
-  return map;
+  return normalizeNoteTypesSyncMap(map);
 }
 function normalizeNoteTypesSyncMap(value) {
   const clean = {};
   const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   Object.keys(raw).sort().forEach(function(id) {
-    clean[String(id)] = normalizeNoteTypes(raw[id]);
+    const parsed = parseNoteTypesStrict(raw[id]);
+    if (parsed.length) clean[String(id)] = parsed;
   });
   return clean;
 }
@@ -1607,6 +1664,12 @@ function parseNoteTypesSyncPayload(entry) {
   } catch {
     return {};
   }
+}
+function mergeNoteTypesSyncMapFromCloud(cloudMap, preferLocal) {
+  const localMap = getLocalNoteTypesMap();
+  const merged = preferLocal ? {...cloudMap, ...localMap} : {...localMap, ...cloudMap};
+  setLocalNoteTypesMap(merged);
+  return normalizeNoteTypesSyncMap(merged);
 }
 
 function getTagFolders() {
@@ -2339,15 +2402,18 @@ function mergeEntryNoteTypes(cloudEntry, localEntry, chosenEntry, cloudNoteTypeM
   const cloudTypes = explicitEntryNoteTypes(cloudEntry);
   const chosenTypes = explicitEntryNoteTypes(chosenEntry);
   const metaTypes = noteTypesFromSyncMap(cloudNoteTypeMap, id);
+  const storedTypes = noteTypesFromLocalMap(id);
   const lastGoodTypes = explicitEntryNoteTypes(lastGoodMap && lastGoodMap[id]);
 
   if (preferLocal && localTypes.length) return localTypes;
+  if (preferLocal && storedTypes.length) return storedTypes;
   if (!preferLocal && metaTypes.length) return metaTypes;
   if (chosenEntry === cloudEntry && cloudTypes.length) return cloudTypes;
   if (chosenEntry === localEntry && localTypes.length) return localTypes;
   if (chosenTypes.length) return chosenTypes;
   if (localTypes.length) return localTypes;
   if (cloudTypes.length) return cloudTypes;
+  if (storedTypes.length) return storedTypes;
   if (lastGoodTypes.length) return lastGoodTypes;
   return NOTE_TYPE_DEFAULTS.slice();
 }
@@ -2766,7 +2832,7 @@ async function loadFromCloud(options) {
     const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
     const cloudTagFolderEntry = cloudRaw.find(e => e && String(e.id) === TAG_FOLDER_SYNC_ID);
     const cloudNoteTypesEntry = cloudRaw.find(e => e && String(e.id) === NOTE_TYPES_SYNC_ID);
-    const cloudNoteTypeMap = parseNoteTypesSyncPayload(cloudNoteTypesEntry);
+    const cloudNoteTypeMap = mergeNoteTypesSyncMapFromCloud(parseNoteTypesSyncPayload(cloudNoteTypesEntry), preferLocal);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
     mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
     mergeBookCoversFromCloud(cloudRaw, preferLocal);
@@ -2791,6 +2857,7 @@ async function loadFromCloud(options) {
       const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
       const noteTypes = mergeEntryNoteTypes(c, l, chosen, cloudNoteTypeMap, preferLocal, lastGoodMap);
+      updateLocalNoteTypes(id, noteTypes);
       return normalizeEntryForApp({...chosen, noteTypes, noteType: noteTypes[0] || NOTE_TYPE_DEFAULT, drawings, images: [], mediaKinds, mediaUpdatedAt});
     }).filter(Boolean);
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
@@ -6596,6 +6663,7 @@ function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？'))return;
   const target = entries.find(e=>e.id===id || String(e.id)===String(id));
   addDeletedId(id);
+  removeLocalNoteTypes(id);
   if (target) addTombstone({...target, deleted:true});
   entries = entries.filter(e=>String(e.id)!==String(id));
   persist();
@@ -6664,7 +6732,10 @@ async function saveEntry() {
   const nowIso = new Date().toISOString();
   const shouldVerifyMedia = mediaDirty || currentDrawings.length > 0;
   const selectedNoteTypes = getSelectedNoteTypes();
+  const isEditingEntry = editingId !== null && editingId !== undefined;
+  const entryId = isEditingEntry ? editingId : Date.now();
   const data = {
+    id:         entryId,
     book:       bookName,
     author:     document.getElementById('fAuthor').value,
     page:       formatPageValue(document.getElementById('fPage').value),
@@ -6683,8 +6754,9 @@ async function saveEntry() {
     updatedAt:  nowIso,
   };
 
-  if(editingId){ entries=entries.map(e=>e.id===editingId?{...e,...data}:e); }
-  else { entries.unshift({...data,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}); }
+  updateLocalNoteTypes(entryId, selectedNoteTypes);
+  if(isEditingEntry){ entries=entries.map(e=>String(e.id)===String(entryId)?{...e,...data}:e); }
+  else { entries.unshift({...data,createdAt:new Date().toISOString().slice(0,10)}); }
 
   persist(); clearEntryDraft(); closeModal(true); render(); showToast('保存しました');
   if(shouldVerifyMedia) {
@@ -6911,7 +6983,10 @@ function addSelectionToTags(targetId) {
 }
 
 function entryDraftContext() {
-  return editingId===null||editingId===undefined ? 'new' : String(editingId);
+  if (editingId===null||editingId===undefined) return 'new';
+  const entry = entries.find(e=>String(e.id)===String(editingId));
+  const stamp = entry ? (entry.updatedAt || entry.modifiedAt || entry.createdAt || '') : '';
+  return `edit:${editingId}:${stamp}`;
 }
 
 function entryFieldIds() {
@@ -7755,7 +7830,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v128';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v129';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
