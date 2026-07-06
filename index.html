@@ -253,6 +253,8 @@
   .section-block { border-radius: 0.6rem; padding: 0.6rem 0.75rem; }
   .section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.2rem; }
   .section-text { font-size: 0.82rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .section-text strong { font-weight: 900; color: var(--stone-800); }
+  .section-text mark { background: linear-gradient(transparent 42%, #fde68a 42%); color: inherit; padding: 0 0.08em; border-radius: 0.12rem; }
   .content-bg { background: var(--stone-50); } .content-bg .section-text { color: var(--stone-600); }
   .lesson-bg { background: var(--amber-light); } .lesson-bg .section-text { color: #78350f; }
   .supplement-bg { background: var(--stone-50); } .supplement-bg .section-text { color: var(--stone-600); }
@@ -296,6 +298,11 @@
   .field input, .field textarea, .field select { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
   .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
   .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
+  .field textarea, .section-text { tab-size: 2; }
+  .text-format-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.38rem; }
+  .text-format-btn { min-width: 2.15rem; min-height: 1.95rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-600); font: inherit; font-size: 0.74rem; font-weight: 900; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
+  .text-format-btn:hover { border-color: var(--amber-border); background: #fffbeb; color: #92400e; }
+  .text-format-btn-marker { color: #92400e; background: linear-gradient(transparent 48%, #fde68a 48%); }
   .field .note-type-choice input { width: 1.05rem; height: 1.05rem; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .book-wide-edit-note { display: none; margin: -0.2rem 0 0; padding: 0.65rem 0.75rem; border: 1px solid var(--amber-border); border-radius: 0.75rem; background: #fffbeb; color: #92400e; font-size: 0.74rem; line-height: 1.65; font-weight: 700; }
   .modal-overlay.book-wide-edit .book-wide-edit-note { display: block; }
@@ -533,9 +540,9 @@
         </div>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
-      <div class="field entry-only-field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
-      <div class="field entry-only-field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea></div>
-      <div class="field entry-only-field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea></div>
+      <div class="field entry-only-field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field">
         <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
@@ -679,7 +686,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v121';
+const APP_VERSION   = 'tag-auto-folder v123';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5434,7 +5441,7 @@ function cardHTML(e) {
   const freePills  = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
   const pills = fixedPills + freePills;
 
-  const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${esc(txt)}</div></div>`:'';
+  const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${formatRecordText(txt)}</div></div>`:'';
   const media = entryMedia(e);
   const sketchHTML=media.length?`
     <div class="section-block" style="background:var(--stone-50)">
@@ -6506,6 +6513,150 @@ function getSelectedNoteTypes() {
   return normalizeNoteTypes(selected);
 }
 
+const TEXTAREA_INDENT = '  ';
+const INDENT_TEXTAREA_IDS = ['fContent', 'fLesson', 'fSupplement'];
+
+function leadingIndentWidth(line) {
+  if (line.startsWith('\t')) return 1;
+  const match = line.match(/^ {1,2}/);
+  return match ? match[0].length : 0;
+}
+
+function transformTextareaLines(text, rangeStart, rangeEnd, originalStart, indent) {
+  const block = text.slice(rangeStart, rangeEnd);
+  const lines = block.split('\n');
+  let cursor = rangeStart;
+  let deltaBeforeStart = 0;
+  let totalDelta = 0;
+  const nextLines = lines.map(function(line) {
+    let delta = 0;
+    let nextLine = line;
+    if (indent) {
+      nextLine = TEXTAREA_INDENT + line;
+      delta = TEXTAREA_INDENT.length;
+    } else {
+      const removeCount = leadingIndentWidth(line);
+      if (removeCount) {
+        nextLine = line.slice(removeCount);
+        delta = -removeCount;
+      }
+    }
+    if (cursor < originalStart) deltaBeforeStart += delta;
+    totalDelta += delta;
+    cursor += line.length + 1;
+    return nextLine;
+  });
+  return {
+    text: text.slice(0, rangeStart) + nextLines.join('\n') + text.slice(rangeEnd),
+    deltaBeforeStart,
+    totalDelta
+  };
+}
+
+function handleTextareaTab(event) {
+  if (event.key !== 'Tab') return;
+  const el = event.currentTarget;
+  if (!el || typeof el.selectionStart !== 'number') return;
+  event.preventDefault();
+
+  const value = el.value || '';
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const scrollTop = el.scrollTop;
+
+  if (start === end && !event.shiftKey) {
+    el.value = value.slice(0, start) + TEXTAREA_INDENT + value.slice(end);
+    const next = start + TEXTAREA_INDENT.length;
+    el.setSelectionRange(next, next);
+  } else {
+    const rangeStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+    let rangeEnd = end;
+    if (end > start && value[end - 1] === '\n') rangeEnd = end - 1;
+    const result = transformTextareaLines(value, rangeStart, rangeEnd, start, !event.shiftKey);
+    el.value = result.text;
+    const nextStart = Math.max(rangeStart, start + result.deltaBeforeStart);
+    const nextEnd = Math.max(nextStart, end + result.totalDelta);
+    el.setSelectionRange(nextStart, nextEnd);
+  }
+
+  el.scrollTop = scrollTop;
+  queueEntryDraftSave();
+}
+
+function formatRecordText(text) {
+  let html = esc(text);
+  html = html.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/==([\s\S]+?)==/g, '<mark>$1</mark>');
+  return html;
+}
+
+function focusAndSelect(el, start, end) {
+  el.focus();
+  el.setSelectionRange(Math.max(0, start), Math.max(0, end));
+}
+
+function applyTextareaFormat(targetId, action) {
+  const el = document.getElementById(targetId);
+  if (!el || typeof el.selectionStart !== 'number') return;
+  const pair = action === 'bold' ? ['**', '**'] : ['==', '=='];
+  const open = pair[0], close = pair[1];
+  const value = el.value || '';
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const selected = value.slice(start, end);
+  let nextValue = value;
+  let nextStart = start;
+  let nextEnd = end;
+
+  if (start === end) {
+    nextValue = value.slice(0, start) + open + close + value.slice(end);
+    nextStart = nextEnd = start + open.length;
+  } else if (selected.startsWith(open) && selected.endsWith(close) && selected.length >= open.length + close.length) {
+    const inner = selected.slice(open.length, selected.length - close.length);
+    nextValue = value.slice(0, start) + inner + value.slice(end);
+    nextEnd = start + inner.length;
+  } else if (value.slice(start - open.length, start) === open && value.slice(end, end + close.length) === close) {
+    nextValue = value.slice(0, start - open.length) + selected + value.slice(end + close.length);
+    nextStart = start - open.length;
+    nextEnd = nextStart + selected.length;
+  } else {
+    nextValue = value.slice(0, start) + open + selected + close + value.slice(end);
+    nextStart = start + open.length;
+    nextEnd = nextStart + selected.length;
+  }
+
+  el.value = nextValue;
+  focusAndSelect(el, nextStart, nextEnd);
+  queueEntryDraftSave();
+}
+
+function selectedTextAsTag(text) {
+  return String(text || '')
+    .replace(/\*\*/g, '')
+    .replace(/==/g, '')
+    .replace(/[,\uFF0C]/g, '、')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function addSelectionToTags(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el || typeof el.selectionStart !== 'number') return;
+  const tag = selectedTextAsTag(el.value.slice(el.selectionStart, el.selectionEnd));
+  if (!tag) {
+    showToast('タグにする部分を選択してください');
+    el.focus();
+    return;
+  }
+  const tagInput = document.getElementById('fTags');
+  const current = tagInput.value.split(',').map(t => t.trim()).filter(Boolean);
+  const nextTags = cleanTagList([...current, tag]);
+  tagInput.value = nextTags.join(', ');
+  queueEntryDraftSave();
+  showToast('タグに追加しました');
+  el.focus();
+}
+
 function entryDraftContext() {
   return editingId===null||editingId===undefined ? 'new' : String(editingId);
 }
@@ -7319,13 +7470,27 @@ entryFieldIds().forEach(function(id) {
 document.querySelectorAll('input[name="fNoteTypes"]').forEach(function(el) {
   el.addEventListener('change', queueEntryDraftSave);
 });
+INDENT_TEXTAREA_IDS.forEach(function(id) {
+  document.getElementById(id)?.addEventListener('keydown', handleTextareaTab);
+});
+document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
+  toolbar.addEventListener('click', function(event) {
+    const button = event.target.closest && event.target.closest('[data-format-action]');
+    if (!button) return;
+    event.preventDefault();
+    const targetId = toolbar.dataset.formatFor || '';
+    const action = button.dataset.formatAction || '';
+    if (action === 'tag') addSelectionToTags(targetId);
+    else if (action === 'bold' || action === 'mark') applyTextareaFormat(targetId, action);
+  });
+});
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v121';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v123';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
