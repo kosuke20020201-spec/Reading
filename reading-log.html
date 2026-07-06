@@ -687,7 +687,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v127';
+const APP_VERSION   = 'tag-auto-folder v128';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -866,6 +866,42 @@ function normalizeNoteTypes(value) {
 function entryNoteTypes(entry) {
   if (!entry) return NOTE_TYPE_DEFAULTS.slice();
   return normalizeNoteTypes(Array.isArray(entry.noteTypes) ? entry.noteTypes : entry.noteType);
+}
+function explicitEntryNoteTypes(entry) {
+  if (!entry || typeof entry !== 'object') return [];
+  if (Array.isArray(entry.noteTypes)) {
+    return entry.noteTypes.map(item => String(item || '').trim()).filter(type => NOTE_TYPE_MAP.has(type));
+  }
+  if (Object.prototype.hasOwnProperty.call(entry, 'noteType')) {
+    const type = String(entry.noteType || '').trim();
+    return NOTE_TYPE_MAP.has(type) ? [type] : [];
+  }
+  return [];
+}
+function noteTypesFromSyncMap(map, id) {
+  if (!map || id == null || !Object.prototype.hasOwnProperty.call(map, String(id))) return [];
+  return normalizeNoteTypes(map[String(id)]);
+}
+function getEntryNoteTypesForSync(source) {
+  const map = {};
+  (Array.isArray(source) ? source : entries)
+    .filter(e => e && e.id != null && !isSyncMetaEntry(e) && !isDeletedEntry(e))
+    .sort((a,b)=>String(a.id).localeCompare(String(b.id)))
+    .forEach(function(entry) {
+      map[String(entry.id)] = entryNoteTypes(entry);
+    });
+  return map;
+}
+function normalizeNoteTypesSyncMap(value) {
+  const clean = {};
+  const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  Object.keys(raw).sort().forEach(function(id) {
+    clean[String(id)] = normalizeNoteTypes(raw[id]);
+  });
+  return clean;
+}
+function noteTypesSyncMapsEqual(left, right) {
+  return JSON.stringify(normalizeNoteTypesSyncMap(left)) === JSON.stringify(normalizeNoteTypesSyncMap(right));
 }
 function noteTypeLabel(value) {
   return NOTE_TYPE_MAP.get(normalizeNoteType(value)).label;
@@ -1524,11 +1560,12 @@ function getBookMetaForSync() {
 // 通常のエントリと同じ形（idとcontent列）に乗せて book_meta 全体を運ぶ。
 const BOOK_META_SYNC_ID = '__book_meta__';
 const TAG_FOLDER_SYNC_ID = '__tag_folders__';
+const NOTE_TYPES_SYNC_ID = '__note_types__';
 const BOOK_COVER_SYNC_PREFIX = '__book_cover__:';
 
 function isSyncMetaEntry(entry) {
   const id = String(entry && entry.id || '');
-  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
+  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
 }
 
 function buildBookMetaSyncEntry() {
@@ -1544,6 +1581,32 @@ function buildBookMetaSyncEntry() {
     updatedAt: new Date().toISOString(),
     isBookMeta: true
   };
+}
+
+function buildNoteTypesSyncEntry() {
+  return {
+    id: NOTE_TYPES_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getEntryNoteTypesForSync(entries)),
+    tags: [],
+    drawings: [],
+    images: [],
+    createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
+    isNoteTypesMeta: true
+  };
+}
+
+function parseNoteTypesSyncPayload(entry) {
+  if (!entry) return {};
+  try {
+    const parsed = JSON.parse(entry.content || '{}');
+    const payload = parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.noteTypes ? parsed.noteTypes : parsed;
+    return normalizeNoteTypesSyncMap(payload);
+  } catch {
+    return {};
+  }
 }
 
 function getTagFolders() {
@@ -2243,7 +2306,7 @@ function buildCloudPayloadBody() {
     .filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e))
     .map(prepareEntryForCloud);
   const tombstones = getSyncTombstones().map(prepareEntryForCloud);
-  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), ...buildBookCoverSyncEntries()]);
+  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), ...buildBookCoverSyncEntries()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -2269,6 +2332,24 @@ function chooseEntryVersion(cloudEntry, localEntry, preferLocal) {
     return cloudTime > localTime ? cloudEntry : localEntry;
   }
   return preferLocal ? localEntry : cloudEntry;
+}
+function mergeEntryNoteTypes(cloudEntry, localEntry, chosenEntry, cloudNoteTypeMap, preferLocal, lastGoodMap) {
+  const id = String((chosenEntry && chosenEntry.id) || (localEntry && localEntry.id) || (cloudEntry && cloudEntry.id) || '');
+  const localTypes = explicitEntryNoteTypes(localEntry);
+  const cloudTypes = explicitEntryNoteTypes(cloudEntry);
+  const chosenTypes = explicitEntryNoteTypes(chosenEntry);
+  const metaTypes = noteTypesFromSyncMap(cloudNoteTypeMap, id);
+  const lastGoodTypes = explicitEntryNoteTypes(lastGoodMap && lastGoodMap[id]);
+
+  if (preferLocal && localTypes.length) return localTypes;
+  if (!preferLocal && metaTypes.length) return metaTypes;
+  if (chosenEntry === cloudEntry && cloudTypes.length) return cloudTypes;
+  if (chosenEntry === localEntry && localTypes.length) return localTypes;
+  if (chosenTypes.length) return chosenTypes;
+  if (localTypes.length) return localTypes;
+  if (cloudTypes.length) return cloudTypes;
+  if (lastGoodTypes.length) return lastGoodTypes;
+  return NOTE_TYPE_DEFAULTS.slice();
 }
 function mergedMediaList(chosen, localEntry, key) {
   if (chosen && Object.prototype.hasOwnProperty.call(chosen, key)) {
@@ -2684,6 +2765,8 @@ async function loadFromCloud(options) {
     const preferLocal = hasPendingSync();
     const cloudMetaEntry = cloudRaw.find(e => e && String(e.id) === BOOK_META_SYNC_ID);
     const cloudTagFolderEntry = cloudRaw.find(e => e && String(e.id) === TAG_FOLDER_SYNC_ID);
+    const cloudNoteTypesEntry = cloudRaw.find(e => e && String(e.id) === NOTE_TYPES_SYNC_ID);
+    const cloudNoteTypeMap = parseNoteTypesSyncPayload(cloudNoteTypesEntry);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
     mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
     mergeBookCoversFromCloud(cloudRaw, preferLocal);
@@ -2707,7 +2790,8 @@ async function loadFromCloud(options) {
       const drawings = mergeEntryMedia(c, l);
       const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
-      return normalizeEntryForApp({...chosen, drawings, images: [], mediaKinds, mediaUpdatedAt});
+      const noteTypes = mergeEntryNoteTypes(c, l, chosen, cloudNoteTypeMap, preferLocal, lastGoodMap);
+      return normalizeEntryForApp({...chosen, noteTypes, noteType: noteTypes[0] || NOTE_TYPE_DEFAULT, drawings, images: [], mediaKinds, mediaUpdatedAt});
     }).filter(Boolean);
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -2716,7 +2800,8 @@ async function loadFromCloud(options) {
     render();
     // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
     rememberLastGoodEntries(entries);
-    if (hadStraySentinel || preferLocal || idRepair.changed) { persist(); }
+    const noteTypesNeedResync = !noteTypesSyncMapsEqual(cloudNoteTypeMap, getEntryNoteTypesForSync(entries));
+    if (hadStraySentinel || preferLocal || idRepair.changed || noteTypesNeedResync) { persist(); }
     const cloudHasAllDeletedIds = sortedDeletedIds(deletedIds).every(id => cloudDeletedIds.has(id));
     if (cloudHasAllDeletedIds) markDeletedIdsSynced(deletedIds);
     if (!cloudHasAllDeletedIds || (deletedIds.size && hasUnsyncedDeletedIds(deletedIds))) {
@@ -7670,7 +7755,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v127';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v128';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
