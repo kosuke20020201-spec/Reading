@@ -222,6 +222,12 @@
   .note-type-chapter { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
   .note-type-knowledge { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
   .note-type-quote { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+  .note-type-choice-grid { display: flex; flex-wrap: wrap; gap: 0.42rem; }
+  .note-type-choice { display: inline-flex; align-items: center; gap: 0.28rem; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-600); padding: 0.28rem 0.72rem; font-size: 0.76rem; font-weight: 900; cursor: pointer; user-select: none; }
+  .note-type-choice input { width: auto; margin: 0; accent-color: var(--amber); }
+  .note-type-choice:has(input:checked).note-type-chapter { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
+  .note-type-choice:has(input:checked).note-type-knowledge { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .note-type-choice:has(input:checked).note-type-quote { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
   .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
   .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
@@ -279,6 +285,7 @@
   .field input, .field textarea, .field select { width: 100%; padding: 0.6rem 0.75rem; border-radius: 0.65rem; border: 1px solid var(--stone-200); background: var(--stone-50); font-size: 0.82rem; font-family: inherit; outline: none; transition: border-color 0.1s; resize: none; }
   .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b1a; }
   .field input::placeholder, .field textarea::placeholder { color: var(--stone-300); }
+  .field .note-type-choice input { width: auto; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .book-wide-edit-note { display: none; margin: -0.2rem 0 0; padding: 0.65rem 0.75rem; border: 1px solid var(--amber-border); border-radius: 0.75rem; background: #fffbeb; color: #92400e; font-size: 0.74rem; line-height: 1.65; font-weight: 700; }
   .modal-overlay.book-wide-edit .book-wide-edit-note { display: block; }
   .modal-overlay.book-wide-edit .entry-only-field { display: none !important; }
@@ -508,11 +515,11 @@
       </div>
       <div class="field entry-only-field">
         <label>ノート種別</label>
-        <select id="fNoteType">
-          <option value="chapter_summary">章まとめ</option>
-          <option value="knowledge_memo" selected>知識メモ</option>
-          <option value="quote_expression">引用・表現メモ</option>
-        </select>
+        <div class="note-type-choice-grid" id="fNoteTypes">
+          <label class="note-type-choice note-type-chapter"><input type="checkbox" name="fNoteTypes" value="chapter_summary">章まとめ</label>
+          <label class="note-type-choice note-type-knowledge"><input type="checkbox" name="fNoteTypes" value="knowledge_memo" checked>知識メモ</label>
+          <label class="note-type-choice note-type-quote"><input type="checkbox" name="fNoteTypes" value="quote_expression">引用・表現メモ</label>
+        </div>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
       <div class="field entry-only-field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea></div>
@@ -661,7 +668,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v118';
+const APP_VERSION   = 'tag-auto-folder v119';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -707,6 +714,7 @@ const NOTE_TYPES = [
   { value: 'knowledge_memo', label: '知識メモ', className: 'knowledge' },
   { value: 'quote_expression', label: '引用・表現メモ', className: 'quote' }
 ];
+const NOTE_TYPE_DEFAULTS = [NOTE_TYPE_DEFAULT];
 const NOTE_TYPE_MAP = new Map(NOTE_TYPES.map(type => [type.value, type]));
 const SPINE_THEMES = {
   classic: [
@@ -732,7 +740,7 @@ const SPINE_THEMES = {
   ]
 };
 
-let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', activeNoteType = '', editingId = null, pendingAiId = null;
+let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', activeNoteTypes = [], editingId = null, pendingAiId = null;
 let currentDrawings = [], currentImages = [], currentMediaKinds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
@@ -823,14 +831,33 @@ function normalizeNoteType(value) {
   const key = String(value || '').trim();
   return NOTE_TYPE_MAP.has(key) ? key : NOTE_TYPE_DEFAULT;
 }
+function normalizeNoteTypes(value) {
+  const source = Array.isArray(value) ? value : (value ? [value] : []);
+  const clean = [];
+  source.forEach(function(item) {
+    const key = String(item || '').trim();
+    if (NOTE_TYPE_MAP.has(key) && !clean.includes(key)) clean.push(key);
+  });
+  return clean.length ? clean : NOTE_TYPE_DEFAULTS.slice();
+}
+function entryNoteTypes(entry) {
+  if (!entry) return NOTE_TYPE_DEFAULTS.slice();
+  return normalizeNoteTypes(Array.isArray(entry.noteTypes) ? entry.noteTypes : entry.noteType);
+}
 function noteTypeLabel(value) {
   return NOTE_TYPE_MAP.get(normalizeNoteType(value)).label;
 }
 function noteTypeClass(value) {
   return 'note-type-' + NOTE_TYPE_MAP.get(normalizeNoteType(value)).className;
 }
+function noteTypeBadgesHTML(entry) {
+  return entryNoteTypes(entry).map(type => `<span class="note-type-badge ${noteTypeClass(type)}">${esc(noteTypeLabel(type))}</span>`).join('');
+}
 function normalizeEntryForApp(entry) {
-  return { ...(entry || {}), noteType: normalizeNoteType(entry && entry.noteType) };
+  const clone = { ...(entry || {}) };
+  clone.noteTypes = normalizeNoteTypes(Array.isArray(clone.noteTypes) ? clone.noteTypes : clone.noteType);
+  clone.noteType = clone.noteTypes[0] || NOTE_TYPE_DEFAULT;
+  return clone;
 }
 function normalizeTombstone(entry) {
   const now = new Date().toISOString();
@@ -843,7 +870,8 @@ function normalizeTombstone(entry) {
   clone.lesson = clone.lesson || '';
   clone.supplement = clone.supplement || '';
   clone.title = clone.title || '';
-  clone.noteType = normalizeNoteType(clone.noteType);
+  clone.noteTypes = normalizeNoteTypes(Array.isArray(clone.noteTypes) ? clone.noteTypes : clone.noteType);
+  clone.noteType = clone.noteTypes[0] || NOTE_TYPE_DEFAULT;
   clone.tags = Array.isArray(clone.tags) ? clone.tags : [];
   clone.drawings = Array.isArray(clone.drawings) ? clone.drawings : [];
   clone.images = [];
@@ -3373,7 +3401,7 @@ function getFiltered() {
     } else if(folderTagList.length) {
       if(!folderTagList.some(tag => entryHasTag(e, tag))) return false;
     }
-    if(activeNoteType && normalizeNoteType(e.noteType) !== activeNoteType) return false;
+    if(activeNoteTypes.length && !activeNoteTypes.some(type => entryNoteTypes(e).includes(type))) return false;
     return entryMatchesSearch(e, q);
   }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
 }
@@ -3386,7 +3414,7 @@ function entryHasTag(entry, tag) {
 function entryMatchesSearch(entry, query) {
   if (!query) return true;
   const fixedTags = getBookFixedTags(entry.book);
-  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,noteTypeLabel(entry.noteType),...(entry.tags||[]),...fixedTags]
+  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,...entryNoteTypes(entry).map(noteTypeLabel),...(entry.tags||[]),...fixedTags]
     .some(s=>(s||'').toLowerCase().includes(query));
 }
 
@@ -5058,8 +5086,8 @@ function expandedRecordsForGroup(group) {
   let list = entries.filter(function(entry) {
     return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
   });
-  if (activeNoteType) {
-    list = list.filter(entry => normalizeNoteType(entry.noteType) === activeNoteType);
+  if (activeNoteTypes.length) {
+    list = list.filter(entry => activeNoteTypes.some(type => entryNoteTypes(entry).includes(type)));
   }
   if (expandedRecordScope === 'activeTag' && (activeTag || activeTagFolder)) {
     if (activeTag) {
@@ -5083,7 +5111,7 @@ function render() {
   }
   if (activeTag && !tags.includes(activeTag)) activeTag = '';
   if (activeTagFolder && !folderTagsForPath(activeTagFolder).some(tag => tags.includes(tag))) activeTagFolder = '';
-  if (activeNoteType && !NOTE_TYPE_MAP.has(activeNoteType)) activeNoteType = '';
+  activeNoteTypes = activeNoteTypes.filter(type => NOTE_TYPE_MAP.has(type));
   if (!openBookKey) {
     openBookOverviewKey = '';
     bookOverviewClosedKey = '';
@@ -5163,10 +5191,10 @@ function render() {
   const noteTypeFilter = document.getElementById('noteTypeFilter');
   if (noteTypeFilter) {
     const noteTypeOptions = [{ value: '', label: 'すべて' }, ...NOTE_TYPES];
-    noteTypeFilter.innerHTML = noteTypeOptions.map(type => `<button type="button" class="note-type-filter-pill${activeNoteType===type.value?' active':''}" onclick="setNoteTypeFilter('${esc(type.value)}')">${esc(type.label)}</button>`).join('');
+    noteTypeFilter.innerHTML = noteTypeOptions.map(type => `<button type="button" class="note-type-filter-pill${type.value ? (activeNoteTypes.includes(type.value)?' active':'') : (!activeNoteTypes.length?' active':'')}" onclick="setNoteTypeFilter('${esc(type.value)}')">${esc(type.label)}</button>`).join('');
   }
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
-  if(searchQuery||activeTag||activeTagFolder||activeNoteType){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
+  if(searchQuery||activeTag||activeTagFolder||activeNoteTypes.length){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
   if(!list.length){container.innerHTML='';empty.style.display='block';scheduleRecordAddButtonVisibility();return;}
   empty.style.display='none';
 
@@ -5408,7 +5436,7 @@ function cardHTML(e) {
   <div class="card-body">
     <div class="card-header">
       <div>
-        <div class="card-note-meta"><span class="note-type-badge ${noteTypeClass(e.noteType)}">${esc(noteTypeLabel(e.noteType))}</span></div>
+        <div class="card-note-meta">${noteTypeBadgesHTML(e)}</div>
         ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
         ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
         ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
@@ -5496,7 +5524,13 @@ function setTag(t) {
 }
 
 function setNoteTypeFilter(value) {
-  activeNoteType = NOTE_TYPE_MAP.has(value) ? value : '';
+  if (!value) {
+    activeNoteTypes = [];
+  } else if (NOTE_TYPE_MAP.has(value)) {
+    activeNoteTypes = activeNoteTypes.includes(value)
+      ? activeNoteTypes.filter(type => type !== value)
+      : [...activeNoteTypes, value];
+  }
   render();
 }
 
@@ -6261,7 +6295,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
 
   // フォームをリセット
   ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
-  document.getElementById('fNoteType').value = NOTE_TYPE_DEFAULT;
+  setNoteTypeInputs(NOTE_TYPE_DEFAULTS);
   currentFixedTags = [];
   currentDrawings  = [];
   currentImages    = [];
@@ -6275,7 +6309,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
       document.getElementById('fAuthor').value     = e.author||'';
       document.getElementById('fPage').value       = e.page||'';
       document.getElementById('fTitle').value      = e.title||'';
-      document.getElementById('fNoteType').value   = normalizeNoteType(e.noteType);
+      setNoteTypeInputs(entryNoteTypes(e));
       document.getElementById('fContent').value    = e.content||'';
       document.getElementById('fLesson').value     = e.lesson||'';
       document.getElementById('fSupplement').value = e.supplement||'';
@@ -6387,12 +6421,14 @@ async function saveEntry() {
   const existingEntry = editingId ? entries.find(e=>String(e.id)===String(editingId)) : null;
   const nowIso = new Date().toISOString();
   const shouldVerifyMedia = mediaDirty || currentDrawings.length > 0;
+  const selectedNoteTypes = getSelectedNoteTypes();
   const data = {
     book:       bookName,
     author:     document.getElementById('fAuthor').value,
     page:       formatPageValue(document.getElementById('fPage').value),
     title:      document.getElementById('fTitle').value,
-    noteType:   normalizeNoteType(document.getElementById('fNoteType').value),
+    noteTypes:  selectedNoteTypes,
+    noteType:   selectedNoteTypes[0] || NOTE_TYPE_DEFAULT,
     content:    document.getElementById('fContent').value,
     lesson:     document.getElementById('fLesson').value,
     supplement: document.getElementById('fSupplement').value,
@@ -6447,12 +6483,24 @@ function editBookTags(idx) {
   openBookWideEdit(g.book, g.author);
 }
 
+function setNoteTypeInputs(types) {
+  const selected = new Set(normalizeNoteTypes(types));
+  document.querySelectorAll('input[name="fNoteTypes"]').forEach(function(input) {
+    input.checked = selected.has(input.value);
+  });
+}
+
+function getSelectedNoteTypes() {
+  const selected = [...document.querySelectorAll('input[name="fNoteTypes"]:checked')].map(input => input.value);
+  return normalizeNoteTypes(selected);
+}
+
 function entryDraftContext() {
   return editingId===null||editingId===undefined ? 'new' : String(editingId);
 }
 
 function entryFieldIds() {
-  return ['fBook','fAuthor','fPage','fNoteType','fTitle','fContent','fLesson','fSupplement','fTags'];
+  return ['fBook','fAuthor','fPage','fTitle','fContent','fLesson','fSupplement','fTags'];
 }
 
 function collectEntryDraftData() {
@@ -6461,6 +6509,7 @@ function collectEntryDraftData() {
     const el = document.getElementById(id);
     data[id] = el ? el.value : '';
   });
+  data.noteTypes = getSelectedNoteTypes();
   return data;
 }
 
@@ -6471,7 +6520,7 @@ function applyEntryDraftData(data) {
     const el = document.getElementById(id);
     if (el && Object.prototype.hasOwnProperty.call(data, id)) el.value = data[id] || '';
   });
-  document.getElementById('fNoteType').value = normalizeNoteType(document.getElementById('fNoteType').value);
+  setNoteTypeInputs(data.noteTypes || data.fNoteType || NOTE_TYPE_DEFAULTS);
   currentFixedTags = getBookFixedTags(document.getElementById('fBook').value || '');
   renderFixedTagChips();
   suppressEntryDraft = false;
@@ -7256,13 +7305,16 @@ entryFieldIds().forEach(function(id) {
   el.addEventListener('input', queueEntryDraftSave);
   el.addEventListener('change', queueEntryDraftSave);
 });
+document.querySelectorAll('input[name="fNoteTypes"]').forEach(function(el) {
+  el.addEventListener('change', queueEntryDraftSave);
+});
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v118';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v119';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
