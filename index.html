@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v112';
+const APP_VERSION   = 'tag-auto-folder v113';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -4337,6 +4337,24 @@ function hasStoredBookInfo(info) {
   return !!(info.source || info.coverUrl || info.description || info.authors.length || info.publisher || info.publishedDate || pickIsbn(info));
 }
 
+function cleanGeminiOverviewText(text) {
+  return String(text || '')
+    .replace(/^概要[:：]\s*/u, '')
+    .replace(/^[「『"'“”]+|[」』"'“”]+$/g, '')
+    .trim();
+}
+
+function isSuspiciousGeminiBookOverview(text) {
+  const value = cleanGeminiOverviewText(text);
+  if (!value) return false;
+  const compact = value.replace(/\s+/g, '');
+  const numberedMarkers = compact.match(/[（(]\d{1,4}[）)]/g) || [];
+  if (numberedMarkers.length >= 5) return true;
+  if (/(?:[（(]\d{1,4}[）)][^（()）、。,.]{0,3}){4,}/u.test(compact)) return true;
+  const textChars = value.match(/[A-Za-z\u3040-\u30ff\u3400-\u9fff]/gu) || [];
+  return numberedMarkers.length >= 4 && textChars.length > 0 && numberedMarkers.length / textChars.length > 0.08;
+}
+
 function bookOverviewPrompt(book, author, info, options) {
   options = options || {};
   info = normalizeBookMetaValue(info);
@@ -4348,18 +4366,25 @@ function bookOverviewPrompt(book, author, info, options) {
     pickIsbn(info) ? 'ISBN: ' + pickIsbn(info) : '',
     info.categories && info.categories.length ? '分類・カテゴリ: ' + info.categories.join('、') : ''
   ].filter(Boolean).join('\n');
-  const retryNote = options.force && info.description
-    ? `\n前回の概要:\n${info.description}\n\n今回は前回と同じ文章や言い回しを避け、読書ノートで本を見分けやすくなる別案として作り直してください。`
+  const previousDescription = cleanGeminiOverviewText(info.description);
+  const previousWasSuspicious = isSuspiciousGeminiBookOverview(previousDescription);
+  const retryNote = options.force && previousDescription && !previousWasSuspicious
+    ? `\n前回の概要:\n${previousDescription}\n\n今回は前回と同じ文章や言い回しを避け、読書ノートで本を見分けやすくなる別案として作り直してください。`
+    : (options.force && previousWasSuspicious ? '\n前回の概要は文字番号が混じって崩れていたため、参照せずに新しく作成してください。\n' : '');
+  const rejectedNote = options.rejectBadOverview
+    ? '\n直前の出力は文字番号や注番号が混じっていたため破棄しました。今回は本文だけを自然な文章で出力してください。\n'
     : '';
   return `次の本について、読書ノートアプリに表示する「本全体の概要」を日本語で作成してください。
 
 タイトル: ${title}
 著者: ${authors}
-${details}${retryNote}
+${details}${retryNote}${rejectedNote}
 
 条件:
 - 120〜220字程度
 - 箇条書きではなく自然な文章
+- 回答は概要本文だけにし、見出し・文字番号・注番号・脚注番号・引用番号・連番・括弧付き番号を付けない
+- 文字ごと、単語ごと、文節ごとの番号付けを絶対にしない
 - 内容を断定しすぎず、一般に知られている範囲で説明
 - 本のタイトル・副題・著者情報・説明文に含まれる国名、政府名、政党名、組織名、人名は、曖昧な表現に言い換えず、そのまま明記
 - 批判的・政治的な内容は事実として断定せず、「本書は〜と論じる」「著者は〜と主張する」という形で書く
@@ -4392,7 +4417,7 @@ async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
 async function ensureBookOverviewDescription(book, author, info, options) {
   options = options || {};
   info = normalizeBookMetaValue(info);
-  if (info.description && !options.force) return info;
+  if (info.description && !options.force && !isSuspiciousGeminiBookOverview(info.description)) return info;
   if (navigator.onLine === false) return info;
   const key = getApiKey();
   if (!key) {
@@ -4405,11 +4430,21 @@ async function ensureBookOverviewDescription(book, author, info, options) {
   }
   if (!options || options.quiet !== true) showToast('Geminiで本概要を作成中...');
   try {
-    const description = await fetchGeminiText(bookOverviewPrompt(book, author, info, options), key, 900);
+    let description = cleanGeminiOverviewText(await fetchGeminiText(bookOverviewPrompt(book, author, info, options), key, 900));
+    if (isSuspiciousGeminiBookOverview(description)) {
+      console.warn('Rejected suspicious Gemini book overview:', description);
+      const retryInfo = normalizeBookMetaValue({...info, description: ''});
+      description = cleanGeminiOverviewText(await fetchGeminiText(bookOverviewPrompt(book, author, retryInfo, {...options, rejectBadOverview:true}), key, 900));
+      if (isSuspiciousGeminiBookOverview(description)) {
+        console.warn('Rejected suspicious Gemini book overview retry:', description);
+        if (!options || options.quiet !== true) showToast('Geminiの概要形式が崩れたため保存しませんでした');
+        return info;
+      }
+    }
     if (!description) return info;
     return normalizeBookMetaValue({
       ...info,
-      description: description.replace(/^概要[:：]\s*/u, '').trim(),
+      description,
       source: mergeSourceText([removeSourceText(info.source, 'Original entry'), 'Gemini overview']),
       fetchedAt: new Date().toISOString()
     });
@@ -4441,7 +4476,7 @@ async function autoFetchBookInfoForOpenedBook(book, author) {
   if (!key || autoBookInfoFetchKeys.has(key)) return;
   if (navigator.onLine === false) return;
   const stored = getBookMetaInfo(book);
-  if (stored.description) return;
+  if (stored.description && !isSuspiciousGeminiBookOverview(stored.description)) return;
   if (hasStoredBookInfo(stored)) {
     const enriched = await ensureBookOverviewDescription(book, author, stored, {quiet:true});
     if (enriched.description && enriched.description !== stored.description) {
@@ -4699,16 +4734,19 @@ function bookOverviewHTML(group) {
   const hasManualCover = !!(manualCover.coverUrl && !manualCover.deleted);
   const title = info.title || group.book || 'タイトル未入力';
   const authors = cleanAuthorList([...(info.authors || []), group.author]).join('、');
+  const descriptionIsSuspicious = isSuspiciousGeminiBookOverview(info.description);
+  const sourceForMeta = descriptionIsSuspicious ? removeSourceText(info.source, 'Gemini overview') : info.source;
+  const cleanSource = cleanSourceText(sourceForMeta);
   const meta = [
     authors,
     info.publisher,
     info.publishedDate,
     info.pageCount ? info.pageCount + 'ページ' : '',
     pickIsbn(info) ? 'ISBN ' + pickIsbn(info) : '',
-    cleanSourceText(info.source) && cleanSourceText(info.source) !== 'Original entry' ? 'Source: ' + cleanSourceText(info.source) : ''
+    cleanSource && cleanSource !== 'Original entry' ? 'Source: ' + cleanSource : ''
   ].filter(Boolean).join(' / ');
   const cover = safeBookImageUrl(info.coverUrl);
-  const body = info.description || (meta ? '取得できた本情報を表示しています。概要文は見つかった場合だけ表示されます。' : (navigator.onLine === false ? 'オンライン時に本情報を取得できます。' : '本情報はまだ取得されていません。本を開くと自動取得します。'));
+  const body = descriptionIsSuspicious ? '概要生成の形式が崩れていたため表示していません。「概要を作り直す」を押してください。' : (info.description || (meta ? '取得できた本情報を表示しています。概要文は見つかった場合だけ表示されます。' : (navigator.onLine === false ? 'オンライン時に本情報を取得できます。' : '本情報はまだ取得されていません。本を開くと自動取得します。')));
   return `<div class="book-overview-panel">
     <div class="book-overview-head">
       ${cover ? `<img class="book-overview-cover" src="${esc(cover)}" alt="">` : ''}
@@ -4717,7 +4755,7 @@ function bookOverviewHTML(group) {
         ${meta ? `<div class="book-overview-meta">${esc(meta)}</div>` : ''}
       </div>
     </div>
-    <div class="${info.description ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
+    <div class="${info.description && !descriptionIsSuspicious ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
     <div class="book-overview-actions">
       <button type="button" class="book-overview-action-btn" data-book-wide-edit-book="${esc(group.book)}" data-book-wide-edit-author="${esc(group.author || authors)}">本全体を編集</button>
       <button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" data-book-refresh-book="${esc(group.book)}" data-book-refresh-author="${esc(group.author || authors)}">候補を選び直す</button>
@@ -6923,7 +6961,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v112';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v113';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
