@@ -643,13 +643,15 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v114';
+const APP_VERSION   = 'tag-auto-folder v115';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
-const GEMINI_MODEL  = 'gemini-3.5-flash';
-const GEMINI_TIMEOUT_MS = 60000;
+const GEMINI_MODEL  = 'gemini-2.5-flash-lite';
+const GEMINI_SUMMARY_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const GEMINI_TIMEOUT_MS = 35000;
+const GEMINI_SUMMARY_MAX_OUTPUT_TOKENS = 260;
 const RAKUTEN_APP_ID_KEY = 'reading_log_rakuten_application_id';
 const RAKUTEN_ACCESS_KEY_KEY = 'reading_log_rakuten_access_key';
 const BOOK_INFO_CACHE_KEY = 'reading_log_book_info_cache_v1';
@@ -4367,41 +4369,249 @@ function normalizeGeminiOverviewCandidate(text) {
   return value;
 }
 
-function bookOverviewPrompt(book, author, info, options) {
-  options = options || {};
-  info = normalizeBookMetaValue(info);
-  const title = info.title || book || 'タイトル未入力';
-  const authors = cleanAuthorList([...(info.authors || []), author]).join('、') || '不明';
-  const details = [
-    info.publisher ? '出版社: ' + info.publisher : '',
-    info.publishedDate ? '出版年: ' + info.publishedDate : '',
-    pickIsbn(info) ? 'ISBN: ' + pickIsbn(info) : '',
-    info.categories && info.categories.length ? '分類・カテゴリ: ' + info.categories.join('、') : ''
-  ].filter(Boolean).join('\n');
-  const previousDescription = cleanGeminiOverviewText(info.description);
-  const previousWasSuspicious = isSuspiciousGeminiBookOverview(previousDescription);
-  const retryNote = options.force && previousDescription && !previousWasSuspicious
-    ? `\n前回の概要:\n${previousDescription}\n\n今回は前回と同じ文章や言い回しを避け、読書ノートで本を見分けやすくなる別案として作り直してください。`
-    : (options.force && previousWasSuspicious ? '\n前回の概要は文字番号が混じって崩れていたため、参照せずに新しく作成してください。\n' : '');
-  const rejectedNote = options.rejectBadOverview
-    ? '\n直前の出力は文字番号や注番号が混じっていたため破棄しました。今回は本文だけを自然な文章で出力してください。\n'
-    : '';
-  return `次の本について、読書ノートアプリに表示する「本全体の概要」を日本語で作成してください。
+function geminiLog(label, payload, level) {
+  const text = (() => {
+    try { return JSON.stringify(payload); }
+    catch(e) { return String(payload || ''); }
+  })();
+  if (typeof Logger !== 'undefined' && Logger && typeof Logger.log === 'function') {
+    Logger.log(label + ' ' + text);
+  } else if (level === 'warn') {
+    console.warn(label, payload);
+  } else {
+    console.info(label, payload);
+  }
+}
 
-タイトル: ${title}
-著者: ${authors}
-${details}${retryNote}${rejectedNote}
+function firstGeminiText(data) {
+  return (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts || [])
+    .map(part => part && part.text || '')
+    .join('')
+    .trim();
+}
+
+function compactGeminiResponse(data) {
+  const candidate = data && data.candidates && data.candidates[0] || {};
+  return {
+    finishReason: candidate.finishReason || '',
+    textPreview: firstGeminiText(data).slice(0, 600),
+    safetyRatings: candidate.safetyRatings || [],
+    promptFeedback: data && data.promptFeedback || null,
+    usageMetadata: data && data.usageMetadata || null,
+    error: data && data.error || null
+  };
+}
+
+function shortPromptValue(value, maxLength) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
+}
+
+function bookSummaryInput(book, options) {
+  options = options || {};
+  const raw = book || {};
+  const info = normalizeBookMetaValue(raw.info || raw);
+  const source = cleanSourceText(info.source || '');
+  const sourceIsGemini = /\bGemini overview\b/.test(source);
+  const description = sourceIsGemini ? '' : cleanGeminiOverviewText(info.description || raw.description || '');
+  return {
+    title: String(info.title || raw.title || raw.book || '').trim() || 'タイトル未入力',
+    subtitle: String(raw.subtitle || raw.subTitle || '').trim(),
+    authors: cleanAuthorList([...(info.authors || []), raw.author]).join('、') || '不明',
+    publishedDate: String(info.publishedDate || raw.publishedDate || '').trim(),
+    description: shortPromptValue(description, 700),
+    categories: cleanTagList(info.categories || []).slice(0, 6).join('、')
+  };
+}
+
+function bookSummaryInputText(input) {
+  input = input || {};
+  return [input.title, input.subtitle, input.authors, input.publishedDate, input.description, input.categories]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function bookSummaryPrompt(input) {
+  input = input || {};
+  return `あなたは読書ノートアプリの概要作成係です。
+以下の本について、日本語で120〜180字の概要を書いてください。
 
 条件:
-- 120〜220字程度
-- 箇条書きではなく自然な文章
-- 回答は概要本文だけにし、見出し・文字番号・注番号・脚注番号・引用番号・連番・括弧付き番号を付けない
-- 文字ごと、単語ごと、文節ごとの番号付けを絶対にしない
-- 出力前に読み直し、文章中に不要な番号が混じっていたら番号を削って自然文だけにする
-- 内容を断定しすぎず、一般に知られている範囲で説明
-- 本のタイトル・副題・著者情報・説明文に含まれる国名、政府名、政党名、組織名、人名は、曖昧な表現に言い換えず、そのまま明記
-- 批判的・政治的な内容は事実として断定せず、「本書は〜と論じる」「著者は〜と主張する」という形で書く
-- 書誌情報だけで内容が特定しにくい場合は、その分野・目的・読者が分かる控えめな概要にする`;
+- 敬体
+- 最後は必ず句点「。」で終える
+- 入力にある国名・組織名・人名は曖昧化しない
+- 政治的・批判的内容は「本書は〜を論じる」「著者は〜と主張する」と帰属させる
+- 不明な内容は推測しない
+
+出力は必ず次のJSONだけ:
+{"summary":"概要文"}
+
+タイトル: ${input.title || ''}
+副題: ${input.subtitle || ''}
+著者: ${input.authors || ''}
+出版年: ${input.publishedDate || ''}
+説明: ${input.description || ''}
+分類: ${input.categories || ''}`;
+}
+
+function bookSummaryRepairPrompt(input, previousSummary, errors) {
+  input = input || {};
+  return `前回の要約は条件を満たしていません。
+以下の問題を修正して、JSON形式でsummaryだけ返してください。
+- ${((errors && errors.length ? errors : ['概要生成に失敗しました']).join('\n- '))}
+
+条件:
+- 日本語120〜180字
+- 敬体
+- 最後は必ず句点「。」で終える
+- 曖昧表現を使わない
+- 不明な内容は推測しない
+
+前回の要約: ${shortPromptValue(previousSummary, 260)}
+
+出力:
+{"summary":"概要文"}
+
+タイトル: ${input.title || ''}
+副題: ${input.subtitle || ''}
+著者: ${input.authors || ''}
+出版年: ${input.publishedDate || ''}
+説明: ${input.description || ''}`;
+}
+
+function parseGeminiSummaryJson(text) {
+  let raw = String(text || '').trim();
+  raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const objectMatch = raw.match(/\{[\s\S]*\}/);
+  if (objectMatch) raw = objectMatch[0];
+  const parsed = JSON.parse(raw);
+  return cleanGeminiOverviewText(parsed && parsed.summary);
+}
+
+function validateSummary(summary, inputText) {
+  let value = normalizeGeminiOverviewCandidate(summary).replace(/\s+/g, ' ').trim();
+  const errors = [];
+  const length = [...value].length;
+  if (!value) errors.push('summaryが空です');
+  if (value && length < 60) errors.push('summaryが60字未満です');
+  if (length > 220) errors.push('summaryが220字を超えています');
+  if (value && !value.endsWith('。')) errors.push('summaryが句点で終わっていません');
+  if (isSuspiciousGeminiBookOverview(value)) errors.push('文字番号の混入があります');
+  if (/[�□]{2,}/u.test(value)) errors.push('文字化けの疑いがあります');
+  const japaneseChars = value.match(/[ぁ-んァ-ヶ一-龠]/g) || [];
+  if (value && japaneseChars.length < 20) errors.push('日本語文として短すぎます');
+  if (/(特定の国家|特定の国|ある国|ある国家|某国|巨大国家|一部の国家|某政府|某組織)/u.test(value)) {
+    errors.push('曖昧な国家・組織表現が含まれています');
+  }
+  const inputHasChina = /(China|Chinese|中国|中華人民共和国|中国共産党)/i.test(String(inputText || ''));
+  const outputHasChina = /(China|Chinese|中国|中華人民共和国|中国共産党)/i.test(value);
+  if (inputHasChina && !outputHasChina) errors.push('入力の中国関連語が概要に残っていません');
+  return {ok: errors.length === 0, summary: value, errors};
+}
+
+async function callGeminiForSummary(prompt, options) {
+  options = options || {};
+  const apiKey = options.apiKey || getApiKey();
+  const model = options.model || GEMINI_SUMMARY_MODELS[0];
+  if (!apiKey) throw new Error('Gemini API key is missing');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs || GEMINI_TIMEOUT_MS);
+  let r;
+  let data = {};
+  try {
+    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
+      body: JSON.stringify({
+        contents: [{parts: [{text: prompt}]}],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: options.maxOutputTokens || GEMINI_SUMMARY_MAX_OUTPUT_TOKENS,
+          responseMimeType: 'application/json'
+        }
+      }),
+      signal: controller.signal
+    });
+    data = await r.json().catch(() => ({}));
+  } catch(e) {
+    if (e && e.name === 'AbortError') {
+      geminiLog('Gemini summary timeout', {model, timeoutMs: options.timeoutMs || GEMINI_TIMEOUT_MS}, 'warn');
+      throw new Error('Gemini API timed out');
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+  const finishReason = data.candidates?.[0]?.finishReason || 'UNKNOWN';
+  geminiLog('Gemini summary response', {
+    status: r.status,
+    ok: r.ok,
+    model,
+    finishReason,
+    raw: compactGeminiResponse(data)
+  }, r.ok && finishReason === 'STOP' ? 'info' : 'warn');
+  if (!r.ok) throw new Error(data.error?.message || 'Gemini API error');
+  if (finishReason !== 'STOP') {
+    const err = new Error('Gemini finishReason: ' + finishReason);
+    err.finishReason = finishReason;
+    err.raw = data;
+    throw err;
+  }
+  return {
+    summary: parseGeminiSummaryJson(firstGeminiText(data)),
+    model,
+    finishReason,
+    status: r.status,
+    raw: data
+  };
+}
+
+async function generateBookSummary(book, options) {
+  options = options || {};
+  const input = bookSummaryInput(book, options);
+  const inputText = bookSummaryInputText(input);
+  const plan = [
+    {model: GEMINI_SUMMARY_MODELS[0], repair: false},
+    {model: GEMINI_SUMMARY_MODELS[0], repair: true},
+    {model: GEMINI_SUMMARY_MODELS[1], repair: true}
+  ];
+  const maxAttempts = Math.min(plan.length, 1 + Math.max(0, Math.min(2, options.maxRetries == null ? 2 : options.maxRetries)));
+  let lastSummary = '';
+  let lastErrors = [];
+  for (let i = 0; i < maxAttempts; i++) {
+    const step = plan[i];
+    const prompt = step.repair ? bookSummaryRepairPrompt(input, lastSummary, lastErrors) : bookSummaryPrompt(input);
+    try {
+      const response = await callGeminiForSummary(prompt, {
+        apiKey: options.apiKey,
+        model: step.model,
+        timeoutMs: options.timeoutMs,
+        maxOutputTokens: options.maxOutputTokens
+      });
+      const validation = validateSummary(response.summary, inputText);
+      geminiLog('Gemini summary validation', {
+        attempt: i + 1,
+        model: step.model,
+        ok: validation.ok,
+        errors: validation.errors,
+        summaryPreview: validation.summary.slice(0, 240)
+      }, validation.ok ? 'info' : 'warn');
+      if (validation.ok) return {...response, summary: validation.summary};
+      lastSummary = validation.summary;
+      lastErrors = validation.errors;
+    } catch(e) {
+      lastErrors = [e && e.message ? e.message : 'Gemini summary failed'];
+      geminiLog('Gemini summary attempt failed', {
+        attempt: i + 1,
+        model: step.model,
+        errors: lastErrors,
+        finishReason: e && e.finishReason || ''
+      }, 'warn');
+    }
+  }
+  const err = new Error('Book summary generation failed: ' + lastErrors.join(', '));
+  err.validationErrors = lastErrors;
+  throw err;
 }
 
 async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
@@ -4413,7 +4623,7 @@ async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
     r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
-      body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 1000, temperature:0.35, topP:0.9}}),
+      body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 300, temperature:0.2, topP:0.9}}),
       signal: controller.signal
     });
     d = await r.json().catch(() => ({}));
@@ -4423,14 +4633,26 @@ async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
   } finally {
     clearTimeout(timer);
   }
+  const finishReason = d.candidates?.[0]?.finishReason || 'UNKNOWN';
+  geminiLog('Gemini text response', {
+    status: r.status,
+    ok: r.ok,
+    model: GEMINI_MODEL,
+    finishReason,
+    raw: compactGeminiResponse(d)
+  }, r.ok && finishReason === 'STOP' ? 'info' : 'warn');
   if (!r.ok) throw new Error(d.error?.message || 'Gemini API error');
-  return d.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim() || '';
+  if (finishReason !== 'STOP') throw new Error('Gemini finishReason: ' + finishReason);
+  return firstGeminiText(d);
 }
 
 async function ensureBookOverviewDescription(book, author, info, options) {
   options = options || {};
   info = normalizeBookMetaValue(info);
-  if (info.description && !options.force && !isSuspiciousGeminiBookOverview(info.description)) return info;
+  const sourceIsGemini = /\bGemini overview\b/.test(info.source || '');
+  const existingInput = bookSummaryInput({book, author, info}, options);
+  const existingValidation = validateSummary(info.description, bookSummaryInputText(existingInput));
+  if (info.description && !options.force && !isSuspiciousGeminiBookOverview(info.description) && (!sourceIsGemini || existingValidation.ok)) return info;
   if (navigator.onLine === false) return info;
   const key = getApiKey();
   if (!key) {
@@ -4443,17 +4665,8 @@ async function ensureBookOverviewDescription(book, author, info, options) {
   }
   if (!options || options.quiet !== true) showToast('Geminiで本概要を作成中...');
   try {
-    let description = normalizeGeminiOverviewCandidate(await fetchGeminiText(bookOverviewPrompt(book, author, info, options), key, 900));
-    if (isSuspiciousGeminiBookOverview(description)) {
-      console.warn('Rejected suspicious Gemini book overview:', description);
-      const retryInfo = normalizeBookMetaValue({...info, description: ''});
-      description = normalizeGeminiOverviewCandidate(await fetchGeminiText(bookOverviewPrompt(book, author, retryInfo, {...options, rejectBadOverview:true}), key, 900));
-      if (isSuspiciousGeminiBookOverview(description)) {
-        console.warn('Rejected suspicious Gemini book overview retry:', description);
-        if (!options || options.quiet !== true) showToast('Geminiの概要形式が崩れたため保存しませんでした');
-        return info;
-      }
-    }
+    const generated = await generateBookSummary({book, author, info}, {apiKey:key, force: !!options.force, maxRetries:2});
+    const description = generated.summary;
     if (!description) return info;
     return normalizeBookMetaValue({
       ...info,
@@ -4463,7 +4676,7 @@ async function ensureBookOverviewDescription(book, author, info, options) {
     });
   } catch(e) {
     console.warn('Gemini book overview failed:', e);
-    if (!options || options.quiet !== true) showToast('Geminiで概要を作成できませんでした');
+    if (!options || options.quiet !== true) showToast('概要生成に失敗しました。作り直してください');
     return info;
   }
 }
@@ -6858,10 +7071,10 @@ async function runAI(id,btn,key) {
   const e=entries.find(e=>e.id===id); if(!e) return;
   btn.disabled=true; btn.textContent='要約中…';
   try {
-    const prompt=`以下の読書ノートを3行以内で日本語要約してください。\n\n本:「${e.book}」著者:${e.author}\n内容:${e.content}\n教訓:${e.lesson}\n\n要点を箇条書きにせず流れるような文章でまとめてください。`;
-    e.aiSummary = await fetchGeminiText(prompt, key, 1000) || '要約を取得できませんでした。';
+    const prompt=`次の読書ノートを日本語で120字以内に要約してください。敬体で、最後は必ず句点「。」で終えてください。\n\n本: ${e.book}\n著者: ${e.author}\n内容: ${e.content}\n教訓: ${e.lesson}`;
+    e.aiSummary = await fetchGeminiText(prompt, key, 220) || '要約を取得できませんでした。';
     persist(); render(); showToast('✨ AI要約完了');
-  } catch { showToast('エラーが発生しました。'); }
+  } catch { showToast('概要生成に失敗しました。作り直してください'); }
   finally { btn.disabled=false; btn.textContent=e.aiSummary?'✨ 再要約':'✨ AI要約'; }
 }
 
@@ -6974,7 +7187,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v114';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v115';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
