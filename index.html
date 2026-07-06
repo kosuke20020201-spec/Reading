@@ -80,7 +80,7 @@
   .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
   .tag-filter-drag-row { display:flex; flex-wrap:wrap; gap:0.4rem; width:100%; }
   .tag-filter-drag-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
-  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; touch-action:manipulation; }
+  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; }
   .tag-btn[data-folder-tag-chip]:active { cursor:grabbing; }
   .tag-btn[data-folder-tag-chip].dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
@@ -357,7 +357,7 @@
   .tag-folder-card-title { font-size:0.84rem; font-weight:800; color:var(--stone-800); }
   .tag-folder-chip-row { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.65rem; min-height:1.65rem; }
   .tag-folder-chip-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0.45rem; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
-  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; touch-action:manipulation; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
+  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
   .tag-folder-chip:active { cursor:grabbing; }
   .tag-folder-chip.dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .tag-folder-chip button { border:0; background:none; cursor:pointer; color:var(--stone-400); font:inherit; line-height:1; padding:0; }
@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v115';
+const APP_VERSION   = 'tag-auto-folder v116';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1356,8 +1356,21 @@ function getTagFolders() {
     const stored = localStorage.getItem(TAG_FOLDERS_KEY);
     if (!stored) return {};
     if (stored !== tagFolderCacheText || !tagFolderCacheValue) {
-      tagFolderCacheValue = inheritTagFolders(cleanTagFolders(JSON.parse(stored)));
-      tagFolderCacheText = stored;
+      const parsed = JSON.parse(stored);
+      const clean = inheritTagFolders(cleanTagFolders(parsed));
+      const cleanText = JSON.stringify(clean);
+      tagFolderCacheValue = clean;
+      tagFolderCacheText = cleanText;
+      if (cleanText !== stored) {
+        localStorage.setItem(TAG_FOLDERS_KEY, cleanText);
+        const order = cleanTagFolderOrder(getTagFolderOrder(), clean);
+        const orderText = JSON.stringify(order);
+        localStorage.setItem(TAG_FOLDER_ORDER_KEY, orderText);
+        tagFolderOrderCacheText = orderText;
+        tagFolderOrderCacheValue = order.slice();
+        markSyncPending(true);
+        scheduleCloudSync(0);
+      }
       invalidateTagFolderDerivedCaches();
     }
     return cloneTagFolders(tagFolderCacheValue);
@@ -1398,9 +1411,9 @@ function cleanTagFolderOrder(order, folders) {
   const clean = [];
   (Array.isArray(order) ? order : []).forEach(function(path) {
     path = normalizeFolderPath(path);
-    if (path && pathSet.has(path) && !clean.includes(path)) clean.push(path);
+    if (path && !isReservedTagFolderPath(path) && pathSet.has(path) && !clean.includes(path)) clean.push(path);
   });
-  paths.forEach(path => { if (!clean.includes(path)) clean.push(path); });
+  paths.forEach(path => { if (!isReservedTagFolderPath(path) && !clean.includes(path)) clean.push(path); });
   return clean;
 }
 
@@ -1462,6 +1475,11 @@ function folderParentPath(path) {
   return parts.join('/');
 }
 
+function isReservedTagFolderPath(path) {
+  const first = (folderParts(path)[0] || '').toLocaleLowerCase('en-US');
+  return first === 'order';
+}
+
 function isFolderDescendantOrSelf(path, ancestor) {
   path = normalizeFolderPath(path);
   ancestor = normalizeFolderPath(ancestor);
@@ -1472,7 +1490,7 @@ function cleanTagFolderDeletedList(list) {
   const clean = [];
   (Array.isArray(list) ? list : []).forEach(function(path) {
     path = normalizeFolderPath(path);
-    if (!path) return;
+    if (!path || isReservedTagFolderPath(path)) return;
     if (clean.some(existing => isFolderDescendantOrSelf(path, existing))) return;
     for (let i = clean.length - 1; i >= 0; i--) {
       if (isFolderDescendantOrSelf(clean[i], path)) clean.splice(i, 1);
@@ -1576,7 +1594,7 @@ function cleanTagFolders(folders) {
   Object.keys(folders).forEach(function(name) {
     const folderName = normalizeFolderPath(name);
     const tags = cleanTagList(folders[name]);
-    if (folderName) clean[folderName] = cleanTagList([...(clean[folderName] || []), ...tags]);
+    if (folderName && !isReservedTagFolderPath(folderName)) clean[folderName] = cleanTagList([...(clean[folderName] || []), ...tags]);
   });
   return clean;
 }
@@ -5426,6 +5444,8 @@ function setTag(t) {
 }
 
 function setTagFolder(name) {
+  name = normalizeFolderPath(name);
+  if (isReservedTagFolderPath(name)) name = '';
   activeTag = '';
   activeTagFolder = activeTagFolder === name ? '' : name;
   expandedRecordScope = activeTagFolder ? 'activeTag' : 'all';
@@ -5445,6 +5465,7 @@ function tagFolderOptions(excludedTags) {
 
 function normalizeTagFolderTargetPath(path) {
   path = normalizeFolderPath(path);
+  if (isReservedTagFolderPath(path)) return '';
   const names = tagFolderNames();
   while (path && !names.includes(path)) path = folderParentPath(path);
   return path;
@@ -5682,6 +5703,7 @@ function onTagFolderChipPointerDown(event) {
   if (!chip || event.target.closest('[data-tag-remove]')) return;
   const row = chip.closest('[data-folder-chip-row]');
   if (!row) return;
+  if (event.pointerType !== 'mouse') event.preventDefault();
   tagFolderChipDrag = {
     chip,
     row,
@@ -5694,6 +5716,7 @@ function onTagFolderChipPointerDown(event) {
     canceled: false,
     longPressTimer: null
   };
+  try { chip.setPointerCapture(event.pointerId); } catch {}
   tagFolderChipDrag.longPressTimer = setTimeout(startTagFolderChipDrag, event.pointerType === 'mouse' ? 70 : 220);
   document.addEventListener('pointermove', onTagFolderChipPointerMove, {passive:false});
   document.addEventListener('pointerup', finishTagFolderChipDrag, {passive:false});
@@ -5704,12 +5727,13 @@ function onTagFolderChipPointerMove(event) {
   if (!tagFolderChipDrag || event.pointerId !== tagFolderChipDrag.pointerId) return;
   const dx = event.clientX - tagFolderChipDrag.startX;
   const dy = event.clientY - tagFolderChipDrag.startY;
+  const distance = Math.hypot(dx, dy);
   if (!tagFolderChipDrag.dragging) {
-    if (event.pointerType === 'mouse' && Math.hypot(dx, dy) > 4) {
+    if (event.pointerType === 'mouse' && distance > 4) {
       startTagFolderChipDrag();
       return;
     }
-    if (Math.hypot(dx, dy) > 12) {
+    if (event.pointerType !== 'mouse' && distance > 32) {
       tagFolderChipDrag.canceled = true;
       cancelTagFolderChipDrag(event);
     }
@@ -5769,8 +5793,8 @@ function cancelTagFolderChipDrag(event) {
 function selectedFolderNameFromForm() {
   const target = normalizeTagFolderTargetPath(tagFolderTargetPath);
   const name = (document.getElementById('tagFolderName').value || '').trim();
-  if (target && name) return normalizeFolderPath(target + '/' + name);
-  return normalizeFolderPath(target || name);
+  const folderName = target && name ? normalizeFolderPath(target + '/' + name) : normalizeFolderPath(target || name);
+  return isReservedTagFolderPath(folderName) ? '' : folderName;
 }
 
 function moveTagsIntoFolder(folderName, tags) {
@@ -5780,7 +5804,7 @@ function moveTagsIntoFolder(folderName, tags) {
 function addTagsToFolder(folderName, tags) {
   folderName = normalizeFolderPath(folderName);
   const selected = cleanTagList(tags);
-  if (!folderName) return 0;
+  if (!folderName || isReservedTagFolderPath(folderName)) return 0;
   clearDeletedTagFolderPath(folderName);
   const folders = getTagFolders();
   if (!selected.length) {
@@ -5790,15 +5814,6 @@ function addTagsToFolder(folderName, tags) {
     }
     return autoAssignTagFoldersFromEntries([folderName]);
   }
-  Object.keys(folders).forEach(function(name) {
-    if (name === folderName) return;
-    if ((folderParts(name)[0] || '').toLocaleLowerCase('en-US') !== 'order') return;
-    folders[name] = cleanTagList(folders[name]).filter(tag => !selected.includes(tag));
-    if (!folders[name].length) {
-      addDeletedTagFolders([name]);
-      delete folders[name];
-    }
-  });
   folders[folderName] = cleanTagList([...(folders[folderName] || []), ...selected]);
   setTagFolders(folders);
   return autoAssignTagFoldersFromEntries([folderName]);
@@ -7187,7 +7202,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v115';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v116';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
