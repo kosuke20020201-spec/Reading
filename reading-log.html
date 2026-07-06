@@ -560,7 +560,7 @@
         <div class="drawing-gallery" id="drawingGallery"></div>
         <div class="media-actions">
           <button type="button" class="btn-sub" onclick="openDrawingModal(null)">📐 スケッチを追加</button>
-          <label class="btn-sub" style="cursor:pointer">🖼 画像を追加<input type="file" accept="image/*" onchange="addImageAttachment(event)" style="display:none"></label>
+          <label class="btn-sub" style="cursor:pointer">🖼 画像を追加<input type="file" accept="image/*" multiple onchange="addImageAttachment(event)" style="display:none"></label>
         </div>
       </div>
     </div>
@@ -686,10 +686,11 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v124';
+const APP_VERSION   = 'tag-auto-folder v126';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
+const LAST_GOOD_ENTRIES_KEY = 'reading_log_last_good_entries_v1';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
 const GEMINI_MODEL  = 'gemini-2.5-flash-lite';
 const GEMINI_SUMMARY_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
@@ -734,6 +735,9 @@ const NOTE_TYPES = [
 ];
 const NOTE_TYPE_DEFAULTS = [NOTE_TYPE_DEFAULT];
 const NOTE_TYPE_MAP = new Map(NOTE_TYPES.map(type => [type.value, type]));
+const SHEET_CELL_ERROR_VALUES = new Set(['#ERROR!','#VALUE!','#REF!','#DIV/0!','#N/A','#NAME?','#NUM!','#NULL!']);
+const CLOUD_TEXT_FIELDS = ['book','author','page','title','content','lesson','supplement','aiSummary'];
+const CLOUD_TEXT_ARRAY_FIELDS = ['tags','fixedTags'];
 const SPINE_THEMES = {
   classic: [
     { base:'#5a3825', top:'#7b5338', bottom:'#2f1f18', edge:'#3a2419', light:'#9f7b58', shadow:'#261912', ink:'#fff3d2', label:'#ead2a8', labelOpacity:'0.16', badgeBg:'rgba(255,244,214,0.16)', badgeInk:'#fff7df', badgeBorder:'rgba(255,244,214,0.22)', textShadow:'0 1px 1px rgba(0,0,0,0.5)' },
@@ -871,8 +875,113 @@ function noteTypeClass(value) {
 function noteTypeBadgesHTML(entry) {
   return entryNoteTypes(entry).map(type => `<span class="note-type-badge ${noteTypeClass(type)}">${esc(noteTypeLabel(type))}</span>`).join('');
 }
+
+function isSheetCellErrorValue(value) {
+  if (typeof value !== 'string') return false;
+  const text = value.trim().toUpperCase();
+  return SHEET_CELL_ERROR_VALUES.has(text) || /^#(?:ERROR|VALUE|REF|DIV\/0|N\/A|NAME\?|NUM|NULL)!?$/.test(text);
+}
+
+function valueHasSheetCellError(value) {
+  if (isSheetCellErrorValue(value)) return true;
+  if (Array.isArray(value)) return value.some(valueHasSheetCellError);
+  return false;
+}
+
+function unprotectSheetFormulaText(value) {
+  const text = value == null ? '' : String(value);
+  return /^'[=+\-@]/.test(text) ? text.slice(1) : text;
+}
+
+function protectSheetFormulaText(value) {
+  const text = value == null ? '' : String(value);
+  if (!text || /^'[=+\-@]/.test(text)) return text;
+  return /^[=+\-@]/.test(text) ? "'" + text : text;
+}
+
+function restoreSheetText(value, fallback) {
+  if (isSheetCellErrorValue(value)) {
+    return isSheetCellErrorValue(fallback) ? '' : unprotectSheetFormulaText(fallback);
+  }
+  return unprotectSheetFormulaText(value);
+}
+
+function restoreSheetTextArray(value, fallback) {
+  if (valueHasSheetCellError(value)) {
+    return cleanTagList(Array.isArray(fallback) ? fallback.map(unprotectSheetFormulaText) : []);
+  }
+  return cleanTagList((Array.isArray(value) ? value : []).map(unprotectSheetFormulaText));
+}
+
+function entryHasSheetCellError(entry) {
+  if (!entry) return false;
+  return CLOUD_TEXT_FIELDS.some(field => isSheetCellErrorValue(entry[field]))
+    || CLOUD_TEXT_ARRAY_FIELDS.some(field => valueHasSheetCellError(entry[field]))
+    || ['drawings','images','mediaKinds'].some(field => valueHasSheetCellError(entry[field]));
+}
+
+function getLastGoodEntryMap() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LAST_GOOD_ENTRIES_KEY) || '[]');
+    if (!Array.isArray(parsed)) return {};
+    return Object.fromEntries(parsed.filter(e=>e&&e.id!=null&&!entryHasSheetCellError(e)).map(e=>[String(e.id), e]));
+  } catch {
+    return {};
+  }
+}
+
+function repairEntrySheetErrors(entry, fallback) {
+  if (!entry) return entry;
+  const clone = { ...(entry || {}) };
+  const backup = fallback || {};
+  CLOUD_TEXT_FIELDS.forEach(function(field) {
+    clone[field] = restoreSheetText(clone[field], backup[field]);
+  });
+  CLOUD_TEXT_ARRAY_FIELDS.forEach(function(field) {
+    clone[field] = restoreSheetTextArray(clone[field], backup[field]);
+  });
+  if (valueHasSheetCellError(clone.drawings)) clone.drawings = mediaList(backup.drawings);
+  if (valueHasSheetCellError(clone.images)) clone.images = mediaList(backup.images);
+  if (valueHasSheetCellError(clone.mediaKinds)) clone.mediaKinds = Array.isArray(backup.mediaKinds) ? backup.mediaKinds : [];
+  return clone;
+}
+
+function repairEntriesWithLastGood(list) {
+  const lastGood = getLastGoodEntryMap();
+  return (Array.isArray(list) ? list : []).map(function(entry) {
+    return repairEntrySheetErrors(entry, entry && entry.id != null ? lastGood[String(entry.id)] : null);
+  });
+}
+
+function rememberLastGoodEntries(source) {
+  const active = (Array.isArray(source) ? source : entries)
+    .filter(e => e && !isSyncMetaEntry(e) && !isDeletedEntry(e) && !entryHasSheetCellError(e))
+    .map(normalizeEntryForApp);
+  if (active.length || (Array.isArray(source) && !source.length)) {
+    localStorage.setItem(LAST_GOOD_ENTRIES_KEY, JSON.stringify(active));
+  }
+}
+
+function prepareEntryForCloud(entry) {
+  const lastGood = getLastGoodEntryMap();
+  const clone = normalizeEntryForApp(repairEntrySheetErrors(entry, entry && entry.id != null ? lastGood[String(entry.id)] : null));
+  CLOUD_TEXT_FIELDS.forEach(function(field) {
+    clone[field] = protectSheetFormulaText(clone[field]);
+  });
+  CLOUD_TEXT_ARRAY_FIELDS.forEach(function(field) {
+    clone[field] = cleanTagList(clone[field]).map(protectSheetFormulaText);
+  });
+  return clone;
+}
+
 function normalizeEntryForApp(entry) {
   const clone = { ...(entry || {}) };
+  CLOUD_TEXT_FIELDS.forEach(function(field) {
+    clone[field] = restoreSheetText(clone[field], '');
+  });
+  CLOUD_TEXT_ARRAY_FIELDS.forEach(function(field) {
+    clone[field] = restoreSheetTextArray(clone[field], []);
+  });
   clone.noteTypes = normalizeNoteTypes(Array.isArray(clone.noteTypes) ? clone.noteTypes : clone.noteType);
   clone.noteType = clone.noteTypes[0] || NOTE_TYPE_DEFAULT;
   return clone;
@@ -1947,19 +2056,22 @@ function load() {
   setTombstones([...getTombstones(), ...tombstoneCandidates]);
   entries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
   const idRepair = repairMissingIds(entries);
-  entries = idRepair.list;
+  entries = repairEntriesWithLastGood(idRepair.list);
   entries = entries.map(normalizeEntryForApp);
+  rememberLastGoodEntries(entries);
   const mediaMigrated = migrateImagesIntoDrawings();
   if (idRepair.changed || mediaMigrated) persist();
 }
 
 function persist() {
   bookFixedTagsCache.clear();
+  entries = repairEntriesWithLastGood(entries);
   entries = entries.map(normalizeEntryForApp);
   migrateImagesIntoDrawings();
   syncEntryFixedTags();
   autoAssignTagFoldersFromEntries();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  rememberLastGoodEntries(entries);
   markSyncPending(true);
   scheduleCloudSync(0);
 }
@@ -2126,8 +2238,11 @@ async function showSyncDiagnostics() {
 function buildCloudPayloadBody() {
   migrateImagesIntoDrawings();
   const deletedIds = getDeletedIds();
-  const activeEntries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
-  return JSON.stringify([...activeEntries, ...getSyncTombstones(), buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), ...buildBookCoverSyncEntries()]);
+  const activeEntries = entries
+    .filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e))
+    .map(prepareEntryForCloud);
+  const tombstones = getSyncTombstones().map(prepareEntryForCloud);
+  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), ...buildBookCoverSyncEntries()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -2143,6 +2258,10 @@ function entryTime(entry) {
 function chooseEntryVersion(cloudEntry, localEntry, preferLocal) {
   if (!cloudEntry) return localEntry;
   if (!localEntry) return cloudEntry;
+  const cloudBroken = entryHasSheetCellError(cloudEntry);
+  const localBroken = entryHasSheetCellError(localEntry);
+  if (cloudBroken && !localBroken) return localEntry;
+  if (!cloudBroken && localBroken) return cloudEntry;
   const cloudTime = entryTime(cloudEntry);
   const localTime = entryTime(localEntry);
   if (cloudTime && localTime && cloudTime !== localTime) {
@@ -2453,6 +2572,18 @@ async function verifyCloudMedia(expectedEntries) {
   throw new Error('Cloud did not save images');
 }
 
+async function verifyCloudHasNoSheetErrors(expectedEntries) {
+  const ids = new Set((Array.isArray(expectedEntries) ? expectedEntries : []).filter(e=>e&&e.id!=null).map(e=>String(e.id)));
+  if (!ids.size) return true;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const cloudRaw = await fetchCloudEntries();
+    const broken = cloudRaw.filter(e=>e&&ids.has(String(e.id))&&entryHasSheetCellError(e));
+    if (!broken.length) return true;
+    await delay(1200);
+  }
+  throw new Error('Cloud returned spreadsheet error cells');
+}
+
 async function verifyCloudBookCovers() {
   const expected = buildBookCoverSyncEntries();
   if (!expected.length) return true;
@@ -2517,6 +2648,7 @@ async function syncToCloud(options) {
     } catch (corsError) {
       await postCloudPayload(body, 'no-cors');
     }
+    await verifyCloudHasNoSheetErrors(expectedEntries);
     await verifyCloudMedia(expectedEntries);
     await verifyCloudBookCovers();
     await verifyCloudDeletedIds(deletedIds);
@@ -2561,22 +2693,28 @@ async function loadFromCloud(options) {
     const localEntries = entries.filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e));
     const hadStraySentinel = localEntries.length !== entries.length;
     const localMap = Object.fromEntries(localEntries.map(e=>[String(e.id),e]));
-    const cloudMap = Object.fromEntries(filtered.map(e=>[String(e.id),e]));
+    const lastGoodMap = getLastGoodEntryMap();
+    const cloudMap = Object.fromEntries(filtered.map(function(e) {
+      const id = String(e.id);
+      return [id, repairEntrySheetErrors(e, localMap[id] || lastGoodMap[id])];
+    }));
     const allIds = new Set([...Object.keys(localMap),...Object.keys(cloudMap)]);
     entries = [...allIds].filter(id=>!deletedIds.has(id)).map(id=>{
       const c=cloudMap[id], l=localMap[id];
       const chosen = chooseEntryVersion(c, l, preferLocal);
+      if (!chosen) return null;
       const drawings = mergeEntryMedia(c, l);
       const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
       return normalizeEntryForApp({...chosen, drawings, images: [], mediaKinds, mediaUpdatedAt});
-    });
+    }).filter(Boolean);
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
     entries = idRepair.list;
     migrateOldFixedTags();
     render();
     // 過去に固定タグ同期用エントリが通常データとして紛れ込んでいた場合、クラウド側も整理する
+    rememberLastGoodEntries(entries);
     if (hadStraySentinel || preferLocal || idRepair.changed) { persist(); }
     const cloudHasAllDeletedIds = sortedDeletedIds(deletedIds).every(id => cloudDeletedIds.has(id));
     if (cloudHasAllDeletedIds) markDeletedIdsSynced(deletedIds);
@@ -7005,32 +7143,44 @@ async function removeBookCover(book) {
 }
 
 async function addImageAttachment(ev) {
-  const input=ev.target;
-  const file=input.files&&input.files[0];
-  input.value='';
-  if(!file)return;
-  mediaProcessingCount++;
-  try {
-    const dataUrl=await compressImageFile(file);
-    currentDrawings.push(dataUrl);
-    currentMediaKinds.push('image');
-    mediaDirty=true;
-    renderDrawingGallery();
-    if(editingId!==null&&editingId!==undefined) {
-      const synced = await persistEditingMedia();
-      showToast(synced ? 'Image saved to cloud' : 'Image saved here. Sync pending.');
-      return;
+  const input=ev&&ev.target;
+  const files=Array.from(input&&input.files?input.files:[]).filter(file=>file&&file.type&&file.type.startsWith('image/'));
+  if(input) input.value='';
+  if(!files.length)return;
+  let added=0, failed=0;
+  mediaProcessingCount+=files.length;
+  renderDrawingGallery();
+  showToast(files.length>1 ? `${files.length}枚の画像を追加中です...` : '画像を追加中です...');
+  for(const file of files) {
+    try {
+      const dataUrl=await compressImageFile(file);
+      currentDrawings.push(dataUrl);
+      currentMediaKinds.push('image');
+      mediaDirty=true;
+      added++;
+      renderDrawingGallery();
+    } catch(e) {
+      failed++;
+      console.warn('Image attachment failed:',e);
+    } finally {
+      mediaProcessingCount=Math.max(0,mediaProcessingCount-1);
     }
-    showToast('Image added. Save the note next.');
-    return;
-    if(persistEditingMedia()) showToast('🖼 画像を保存して同期中です');
-    else showToast('🖼 画像を追加しました。最後に保存してください');
-  } catch(e) {
-    console.warn('Image attachment failed:',e);
-    showToast('画像を追加できませんでした');
-  } finally {
-    mediaProcessingCount=Math.max(0,mediaProcessingCount-1);
   }
+  renderDrawingGallery();
+  if(added&&editingId!==null&&editingId!==undefined) {
+    const suffix = failed ? `。${failed}枚は追加できませんでした` : '';
+    try {
+      const synced = await persistEditingMedia();
+      showToast(synced ? `${added}枚の画像をクラウドに保存しました${suffix}` : `${added}枚の画像を保存しました。同期待ちです${suffix}`);
+    } catch(e) {
+      console.warn('Image media sync failed:', e);
+      showToast(`${added}枚の画像を保存しました。同期待ちです${suffix}`);
+    }
+    return;
+  }
+  if(added&&failed) showToast(`${added}枚追加しました。${failed}枚は追加できませんでした`);
+  else if(added) showToast(added>1 ? `${added}枚の画像を追加しました。最後に保存してください` : '画像を追加しました。最後に保存してください');
+  else showToast('画像を追加できませんでした');
 }
 
 function openDrawingModal(editIndex, mediaKind) {
@@ -7491,7 +7641,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v124';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v126';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
