@@ -80,7 +80,7 @@
   .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
   .tag-filter-drag-row { display:flex; flex-wrap:wrap; gap:0.4rem; width:100%; }
   .tag-filter-drag-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
-  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; }
+  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; -webkit-user-select:none; touch-action:pan-y; }
   .tag-btn[data-folder-tag-chip]:active { cursor:grabbing; }
   .tag-btn[data-folder-tag-chip].dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
@@ -357,7 +357,7 @@
   .tag-folder-card-title { font-size:0.84rem; font-weight:800; color:var(--stone-800); }
   .tag-folder-chip-row { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.65rem; min-height:1.65rem; }
   .tag-folder-chip-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0.45rem; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
-  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
+  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:pan-y; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
   .tag-folder-chip:active { cursor:grabbing; }
   .tag-folder-chip.dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .tag-folder-chip button { border:0; background:none; cursor:pointer; color:var(--stone-400); font:inherit; line-height:1; padding:0; }
@@ -643,7 +643,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v116';
+const APP_VERSION   = 'tag-auto-folder v117';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5703,7 +5703,6 @@ function onTagFolderChipPointerDown(event) {
   if (!chip || event.target.closest('[data-tag-remove]')) return;
   const row = chip.closest('[data-folder-chip-row]');
   if (!row) return;
-  if (event.pointerType !== 'mouse') event.preventDefault();
   tagFolderChipDrag = {
     chip,
     row,
@@ -5716,7 +5715,6 @@ function onTagFolderChipPointerDown(event) {
     canceled: false,
     longPressTimer: null
   };
-  try { chip.setPointerCapture(event.pointerId); } catch {}
   tagFolderChipDrag.longPressTimer = setTimeout(startTagFolderChipDrag, event.pointerType === 'mouse' ? 70 : 220);
   document.addEventListener('pointermove', onTagFolderChipPointerMove, {passive:false});
   document.addEventListener('pointerup', finishTagFolderChipDrag, {passive:false});
@@ -7202,7 +7200,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v116';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v117';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
