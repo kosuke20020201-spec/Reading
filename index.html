@@ -643,13 +643,13 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v113';
+const APP_VERSION   = 'tag-auto-folder v114';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
 const GEMINI_MODEL  = 'gemini-3.5-flash';
-const GEMINI_TIMEOUT_MS = 45000;
+const GEMINI_TIMEOUT_MS = 60000;
 const RAKUTEN_APP_ID_KEY = 'reading_log_rakuten_application_id';
 const RAKUTEN_ACCESS_KEY_KEY = 'reading_log_rakuten_access_key';
 const BOOK_INFO_CACHE_KEY = 'reading_log_book_info_cache_v1';
@@ -4348,11 +4348,23 @@ function isSuspiciousGeminiBookOverview(text) {
   const value = cleanGeminiOverviewText(text);
   if (!value) return false;
   const compact = value.replace(/\s+/g, '');
-  const numberedMarkers = compact.match(/[（(]\d{1,4}[）)]/g) || [];
-  if (numberedMarkers.length >= 5) return true;
-  if (/(?:[（(]\d{1,4}[）)][^（()）、。,.]{0,3}){4,}/u.test(compact)) return true;
+  const numberedMarkers = [...compact.matchAll(/[（(]\d{1,4}[）)]/g)];
+  if (numberedMarkers.length < 4) return false;
+  if (/(?:[（(]\d{1,4}[）)][^（()、。,.!?！？]{0,3}){5,}/u.test(compact)) return true;
   const textChars = value.match(/[A-Za-z\u3040-\u30ff\u3400-\u9fff]/gu) || [];
-  return numberedMarkers.length >= 4 && textChars.length > 0 && numberedMarkers.length / textChars.length > 0.08;
+  const gaps = numberedMarkers.slice(1).map((marker, i) => marker.index - numberedMarkers[i].index);
+  const averageGap = gaps.length ? gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length : Infinity;
+  return numberedMarkers.length >= 5 && averageGap <= 8 && (textChars.length === 0 || numberedMarkers.length / textChars.length > 0.05);
+}
+
+function normalizeGeminiOverviewCandidate(text) {
+  const value = cleanGeminiOverviewText(text);
+  if (!isSuspiciousGeminiBookOverview(value)) return value;
+  const withoutMarkers = cleanGeminiOverviewText(value.replace(/[（(]\d{1,4}[）)]/g, '').replace(/\s{2,}/g, ' '));
+  if (withoutMarkers.length >= 45 && /[。.!?！？]/u.test(withoutMarkers) && !isSuspiciousGeminiBookOverview(withoutMarkers)) {
+    return withoutMarkers;
+  }
+  return value;
 }
 
 function bookOverviewPrompt(book, author, info, options) {
@@ -4385,6 +4397,7 @@ ${details}${retryNote}${rejectedNote}
 - 箇条書きではなく自然な文章
 - 回答は概要本文だけにし、見出し・文字番号・注番号・脚注番号・引用番号・連番・括弧付き番号を付けない
 - 文字ごと、単語ごと、文節ごとの番号付けを絶対にしない
+- 出力前に読み直し、文章中に不要な番号が混じっていたら番号を削って自然文だけにする
 - 内容を断定しすぎず、一般に知られている範囲で説明
 - 本のタイトル・副題・著者情報・説明文に含まれる国名、政府名、政党名、組織名、人名は、曖昧な表現に言い換えず、そのまま明記
 - 批判的・政治的な内容は事実として断定せず、「本書は〜と論じる」「著者は〜と主張する」という形で書く
@@ -4400,7 +4413,7 @@ async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
     r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
-      body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 1000}}),
+      body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 1000, temperature:0.35, topP:0.9}}),
       signal: controller.signal
     });
     d = await r.json().catch(() => ({}));
@@ -4430,11 +4443,11 @@ async function ensureBookOverviewDescription(book, author, info, options) {
   }
   if (!options || options.quiet !== true) showToast('Geminiで本概要を作成中...');
   try {
-    let description = cleanGeminiOverviewText(await fetchGeminiText(bookOverviewPrompt(book, author, info, options), key, 900));
+    let description = normalizeGeminiOverviewCandidate(await fetchGeminiText(bookOverviewPrompt(book, author, info, options), key, 900));
     if (isSuspiciousGeminiBookOverview(description)) {
       console.warn('Rejected suspicious Gemini book overview:', description);
       const retryInfo = normalizeBookMetaValue({...info, description: ''});
-      description = cleanGeminiOverviewText(await fetchGeminiText(bookOverviewPrompt(book, author, retryInfo, {...options, rejectBadOverview:true}), key, 900));
+      description = normalizeGeminiOverviewCandidate(await fetchGeminiText(bookOverviewPrompt(book, author, retryInfo, {...options, rejectBadOverview:true}), key, 900));
       if (isSuspiciousGeminiBookOverview(description)) {
         console.warn('Rejected suspicious Gemini book overview retry:', description);
         if (!options || options.quiet !== true) showToast('Geminiの概要形式が崩れたため保存しませんでした');
@@ -6961,7 +6974,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v113';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v114';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
