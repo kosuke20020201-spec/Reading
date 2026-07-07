@@ -541,9 +541,9 @@
         </div>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
-      <div class="field entry-only-field"><label>📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field"><label>💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field"><label>🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field">
         <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
@@ -687,7 +687,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v129';
+const APP_VERSION   = 'tag-auto-folder v131';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -737,6 +737,30 @@ const NOTE_TYPES = [
 ];
 const NOTE_TYPE_DEFAULTS = [NOTE_TYPE_DEFAULT];
 const NOTE_TYPE_MAP = new Map(NOTE_TYPES.map(type => [type.value, type]));
+const NOTE_FIELD_DEFAULT_PROFILE = {
+  contentLabel: '📖 内容',
+  contentCardLabel: '内容',
+  contentPlaceholder: '書かれていた内容を記録…',
+  lessonLabel: '💡 教訓',
+  lessonCardLabel: '教訓',
+  lessonPlaceholder: 'そこから得た学びや行動指針…',
+  supplementLabel: '🔍 補足情報',
+  supplementCardLabel: '補足',
+  supplementPlaceholder: '関連知識・参考資料・文脈など…',
+  showLessonWhenEmpty: true
+};
+const NOTE_FIELD_CHAPTER_PROFILE = {
+  contentLabel: '📖 この章で押さえること',
+  contentCardLabel: 'この章で押さえること',
+  contentPlaceholder: 'この章の流れ・主張・結論など、まず押さえる内容…',
+  lessonLabel: '💡 章からの気づき',
+  lessonCardLabel: '章からの気づき',
+  lessonPlaceholder: '必要なら、この章から得た気づきを短く記録…',
+  supplementLabel: '🔍 細かく見るべき内容',
+  supplementCardLabel: '細かく見るべき内容',
+  supplementPlaceholder: '用語・人物・論点など、あとで知識メモに分ける候補…',
+  showLessonWhenEmpty: false
+};
 const SHEET_CELL_ERROR_VALUES = new Set(['#ERROR!','#VALUE!','#REF!','#DIV/0!','#N/A','#NAME?','#NUM!','#NULL!']);
 const CLOUD_TEXT_FIELDS = ['book','author','page','title','content','lesson','supplement','aiSummary'];
 const CLOUD_TEXT_ARRAY_FIELDS = ['tags','fixedTags'];
@@ -889,12 +913,23 @@ function normalizeNoteTypes(value) {
   const clean = parseNoteTypesStrict(value);
   return clean.length ? clean : NOTE_TYPE_DEFAULTS.slice();
 }
+function chooseNoteTypesWithoutDefaultDowngrade(primary, fallback) {
+  const left = parseNoteTypesStrict(primary);
+  const right = parseNoteTypesStrict(fallback);
+  if (!left.length) return right;
+  if (!right.length) return left;
+  const leftNonDefault = left.some(type => type !== NOTE_TYPE_DEFAULT);
+  const rightNonDefault = right.some(type => type !== NOTE_TYPE_DEFAULT);
+  if (leftNonDefault && !rightNonDefault) return left;
+  if (!leftNonDefault && rightNonDefault) return right;
+  return left;
+}
 function entryNoteTypes(entry) {
   if (!entry) return NOTE_TYPE_DEFAULTS.slice();
-  const explicit = explicitEntryNoteTypes(entry);
-  if (explicit.length) return explicit;
   const stored = noteTypesFromLocalMap(entry.id);
-  return stored.length ? stored : NOTE_TYPE_DEFAULTS.slice();
+  const explicit = explicitEntryNoteTypes(entry);
+  const chosen = chooseNoteTypesWithoutDefaultDowngrade(stored, explicit);
+  return chosen.length ? chosen : NOTE_TYPE_DEFAULTS.slice();
 }
 function explicitEntryNoteTypes(entry) {
   if (!entry || typeof entry !== 'object') return [];
@@ -943,8 +978,10 @@ function getEntryNoteTypesForSync(source) {
     .filter(e => e && e.id != null && !isSyncMetaEntry(e) && !isDeletedEntry(e))
     .sort((a,b)=>String(a.id).localeCompare(String(b.id)))
     .forEach(function(entry) {
+      const stored = noteTypesFromSyncMap(map, entry.id);
       const explicit = explicitEntryNoteTypes(entry);
-      map[String(entry.id)] = explicit.length ? explicit : entryNoteTypes(entry);
+      const chosen = chooseNoteTypesWithoutDefaultDowngrade(stored, explicit);
+      map[String(entry.id)] = chosen.length ? chosen : entryNoteTypes(entry);
     });
   return normalizeNoteTypesSyncMap(map);
 }
@@ -968,6 +1005,38 @@ function noteTypeClass(value) {
 }
 function noteTypeBadgesHTML(entry) {
   return entryNoteTypes(entry).map(type => `<span class="note-type-badge ${noteTypeClass(type)}">${esc(noteTypeLabel(type))}</span>`).join('');
+}
+
+function isChapterSummaryTypes(types) {
+  return parseNoteTypesStrict(types).includes('chapter_summary');
+}
+
+function noteFieldProfileForTypes(types) {
+  return isChapterSummaryTypes(types) ? NOTE_FIELD_CHAPTER_PROFILE : NOTE_FIELD_DEFAULT_PROFILE;
+}
+
+function currentNoteFieldProfile() {
+  return noteFieldProfileForTypes(getSelectedNoteTypes());
+}
+
+function updateNoteFieldProfile() {
+  const profile = currentNoteFieldProfile();
+  const content = document.getElementById('fContent');
+  const lesson = document.getElementById('fLesson');
+  const supplement = document.getElementById('fSupplement');
+  const lessonField = document.getElementById('lessonField');
+  const contentLabel = document.getElementById('fContentLabel');
+  const lessonLabel = document.getElementById('fLessonLabel');
+  const supplementLabel = document.getElementById('fSupplementLabel');
+  if (contentLabel) contentLabel.textContent = profile.contentLabel;
+  if (lessonLabel) lessonLabel.textContent = profile.lessonLabel;
+  if (supplementLabel) supplementLabel.textContent = profile.supplementLabel;
+  if (content) content.placeholder = profile.contentPlaceholder;
+  if (lesson) lesson.placeholder = profile.lessonPlaceholder;
+  if (supplement) supplement.placeholder = profile.supplementPlaceholder;
+  if (lessonField && lesson) {
+    lessonField.style.display = profile.showLessonWhenEmpty || lesson.value.trim() ? '' : 'none';
+  }
 }
 
 function isSheetCellErrorValue(value) {
@@ -1076,8 +1145,9 @@ function normalizeEntryForApp(entry) {
   CLOUD_TEXT_ARRAY_FIELDS.forEach(function(field) {
     clone[field] = restoreSheetTextArray(clone[field], []);
   });
-  clone.noteTypes = normalizeNoteTypes(Array.isArray(clone.noteTypes) ? clone.noteTypes : clone.noteType);
+  clone.noteTypes = entryNoteTypes(clone);
   clone.noteType = clone.noteTypes[0] || NOTE_TYPE_DEFAULT;
+  if (clone.id != null) updateLocalNoteTypes(clone.id, clone.noteTypes);
   return clone;
 }
 function normalizeTombstone(entry) {
@@ -1667,7 +1737,16 @@ function parseNoteTypesSyncPayload(entry) {
 }
 function mergeNoteTypesSyncMapFromCloud(cloudMap, preferLocal) {
   const localMap = getLocalNoteTypesMap();
-  const merged = preferLocal ? {...cloudMap, ...localMap} : {...localMap, ...cloudMap};
+  const merged = {};
+  const ids = new Set([...Object.keys(localMap || {}), ...Object.keys(cloudMap || {})]);
+  ids.forEach(function(id) {
+    const localTypes = noteTypesFromSyncMap(localMap, id);
+    const cloudTypes = noteTypesFromSyncMap(cloudMap, id);
+    const chosen = preferLocal
+      ? chooseNoteTypesWithoutDefaultDowngrade(localTypes, cloudTypes)
+      : chooseNoteTypesWithoutDefaultDowngrade(cloudTypes, localTypes);
+    if (chosen.length) merged[id] = chosen;
+  });
   setLocalNoteTypesMap(merged);
   return normalizeNoteTypesSyncMap(merged);
 }
@@ -2405,17 +2484,13 @@ function mergeEntryNoteTypes(cloudEntry, localEntry, chosenEntry, cloudNoteTypeM
   const storedTypes = noteTypesFromLocalMap(id);
   const lastGoodTypes = explicitEntryNoteTypes(lastGoodMap && lastGoodMap[id]);
 
-  if (preferLocal && localTypes.length) return localTypes;
-  if (preferLocal && storedTypes.length) return storedTypes;
-  if (!preferLocal && metaTypes.length) return metaTypes;
-  if (chosenEntry === cloudEntry && cloudTypes.length) return cloudTypes;
-  if (chosenEntry === localEntry && localTypes.length) return localTypes;
-  if (chosenTypes.length) return chosenTypes;
-  if (localTypes.length) return localTypes;
-  if (cloudTypes.length) return cloudTypes;
-  if (storedTypes.length) return storedTypes;
-  if (lastGoodTypes.length) return lastGoodTypes;
-  return NOTE_TYPE_DEFAULTS.slice();
+  const candidates = preferLocal
+    ? [storedTypes, localTypes, metaTypes, chosenTypes, cloudTypes, lastGoodTypes]
+    : [metaTypes, storedTypes, chosenTypes, cloudTypes, localTypes, lastGoodTypes];
+  const chosen = candidates.reduce(function(best, candidate) {
+    return chooseNoteTypesWithoutDefaultDowngrade(best, candidate);
+  }, []);
+  return chosen.length ? chosen : NOTE_TYPE_DEFAULTS.slice();
 }
 function mergedMediaList(chosen, localEntry, key) {
   if (chosen && Object.prototype.hasOwnProperty.call(chosen, key)) {
@@ -5731,6 +5806,7 @@ function cardHTML(e) {
   const fixedPills = fixedTags.map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
   const freePills  = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
   const pills = fixedPills + freePills;
+  const fieldProfile = noteFieldProfileForTypes(entryNoteTypes(e));
 
   const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${formatRecordText(txt)}</div></div>`:'';
   const media = entryMedia(e);
@@ -5758,9 +5834,9 @@ function cardHTML(e) {
     </div>
     ${pills?`<div class="card-tags">${pills}</div>`:''}
     <div class="card-sections">
-      ${sec('content-bg','📖','内容',e.content)}
-      ${sec('lesson-bg','💡','教訓',e.lesson)}
-      ${sec('supplement-bg','🔍','補足',e.supplement)}
+      ${sec('content-bg','📖',fieldProfile.contentCardLabel,e.content)}
+      ${sec('lesson-bg','💡',fieldProfile.lessonCardLabel,e.lesson)}
+      ${sec('supplement-bg','🔍',fieldProfile.supplementCardLabel,e.supplement)}
       ${sketchHTML}
     </div>
     <div class="ai-area">
@@ -6639,6 +6715,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   entryDraftDirty = false;
   setEntryDraftStatus('');
   if (!options.skipDraft) maybeRestoreEntryDraft();
+  updateNoteFieldProfile();
   scheduleAutoAuthorLookup(document.getElementById('fBook').value);
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
@@ -7013,6 +7090,7 @@ function applyEntryDraftData(data) {
   setNoteTypeInputs(data.noteTypes || data.fNoteType || NOTE_TYPE_DEFAULTS);
   currentFixedTags = getBookFixedTags(document.getElementById('fBook').value || '');
   renderFixedTagChips();
+  updateNoteFieldProfile();
   suppressEntryDraft = false;
 }
 
@@ -7808,7 +7886,10 @@ entryFieldIds().forEach(function(id) {
   el.addEventListener('change', queueEntryDraftSave);
 });
 document.querySelectorAll('input[name="fNoteTypes"]').forEach(function(el) {
-  el.addEventListener('change', queueEntryDraftSave);
+  el.addEventListener('change', function() {
+    updateNoteFieldProfile();
+    queueEntryDraftSave();
+  });
 });
 INDENT_TEXTAREA_IDS.forEach(function(id) {
   document.getElementById(id)?.addEventListener('keydown', handleTextareaTab);
@@ -7830,7 +7911,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v129';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v131';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
