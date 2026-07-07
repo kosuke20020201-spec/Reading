@@ -303,6 +303,7 @@
   .text-format-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.38rem; }
   .text-format-btn { min-width: 2.15rem; min-height: 1.95rem; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-600); font: inherit; font-size: 0.74rem; font-weight: 900; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
   .text-format-btn:hover { border-color: var(--amber-border); background: #fffbeb; color: #92400e; }
+  .text-format-btn-indent { color: #0f766e; }
   .text-format-btn-marker { color: #92400e; background: linear-gradient(transparent 48%, #fde68a 48%); }
   .field .note-type-choice input { width: 1.05rem; height: 1.05rem; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .book-wide-edit-note { display: none; margin: -0.2rem 0 0; padding: 0.65rem 0.75rem; border: 1px solid var(--amber-border); border-radius: 0.75rem; background: #fffbeb; color: #92400e; font-size: 0.74rem; line-height: 1.65; font-weight: 700; }
@@ -344,9 +345,22 @@
   #drawingCanvas { border: 2px solid var(--stone-200); border-radius: 0.8rem; background: white; display: block; width: 100%; touch-action: none; cursor: crosshair; }
 
   /* 画像ビューアー */
-  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 1rem; }
+  .viewer-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); align-items: stretch; justify-content: stretch; padding: 0; }
   .viewer-overlay.open { display: flex; }
-  .viewer-img { max-width: 95vw; max-height: 90vh; border-radius: 0.75rem; display: block; }
+  .viewer-stage { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; cursor: grab; }
+  .viewer-stage.dragging { cursor: grabbing; }
+  .viewer-img { max-width: 92vw; max-height: 82vh; border-radius: 0.75rem; display: block; transform-origin: center center; will-change: transform; user-select: none; -webkit-user-drag: none; box-shadow: 0 18px 60px rgba(0,0,0,0.35); }
+  .viewer-toolbar { position: absolute; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 0.45rem; align-items: center; padding: 0.42rem; border-radius: 999px; background: rgba(255,255,255,0.94); box-shadow: 0 12px 32px rgba(0,0,0,0.24); z-index: 2; }
+  .viewer-btn { min-width: 2.25rem; height: 2.25rem; padding: 0 0.7rem; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-700); font: inherit; font-size: 0.78rem; font-weight: 900; cursor: pointer; white-space: nowrap; }
+  .viewer-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  .viewer-btn.primary { background: var(--amber); border-color: var(--amber); color: white; }
+  .viewer-zoom-label { min-width: 3.1rem; text-align: center; color: var(--stone-600); font-size: 0.72rem; font-weight: 900; }
+  .viewer-close-btn { position: absolute; top: max(0.75rem, env(safe-area-inset-top)); right: max(0.75rem, env(safe-area-inset-right)); z-index: 3; width: 2.6rem; height: 2.6rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.94); color: var(--stone-700); font: inherit; font-size: 1.2rem; font-weight: 900; cursor: pointer; box-shadow: 0 8px 22px rgba(0,0,0,0.24); }
+  @media (max-width: 520px) {
+    .viewer-toolbar { width: calc(100vw - 1rem); justify-content: center; gap: 0.25rem; }
+    .viewer-btn { min-width: 2.05rem; height: 2.12rem; padding: 0 0.55rem; font-size: 0.72rem; }
+    .viewer-zoom-label { min-width: 2.6rem; font-size: 0.68rem; }
+  }
 
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
@@ -541,9 +555,9 @@
         </div>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
-      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field">
         <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
@@ -678,8 +692,18 @@
   </div>
 </div>
 
-<div class="viewer-overlay" id="viewerOverlay" onclick="closeViewer()">
-  <img class="viewer-img" id="viewerImg" src="" alt="">
+<div class="viewer-overlay" id="viewerOverlay">
+  <button class="viewer-close-btn" type="button" onclick="closeViewer()" aria-label="閉じる">×</button>
+  <div class="viewer-stage" id="viewerStage">
+    <img class="viewer-img" id="viewerImg" src="" alt="">
+  </div>
+  <div class="viewer-toolbar" onclick="event.stopPropagation()">
+    <button class="viewer-btn" type="button" onclick="zoomViewerBy(0.8)">－</button>
+    <span class="viewer-zoom-label" id="viewerZoomLabel">100%</span>
+    <button class="viewer-btn" type="button" onclick="zoomViewerBy(1.25)">＋</button>
+    <button class="viewer-btn" type="button" onclick="resetViewerZoom()">等倍</button>
+    <button class="viewer-btn primary" type="button" id="viewerEditBtn" onclick="editCurrentViewerMedia()">編集</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -687,7 +711,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v131';
+const APP_VERSION   = 'tag-auto-folder v133';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -843,6 +867,8 @@ let childFoldersCacheKey = '', childFoldersCache = new Map();
 let bookFixedTagsCache = new Map();
 let tagClassCache = new Map();
 let lazyImageObserver = null;
+let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0;
+let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
 let searchRenderTimer = null;
 let scrollUpdateQueued = false;
 let tagFolderChipDrag = null;
@@ -5813,7 +5839,7 @@ function cardHTML(e) {
   const sketchHTML=media.length?`
     <div class="section-block" style="background:var(--stone-50)">
       <div class="section-label">🎨 スケッチ・画像</div>
-      <div class="sketch-grid">${media.map((d,i)=>`<img src="${LAZY_IMAGE_PLACEHOLDER}" data-lazy-src="${esc(d)}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="annotateEntryMedia('${e.id}','${i}')">`).join('')}</div>
+      <div class="sketch-grid">${media.map((d,i)=>`<img src="${LAZY_IMAGE_PLACEHOLDER}" data-lazy-src="${esc(d)}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="openMediaViewer(${esc(JSON.stringify(e.id))},${i})">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
   return `<div class="card" id="card-${e.id}">
@@ -5871,17 +5897,141 @@ function observeLazyImages() {
   images.forEach(img => lazyImageObserver.observe(img));
 }
 
-function openViewer(entryId, idx, kind) {
-  const entry=entries.find(e=>String(e.id)===String(entryId));
-  if(!entry)return;
-  const list = kind === 'images' ? entry.images : entry.drawings;
-  if(!list)return;
-  const src=list[parseInt(idx)];
-  if(!src)return;
-  document.getElementById('viewerImg').src=src;
+function clampViewerScale(value) {
+  return Math.min(5, Math.max(0.35, Number(value) || 1));
+}
+
+function applyViewerTransform() {
+  const img = document.getElementById('viewerImg');
+  if (!img) return;
+  img.style.transform = `translate(${viewerOffsetX}px, ${viewerOffsetY}px) scale(${viewerScale})`;
+  const label = document.getElementById('viewerZoomLabel');
+  if (label) label.textContent = Math.round(viewerScale * 100) + '%';
+}
+
+function resetViewerZoom() {
+  viewerScale = 1;
+  viewerOffsetX = 0;
+  viewerOffsetY = 0;
+  applyViewerTransform();
+}
+
+function zoomViewerBy(multiplier) {
+  viewerScale = clampViewerScale(viewerScale * multiplier);
+  applyViewerTransform();
+}
+
+function openViewerWithSource(src, options) {
+  if (!src) return;
+  options = options || {};
+  viewerEntryId = options.entryId !== undefined ? options.entryId : null;
+  viewerMediaIndex = options.index !== undefined ? parseInt(options.index) : null;
+  document.getElementById('viewerImg').src = src;
+  resetViewerZoom();
+  const editBtn = document.getElementById('viewerEditBtn');
+  if (editBtn) editBtn.style.display = viewerEntryId !== null && viewerMediaIndex !== null ? '' : 'none';
   document.getElementById('viewerOverlay').classList.add('open');
 }
-function closeViewer() { document.getElementById('viewerOverlay').classList.remove('open'); }
+
+function openMediaViewer(entryId, idx) {
+  const entry = entries.find(e => String(e.id) === String(entryId));
+  if (!entry) return;
+  const mediaIndex = parseInt(idx);
+  const src = entryMedia(entry)[mediaIndex];
+  openViewerWithSource(src, {entryId: entry.id, index: mediaIndex});
+}
+
+function openViewer(entryId, idx, kind) {
+  const entry = entries.find(e => String(e.id) === String(entryId));
+  if (!entry) return;
+  const list = kind === 'images' ? mediaList(entry.images) : mediaList(entry.drawings);
+  const src = list[parseInt(idx)];
+  openViewerWithSource(src, {entryId: entry.id, index: parseInt(idx)});
+}
+
+function closeViewer() {
+  document.getElementById('viewerOverlay').classList.remove('open');
+  viewerPointers.clear();
+  viewerDragStart = null;
+  viewerPinchStart = null;
+  viewerEntryId = null;
+  viewerMediaIndex = null;
+}
+
+function editCurrentViewerMedia() {
+  if (viewerEntryId === null || viewerMediaIndex === null) return;
+  const entryId = viewerEntryId;
+  const mediaIndex = viewerMediaIndex;
+  closeViewer();
+  annotateEntryMedia(entryId, mediaIndex);
+}
+
+function viewerPoint(event) {
+  return {x: event.clientX, y: event.clientY};
+}
+
+function viewerDistance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function onViewerPointerDown(event) {
+  const stage = event.currentTarget;
+  viewerPointers.set(event.pointerId, viewerPoint(event));
+  stage.classList.add('dragging');
+  if (viewerPointers.size === 1) {
+    viewerDragStart = {x: event.clientX, y: event.clientY, offsetX: viewerOffsetX, offsetY: viewerOffsetY};
+    viewerPinchStart = null;
+  } else if (viewerPointers.size === 2) {
+    const points = [...viewerPointers.values()];
+    viewerPinchStart = {distance: viewerDistance(points[0], points[1]), scale: viewerScale};
+    viewerDragStart = null;
+  }
+  try { stage.setPointerCapture(event.pointerId); } catch {}
+  event.preventDefault();
+}
+
+function onViewerPointerMove(event) {
+  if (!viewerPointers.has(event.pointerId)) return;
+  viewerPointers.set(event.pointerId, viewerPoint(event));
+  if (viewerPointers.size >= 2 && viewerPinchStart) {
+    const points = [...viewerPointers.values()].slice(0, 2);
+    const baseDistance = viewerPinchStart.distance || 1;
+    viewerScale = clampViewerScale(viewerPinchStart.scale * (viewerDistance(points[0], points[1]) / baseDistance));
+    applyViewerTransform();
+  } else if (viewerDragStart && viewerPointers.size === 1) {
+    viewerOffsetX = viewerDragStart.offsetX + event.clientX - viewerDragStart.x;
+    viewerOffsetY = viewerDragStart.offsetY + event.clientY - viewerDragStart.y;
+    applyViewerTransform();
+  }
+  event.preventDefault();
+}
+
+function onViewerPointerUp(event) {
+  const stage = event.currentTarget;
+  viewerPointers.delete(event.pointerId);
+  if (viewerPointers.size === 1) {
+    const point = [...viewerPointers.values()][0];
+    viewerDragStart = {x: point.x, y: point.y, offsetX: viewerOffsetX, offsetY: viewerOffsetY};
+    viewerPinchStart = null;
+  } else if (!viewerPointers.size) {
+    viewerDragStart = null;
+    viewerPinchStart = null;
+    stage.classList.remove('dragging');
+  }
+  try { stage.releasePointerCapture(event.pointerId); } catch {}
+}
+
+function onViewerWheel(event) {
+  event.preventDefault();
+  zoomViewerBy(event.deltaY < 0 ? 1.12 : 0.88);
+}
+
+function onViewerDoubleClick() {
+  viewerScale = viewerScale > 1.05 ? 1 : 2;
+  viewerOffsetX = 0;
+  viewerOffsetY = 0;
+  applyViewerTransform();
+}
 
 function onSearch(v) {
   searchQuery=v;
@@ -6927,18 +7077,15 @@ function transformTextareaLines(text, rangeStart, rangeEnd, originalStart, inden
   };
 }
 
-function handleTextareaTab(event) {
-  if (event.key !== 'Tab') return;
-  const el = event.currentTarget;
+function applyTextareaIndent(targetId, indent) {
+  const el = typeof targetId === 'string' ? document.getElementById(targetId) : targetId;
   if (!el || typeof el.selectionStart !== 'number') return;
-  event.preventDefault();
-
   const value = el.value || '';
   const start = el.selectionStart;
   const end = el.selectionEnd;
   const scrollTop = el.scrollTop;
 
-  if (start === end && !event.shiftKey) {
+  if (start === end && indent) {
     el.value = value.slice(0, start) + TEXTAREA_INDENT + value.slice(end);
     const next = start + TEXTAREA_INDENT.length;
     el.setSelectionRange(next, next);
@@ -6946,15 +7093,22 @@ function handleTextareaTab(event) {
     const rangeStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
     let rangeEnd = end;
     if (end > start && value[end - 1] === '\n') rangeEnd = end - 1;
-    const result = transformTextareaLines(value, rangeStart, rangeEnd, start, !event.shiftKey);
+    const result = transformTextareaLines(value, rangeStart, rangeEnd, start, !!indent);
     el.value = result.text;
     const nextStart = Math.max(rangeStart, start + result.deltaBeforeStart);
     const nextEnd = Math.max(nextStart, end + result.totalDelta);
     el.setSelectionRange(nextStart, nextEnd);
   }
 
+  el.focus();
   el.scrollTop = scrollTop;
   queueEntryDraftSave();
+}
+
+function handleTextareaTab(event) {
+  if (event.key !== 'Tab') return;
+  event.preventDefault();
+  applyTextareaIndent(event.currentTarget, !event.shiftKey);
 }
 
 function formatRecordText(text) {
@@ -7250,9 +7404,7 @@ function triggerImmediateSync() {
 function openTempViewer(kind, idx) {
   const list = kind === 'images' ? currentImages : currentDrawings;
   const src = list && list[parseInt(idx)];
-  if(!src)return;
-  document.getElementById('viewerImg').src=src;
-  document.getElementById('viewerOverlay').classList.add('open');
+  openViewerWithSource(src, {});
 }
 
 function setDrawingSaveStatus(text) {
@@ -7870,6 +8022,13 @@ document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.ta
 document.getElementById('tagFolderList')?.addEventListener('pointerdown', onTagFolderChipPointerDown);
 document.getElementById('tagExpandedTags')?.addEventListener('pointerdown', onTagFolderChipPointerDown);
 document.getElementById('drawingOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)showToast('Use cancel or save to close drawing');});
+document.getElementById('viewerOverlay')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closeViewer();});
+document.getElementById('viewerStage')?.addEventListener('pointerdown', onViewerPointerDown);
+document.getElementById('viewerStage')?.addEventListener('pointermove', onViewerPointerMove);
+document.getElementById('viewerStage')?.addEventListener('pointerup', onViewerPointerUp);
+document.getElementById('viewerStage')?.addEventListener('pointercancel', onViewerPointerUp);
+document.getElementById('viewerStage')?.addEventListener('wheel', onViewerWheel, {passive:false});
+document.getElementById('viewerStage')?.addEventListener('dblclick', onViewerDoubleClick);
 document.getElementById('cardsContainer').addEventListener('click', handleShelfClick, true);
 document.getElementById('cardsContainer').addEventListener('change',e=>{
   const input = e.target.closest && e.target.closest('[data-book-cover-book]');
@@ -7902,6 +8061,7 @@ document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
     const targetId = toolbar.dataset.formatFor || '';
     const action = button.dataset.formatAction || '';
     if (action === 'tag') addSelectionToTags(targetId);
+    else if (action === 'indent' || action === 'outdent') applyTextareaIndent(targetId, action === 'indent');
     else if (action === 'bold' || action === 'mark') applyTextareaFormat(targetId, action);
   });
 });
@@ -7911,7 +8071,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v131';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v133';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
