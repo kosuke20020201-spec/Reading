@@ -454,6 +454,77 @@
     .record-book-cards { padding: 0.65rem; gap: 0.65rem; }
     .record-book-cards .card { flex-basis: min(78vw, 21rem); }
   }
+
+  @media (orientation: landscape) and (max-height: 540px) and (max-width: 960px) {
+    body { min-height: 100dvh; }
+    .container { width: min(100vw, 960px); max-width: none; padding: 0.55rem 0.75rem 3.25rem; }
+    header { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.55rem; }
+    .header-left { align-self: auto; min-width: 0; flex: 1 1 auto; }
+    .header-eyebrow { margin-bottom: 0.1rem; font-size: 0.56rem; letter-spacing: 0.18em; }
+    .header-title { font-size: 1.32rem; line-height: 1.08; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-meta { margin-top: 0.12rem; font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-btns { width: auto; min-width: min(22rem, 58vw); max-width: 58vw; flex-direction: row; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.28rem; }
+    .header-btns-row { width: auto; gap: 0.28rem; justify-content: flex-end; }
+    .sync-strip { width: auto; align-self: auto; justify-content: flex-end; }
+    .btn-add { padding: 0.42rem 0.9rem; font-size: 0.76rem; }
+    .btn-sub, .sync-pill { min-height: 1.78rem; padding: 0.28rem 0.62rem; font-size: 0.68rem; }
+    .sync-info-btn { width: 1.78rem; height: 1.78rem; font-size: 0.68rem; }
+    .sticky-controls { display: grid; grid-template-columns: minmax(13rem, 0.78fr) minmax(0, 1.22fr); gap: 0.3rem 0.45rem; align-items: start; margin: 0 -0.35rem 0.55rem; padding: 0.34rem 0.35rem 0.42rem; }
+    .search-wrap { grid-column: 1; margin-bottom: 0; }
+    .search-input { padding: 0.48rem 2.2rem 0.48rem 2rem; border-radius: 0.82rem; font-size: 0.78rem; }
+    .search-icon { left: 0.72rem; font-size: 0.78rem; }
+    .filter-bar { grid-column: 2; align-items: center; gap: 0.35rem; flex-wrap: nowrap; }
+    .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; padding: 0 0 0.12rem; scrollbar-width: thin; }
+    .tag-filters > * { flex: 0 0 auto; }
+    .tag-btn, .tag-folder-btn, .tag-folder-child-btn, .note-type-filter-pill, .sort-select, .view-mode-btn { font-size: 0.66rem; }
+    .tag-btn, .tag-folder-btn, .tag-folder-child-btn { padding: 0.17rem 0.55rem; }
+    .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
+    .tag-folder-inner-tags { flex-direction: row; align-items: center; gap: 0.22rem; }
+    .tag-folder-child-row { flex-wrap: nowrap; margin-left: 0; }
+    .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: 45vw; overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding-bottom: 0.12rem; scrollbar-width: thin; }
+    .theme-select { min-width: 7.2rem; }
+    .tag-expanded-tags { grid-column: 1 / -1; flex-wrap: nowrap; align-items: center; overflow-x: auto; overflow-y: hidden; max-height: 2.45rem; margin-top: 0; padding: 0.32rem 0.42rem; border-radius: 0.7rem; overscroll-behavior-x: contain; scrollbar-width: thin; }
+    .tag-expanded-tags > * { flex: 0 0 auto; }
+    .tag-expanded-label { width: auto; }
+    .note-type-filter-row { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; margin-top: 0; gap: 0.28rem; padding-bottom: 0.08rem; scrollbar-width: thin; }
+    .note-type-filter-row > * { flex: 0 0 auto; }
+    .results-count { margin-bottom: 0.45rem; font-size: 0.68rem; }
+    .bookshelf-main { gap: 0.82rem 0.56rem; padding: 0.75rem 0.65rem 1.65rem; border-bottom-width: 10px; }
+    .book-group { min-height: 14.45rem; }
+    .book-shell { min-height: 14.25rem; padding-bottom: 0.72rem; }
+    .book-shell::before { height: 12.72rem; }
+    .book-spine { height: 12.7rem; width: var(--spine-width-mobile, var(--spine-width, 4.05rem)); padding: 0.62rem 0.34rem 0.55rem; }
+    .book-spine-title { height: 8.75rem; font-size: var(--title-size, 0.74rem); }
+    .book-spine-author { height: 1.95rem; font-size: 0.55rem; }
+    .book-spine-tag, .book-spine-date, .book-spine-count { font-size: 0.54rem; }
+    .book-group.open .book-group-cards { padding: 0.62rem 0.7rem 3.25rem; }
+    .records-list-main { gap: 0.7rem; }
+    .record-book-section { grid-template-columns: minmax(4.2rem, 5rem) minmax(0,1fr); }
+    .record-book-cards { padding: 0.62rem; gap: 0.62rem; }
+    .record-book-cards .card { flex-basis: min(56vw, 24rem); }
+    .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(100vw - 1rem)); }
+    .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
+    .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
+    .modal-overlay { align-items: stretch; padding: max(0.35rem, env(safe-area-inset-top)) max(0.55rem, env(safe-area-inset-right)) max(0.35rem, env(safe-area-inset-bottom)) max(0.55rem, env(safe-area-inset-left)); }
+    .modal { max-width: min(45rem, calc(100vw - 1.1rem)); max-height: calc(100dvh - 0.7rem); border-radius: 1rem; }
+    .modal-header { padding: 0.62rem 0.95rem 0.48rem; }
+    .modal-title { font-size: 0.9rem; }
+    .modal-body { padding: 0.68rem 0.95rem; gap: 0.6rem; }
+    .modal-footer { padding: 0.55rem 0.95rem 0.65rem; }
+    .field label { font-size: 0.64rem; margin-bottom: 0.22rem; }
+    .field input, .field textarea, .field select { padding: 0.48rem 0.62rem; font-size: 0.76rem; border-radius: 0.55rem; }
+    .note-type-choice-grid { gap: 0.36rem; }
+    .note-type-choice { min-height: 1.82rem; padding: 0.22rem 0.56rem; font-size: 0.7rem; }
+    .text-format-toolbar { gap: 0.25rem; margin-top: 0.26rem; }
+    .text-format-btn { min-width: 1.9rem; min-height: 1.68rem; font-size: 0.68rem; }
+    .drawing-tools { margin: 0 -0.95rem 0.5rem; padding: 0.52rem 0.95rem 0.48rem; gap: 0.28rem; }
+    .drawing-tool-btn { padding: 0.32rem 0.62rem; font-size: 0.66rem; }
+    #drawingCanvas { max-height: 48vh; }
+    .viewer-img { max-height: 76vh; max-width: 86vw; }
+    .viewer-toolbar { bottom: max(0.55rem, env(safe-area-inset-bottom)); padding: 0.32rem; gap: 0.28rem; }
+    .viewer-btn { min-width: 2rem; height: 2rem; padding: 0 0.55rem; font-size: 0.7rem; }
+    .viewer-close-btn { width: 2.15rem; height: 2.15rem; top: max(0.45rem, env(safe-area-inset-top)); right: max(0.45rem, env(safe-area-inset-right)); }
+  }
 </style>
 </head>
 <body>
@@ -711,7 +782,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v133';
+const APP_VERSION   = 'tag-auto-folder v134';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -8071,7 +8142,7 @@ document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v133';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v134';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
