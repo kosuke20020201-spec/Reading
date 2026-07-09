@@ -481,6 +481,14 @@
     .filter-bar { grid-column: 2; align-items: center; gap: 0.35rem; flex-wrap: nowrap; }
     .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; padding: 0 0 0.12rem; scrollbar-width: thin; }
     .tag-filters > * { flex: 0 0 auto; }
+    .tag-filters,
+    .tag-expanded-tags,
+    .note-type-filter-row,
+    .filter-controls { -webkit-overflow-scrolling: touch; touch-action: auto; }
+    .tag-filters.is-touch-scrolling,
+    .tag-expanded-tags.is-touch-scrolling,
+    .note-type-filter-row.is-touch-scrolling,
+    .filter-controls.is-touch-scrolling { cursor: grabbing; }
     .tag-btn, .tag-folder-btn, .tag-folder-child-btn, .note-type-filter-pill, .sort-select, .view-mode-btn { font-size: 0.66rem; }
     .tag-btn, .tag-folder-btn, .tag-folder-child-btn { padding: 0.17rem 0.55rem; }
     .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
@@ -562,6 +570,14 @@
     body.manual-landscape .filter-bar { grid-column: 2; align-items: center; gap: 0.35rem; flex-wrap: nowrap; }
     body.manual-landscape .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; padding: 0 0 0.12rem; scrollbar-width: thin; }
     body.manual-landscape .tag-filters > * { flex: 0 0 auto; }
+    body.manual-landscape .tag-filters,
+    body.manual-landscape .tag-expanded-tags,
+    body.manual-landscape .note-type-filter-row,
+    body.manual-landscape .filter-controls { -webkit-overflow-scrolling: touch; touch-action: auto; }
+    body.manual-landscape .tag-filters.is-touch-scrolling,
+    body.manual-landscape .tag-expanded-tags.is-touch-scrolling,
+    body.manual-landscape .note-type-filter-row.is-touch-scrolling,
+    body.manual-landscape .filter-controls.is-touch-scrolling { cursor: grabbing; }
     body.manual-landscape .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
     body.manual-landscape .tag-folder-inner-tags { flex-direction: row; align-items: center; gap: 0.22rem; }
     body.manual-landscape .tag-folder-child-row { flex-wrap: nowrap; margin-left: 0; }
@@ -900,7 +916,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v139';
+const APP_VERSION   = 'tag-auto-folder v140';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -945,10 +961,10 @@ const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
 const ORIENTATION_FALLBACK_KEY = 'reading_log_manual_landscape_fallback';
 const ORIENTATION_ENTER_GAMMA = 42;
 const ORIENTATION_ENTER_BETA = 95;
-const ORIENTATION_STAY_GAMMA = 10;
-const ORIENTATION_STAY_BETA = 150;
+const ORIENTATION_STAY_GAMMA = 18;
+const ORIENTATION_STAY_BETA = 130;
 const ORIENTATION_ENTER_DELAY_MS = 220;
-const ORIENTATION_EXIT_DELAY_MS = 2200;
+const ORIENTATION_EXIT_DELAY_MS = 1400;
 const NOTE_TYPE_DEFAULT = 'knowledge_memo';
 const NOTE_TYPES = [
   { value: 'chapter_summary', label: '章まとめ', className: 'chapter' },
@@ -8398,6 +8414,93 @@ function scrollToTop() {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+function shouldAssistHorizontalSwipeScroll(el) {
+  if (!el) return false;
+  const landscapeLike = document.body.classList.contains('manual-landscape') || window.matchMedia('(orientation: landscape)').matches;
+  return landscapeLike && el.scrollWidth > el.clientWidth + 2;
+}
+
+function horizontalSwipeDelta(event, previousEvent) {
+  if (document.body.classList.contains('manual-landscape')) {
+    return event.clientY - previousEvent.clientY;
+  }
+  return event.clientX - previousEvent.clientX;
+}
+
+function horizontalSwipePrimaryDistance(event, start) {
+  if (document.body.classList.contains('manual-landscape')) {
+    return event.clientY - start.y;
+  }
+  return event.clientX - start.x;
+}
+
+function horizontalSwipeCrossDistance(event, start) {
+  if (document.body.classList.contains('manual-landscape')) {
+    return event.clientX - start.x;
+  }
+  return event.clientY - start.y;
+}
+
+function attachHorizontalSwipeScroll(el) {
+  if (!el || el.dataset.horizontalSwipeScroll === '1') return;
+  el.dataset.horizontalSwipeScroll = '1';
+  let state = null;
+  let suppressClick = false;
+
+  el.addEventListener('pointerdown', function(event) {
+    if (!shouldAssistHorizontalSwipeScroll(el)) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    state = {
+      pointerId: event.pointerId,
+      start: { x: event.clientX, y: event.clientY },
+      previous: { clientX: event.clientX, clientY: event.clientY },
+      dragging: false
+    };
+    try { el.setPointerCapture(event.pointerId); } catch {}
+  }, {passive:true});
+
+  el.addEventListener('pointermove', function(event) {
+    if (!state || event.pointerId !== state.pointerId) return;
+    const primary = horizontalSwipePrimaryDistance(event, state.start);
+    const cross = horizontalSwipeCrossDistance(event, state.start);
+    if (!state.dragging) {
+      if (Math.abs(primary) < 8 || Math.abs(primary) < Math.abs(cross) * 0.75) return;
+      state.dragging = true;
+      el.classList.add('is-touch-scrolling');
+    }
+    event.preventDefault();
+    el.scrollLeft -= horizontalSwipeDelta(event, state.previous);
+    state.previous = { clientX: event.clientX, clientY: event.clientY };
+  }, {passive:false});
+
+  function finish(event) {
+    if (!state || (event && event.pointerId !== state.pointerId)) return;
+    if (state.dragging) {
+      suppressClick = true;
+      setTimeout(function() { suppressClick = false; }, 120);
+    }
+    el.classList.remove('is-touch-scrolling');
+    try { el.releasePointerCapture(state.pointerId); } catch {}
+    state = null;
+  }
+
+  el.addEventListener('pointerup', finish, {passive:true});
+  el.addEventListener('pointercancel', finish, {passive:true});
+  el.addEventListener('click', function(event) {
+    if (!suppressClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClick = false;
+  }, true);
+}
+
+function initHorizontalSwipeScroll() {
+  ['tagFilters', 'tagExpandedTags', 'noteTypeFilter'].forEach(function(id) {
+    attachHorizontalSwipeScroll(document.getElementById(id));
+  });
+  document.querySelectorAll('.filter-controls').forEach(attachHorizontalSwipeScroll);
+}
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(document.getElementById('drawingOverlay').classList.contains('open')) {
@@ -8460,12 +8563,13 @@ document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
 });
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
 initOrientationSupport();
+initHorizontalSwipeScroll();
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v139';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v140';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
