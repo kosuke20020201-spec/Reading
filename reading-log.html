@@ -97,7 +97,6 @@
   .view-mode-btn { min-height: 1.85rem; padding: 0.25rem 0.68rem; border: 0; border-radius: 999px; background: transparent; color: var(--stone-500); font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
   .view-mode-btn.active { background: var(--stone-800); color: white; }
   .sort-select { font-size: 0.72rem; color: var(--stone-500); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.25rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
-  .theme-select { color: #5f4b32; border-color: #d6c4a7; background: #fffaf0; min-width: 8.2rem; }
   .results-count { font-size: 0.75rem; color: var(--stone-400); margin-bottom: 0.75rem; }
 
   .bookshelf-main { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; align-content: flex-start; gap: 1.15rem 0.72rem; padding: 1.15rem 0.8rem 2.25rem; border: 1px solid #a16207; border-bottom: 14px solid #7c4a21; border-radius: 0.95rem 0.95rem 0.5rem 0.5rem; background-color: #f3dfbd; background-image: linear-gradient(180deg, rgba(255,255,255,0.52), rgba(255,255,255,0.08) 42%, rgba(92,64,51,0.12) 100%), linear-gradient(90deg, rgba(92,64,51,0.2) 0 0.5rem, transparent 0.5rem calc(100% - 0.5rem), rgba(92,64,51,0.2) calc(100% - 0.5rem)), repeating-linear-gradient(90deg, rgba(120,53,15,0.055) 0 1px, transparent 1px 8px); box-shadow: inset 0 0 0 4px rgba(255,255,255,0.18), inset 12px 0 18px rgba(120,53,15,0.12), inset -12px 0 18px rgba(41,37,36,0.1), inset 0 -8px 0 rgba(87,53,24,0.2), 0 8px 18px rgba(41,37,36,0.08); overflow: hidden; }
@@ -429,7 +428,9 @@
     .header-btns-row .btn-sub { flex: 1 1 calc(50% - 0.25rem); justify-content: center; min-width: 0; padding-inline: 0.55rem; font-size: 0.72rem; }
     .btn-add { align-self: flex-end; }
     .field-row { grid-template-columns: 1fr; }
-    .tag-expanded-tags { max-height: 6.5rem; padding: 0.45rem; }
+    .tag-filters { row-gap: 0.55rem; padding-block: 0.18rem 0.22rem; }
+    .tag-folder-group { padding: 0.28rem 0.4rem; }
+    .tag-expanded-tags { max-height: 7.4rem; min-height: 2.7rem; padding: 0.72rem 0.65rem; }
     .view-mode-toggle { width: 100%; }
     .view-mode-btn { flex: 1; }
     .tag-folder-create, .tag-folder-add-line, .tag-bulk-toolbar { grid-template-columns: 1fr; }
@@ -479,7 +480,7 @@
     .search-input { padding: 0.48rem 2.2rem 0.48rem 2rem; border-radius: 0.82rem; font-size: 0.78rem; }
     .search-icon { left: 0.72rem; font-size: 0.78rem; }
     .filter-bar { grid-column: 2; align-items: center; gap: 0.35rem; flex-wrap: nowrap; }
-    .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; padding: 0 0 0.12rem; scrollbar-width: thin; }
+    .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; min-height: 2.8rem; padding: 0.32rem 0 0.58rem; scrollbar-width: thin; scroll-padding-inline: 0.6rem; }
     .tag-filters > * { flex: 0 0 auto; }
     .tag-filters,
     .tag-expanded-tags,
@@ -491,20 +492,19 @@
     .filter-controls.is-touch-scrolling { cursor: grabbing; }
     .tag-btn, .tag-folder-btn, .tag-folder-child-btn, .note-type-filter-pill, .sort-select, .view-mode-btn { font-size: 0.66rem; }
     .tag-btn, .tag-folder-btn, .tag-folder-child-btn { padding: 0.17rem 0.55rem; }
-    .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
+    .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.28rem 0.42rem; }
     .tag-folder-inner-tags { flex-direction: row; align-items: center; gap: 0.22rem; }
     .tag-folder-child-row { flex-wrap: nowrap; margin-left: 0; }
-    .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: min(46rem, 52vw); overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding-bottom: 0.12rem; scrollbar-width: thin; }
-    .theme-select { min-width: 7.2rem; }
+    .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: min(46rem, 52vw); overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding: 0.22rem 0 0.48rem; scrollbar-width: thin; }
     .view-mode-toggle { width: auto; min-width: 6.85rem; flex: 0 0 auto; overflow: visible; }
     .view-mode-btn { min-width: 3.25rem; flex: 0 0 auto; padding-inline: 0.7rem; white-space: nowrap; }
     #shelfReorderBtn,
     .book-move-status,
     .book-move-actions { display: none !important; }
-    .tag-expanded-tags { grid-column: 1 / -1; flex-wrap: nowrap; align-items: center; overflow-x: auto; overflow-y: hidden; max-height: 2.45rem; margin-top: 0; padding: 0.32rem 0.42rem; border-radius: 0.7rem; overscroll-behavior-x: contain; scrollbar-width: thin; }
+    .tag-expanded-tags { grid-column: 1 / -1; flex-wrap: nowrap; align-items: center; overflow-x: auto; overflow-y: hidden; min-height: 2.85rem; max-height: 3.25rem; margin-top: 0; padding: 0.55rem 0.68rem 0.65rem; border-radius: 0.7rem; overscroll-behavior-x: contain; scrollbar-width: thin; scroll-padding-inline: 0.65rem; }
     .tag-expanded-tags > * { flex: 0 0 auto; }
     .tag-expanded-label { width: auto; }
-    .note-type-filter-row { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; margin-top: 0; gap: 0.28rem; padding-bottom: 0.08rem; scrollbar-width: thin; }
+    .note-type-filter-row { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; margin-top: 0; gap: 0.28rem; min-height: 2.45rem; padding: 0.24rem 0 0.42rem; scrollbar-width: thin; scroll-padding-inline: 0.6rem; }
     .note-type-filter-row > * { flex: 0 0 auto; }
     .results-count { margin-bottom: 0.45rem; font-size: 0.68rem; }
     .bookshelf-main { gap: 0.82rem 0.56rem; padding: 0.75rem 0.65rem 1.65rem; border-bottom-width: 10px; }
@@ -568,7 +568,7 @@
     body.manual-landscape .search-input { padding: 0.48rem 2.2rem 0.48rem 2rem; border-radius: 0.82rem; font-size: 0.78rem; }
     body.manual-landscape .search-icon { left: 0.72rem; font-size: 0.78rem; }
     body.manual-landscape .filter-bar { grid-column: 2; align-items: center; gap: 0.35rem; flex-wrap: nowrap; }
-    body.manual-landscape .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; padding: 0 0 0.12rem; scrollbar-width: thin; }
+    body.manual-landscape .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; min-height: 2.8rem; padding: 0.32rem 0 0.58rem; scrollbar-width: thin; scroll-padding-inline: 0.6rem; }
     body.manual-landscape .tag-filters > * { flex: 0 0 auto; }
     body.manual-landscape .tag-filters,
     body.manual-landscape .tag-expanded-tags,
@@ -578,11 +578,10 @@
     body.manual-landscape .tag-expanded-tags.is-touch-scrolling,
     body.manual-landscape .note-type-filter-row.is-touch-scrolling,
     body.manual-landscape .filter-controls.is-touch-scrolling { cursor: grabbing; }
-    body.manual-landscape .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
+    body.manual-landscape .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.28rem 0.42rem; }
     body.manual-landscape .tag-folder-inner-tags { flex-direction: row; align-items: center; gap: 0.22rem; }
     body.manual-landscape .tag-folder-child-row { flex-wrap: nowrap; margin-left: 0; }
-    body.manual-landscape .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: min(46rem, calc(var(--manual-landscape-width, 100vh) * 0.52)); overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding-bottom: 0.12rem; scrollbar-width: thin; }
-    body.manual-landscape .theme-select { min-width: 7.2rem; }
+    body.manual-landscape .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: min(46rem, calc(var(--manual-landscape-width, 100vh) * 0.52)); overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding: 0.22rem 0 0.48rem; scrollbar-width: thin; }
     body.manual-landscape .view-mode-toggle { width: auto; min-width: 6.85rem; flex: 0 0 auto; overflow: visible; }
     body.manual-landscape .view-mode-btn { min-width: 3.25rem; flex: 0 0 auto; padding-inline: 0.7rem; white-space: nowrap; }
     body.manual-landscape #shelfReorderBtn,
@@ -597,10 +596,10 @@
     body.manual-landscape .tag-btn,
     body.manual-landscape .tag-folder-btn,
     body.manual-landscape .tag-folder-child-btn { padding: 0.17rem 0.55rem; }
-    body.manual-landscape .tag-expanded-tags { grid-column: 1 / -1; flex-wrap: nowrap; align-items: center; overflow-x: auto; overflow-y: hidden; max-height: 2.45rem; margin-top: 0; padding: 0.32rem 0.42rem; border-radius: 0.7rem; overscroll-behavior-x: contain; scrollbar-width: thin; }
+    body.manual-landscape .tag-expanded-tags { grid-column: 1 / -1; flex-wrap: nowrap; align-items: center; overflow-x: auto; overflow-y: hidden; min-height: 2.85rem; max-height: 3.25rem; margin-top: 0; padding: 0.55rem 0.68rem 0.65rem; border-radius: 0.7rem; overscroll-behavior-x: contain; scrollbar-width: thin; scroll-padding-inline: 0.65rem; }
     body.manual-landscape .tag-expanded-tags > * { flex: 0 0 auto; }
     body.manual-landscape .tag-expanded-label { width: auto; }
-    body.manual-landscape .note-type-filter-row { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; margin-top: 0; gap: 0.28rem; padding-bottom: 0.08rem; scrollbar-width: thin; }
+    body.manual-landscape .note-type-filter-row { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; margin-top: 0; gap: 0.28rem; min-height: 2.45rem; padding: 0.24rem 0 0.42rem; scrollbar-width: thin; scroll-padding-inline: 0.6rem; }
     body.manual-landscape .note-type-filter-row > * { flex: 0 0 auto; }
     body.manual-landscape .results-count { margin-bottom: 0.45rem; font-size: 0.68rem; }
     body.manual-landscape .bookshelf-main { gap: 0.82rem 0.56rem; padding: 0.75rem 0.65rem 1.65rem; border-bottom-width: 10px; }
@@ -707,15 +706,6 @@
         <button class="view-mode-btn" id="viewModeShelfBtn" onclick="setDisplayMode('shelf')" type="button">本棚</button>
         <button class="view-mode-btn" id="viewModeListBtn" onclick="setDisplayMode('list')" type="button">一覧</button>
       </div>
-      <select class="sort-select theme-select" id="shelfThemeSelect" onchange="setShelfTheme(this.value)" aria-label="本棚の着せ替え">
-        <option value="classic">本棚：古書店</option>
-        <option value="library">本棚：図書館</option>
-        <option value="quiet">本棚：モノクロ</option>
-      </select>
-      <select class="sort-select" id="sortSelect" onchange="render()">
-        <option value="date">新しい順</option>
-        <option value="book">書名順</option>
-      </select>
       <button class="btn-sub" id="shelfReorderBtn" onclick="toggleShelfReorderMode()" type="button">↔ 本移動</button>
       <button class="btn-sub" onclick="openTagFolders()" type="button">🏷 タグ整理</button>
     </div>
@@ -916,7 +906,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v140';
+const APP_VERSION   = 'tag-auto-folder v141';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -955,7 +945,6 @@ const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
 const TAG_FOLDER_DELETED_KEY = 'reading_log_tag_folder_deleted';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
-const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
 const ORIENTATION_FALLBACK_KEY = 'reading_log_manual_landscape_fallback';
@@ -1062,8 +1051,7 @@ let shelfReorderSelectedKey = '';
 let tagFolderSearchQuery = '';
 let tagFolderUnfiledOnly = false;
 let tagFolderTargetPath = '';
-let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
-if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
+let shelfTheme = 'classic';
 let displayMode = localStorage.getItem(VIEW_MODE_KEY) === 'list' ? 'list' : 'shelf';
 let manualLandscapeFallback = localStorage.getItem(ORIENTATION_FALLBACK_KEY) === '1';
 let orientationMotionListening = false;
@@ -4212,7 +4200,7 @@ function bookGroups() {
 }
 
 function getFiltered() {
-  const q=searchQuery.toLowerCase(),sort=document.getElementById('sortSelect').value;
+  const q=searchQuery.toLowerCase();
   const folderTagList = (!activeTag && activeTagFolder) ? activeFolderFilterTags() : [];
   return entries.filter(e=>{
     if(activeTag) {
@@ -4222,7 +4210,7 @@ function getFiltered() {
     }
     if(activeNoteTypes.length && !activeNoteTypes.some(type => entryNoteTypes(e).includes(type))) return false;
     return entryMatchesSearch(e, q);
-  }).sort((a,b)=>sort==='book'?(a.book||'').localeCompare(b.book||'','ja'):(Number(b.id||0)-Number(a.id||0)));
+  }).sort((a,b)=>Number(b.id||0)-Number(a.id||0));
 }
 
 function entryHasTag(entry, tag) {
@@ -5942,11 +5930,6 @@ function render() {
   }
   const folderCount = tagFolderNames().length;
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
-  const themeSelect = document.getElementById('shelfThemeSelect');
-  if (themeSelect) {
-    themeSelect.value = shelfTheme;
-    themeSelect.style.display = displayMode === 'shelf' ? '' : 'none';
-  }
   const shelfModeBtn = document.getElementById('viewModeShelfBtn');
   const listModeBtn = document.getElementById('viewModeListBtn');
   if (shelfModeBtn) shelfModeBtn.classList.toggle('active', displayMode === 'shelf');
@@ -6136,8 +6119,7 @@ function setExpandedRecordScope(value) {
 }
 
 function setShelfTheme(value) {
-  shelfTheme = SPINE_THEMES[value] ? value : 'classic';
-  localStorage.setItem(SHELF_THEME_KEY, shelfTheme);
+  shelfTheme = 'classic';
   render();
 }
 
@@ -8569,7 +8551,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v140';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v141';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
