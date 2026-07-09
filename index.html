@@ -932,7 +932,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v144';
+const APP_VERSION   = 'tag-auto-folder v145';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1087,6 +1087,7 @@ let lastPhysicalLandscape = false;
 let orientationEnterTimer = null;
 let orientationExitTimer = null;
 let orientationTransitionInFlight = false;
+let entryPortraitLockActive = false;
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
@@ -1274,6 +1275,55 @@ function syncOrientationState() {
   updateOrientationButton();
 }
 
+function isEntryInputModalOpen() {
+  const overlay = document.getElementById('modalOverlay');
+  return !!overlay && overlay.classList.contains('open') && !overlay.classList.contains('book-wide-edit');
+}
+
+function isEntryInputFocused() {
+  const active = document.activeElement;
+  if (!active || !active.closest) return false;
+  return !!active.closest('#modalOverlay') && active.matches && active.matches('input, textarea, select, [contenteditable="true"]');
+}
+
+function shouldSuspendAutoLandscapeForEntryInput() {
+  return isEntryInputModalOpen() || isEntryInputFocused();
+}
+
+function suspendAutoLandscapeForEntryInput() {
+  orientationEnterTimer = clearOrientationTimer(orientationEnterTimer);
+  orientationExitTimer = clearOrientationTimer(orientationExitTimer);
+  if (!manualLandscapeFallback && lastPhysicalLandscape && isPortraitViewport()) {
+    lastPhysicalLandscape = false;
+    syncOrientationState();
+  }
+}
+
+async function lockPortraitDuringEntryInput() {
+  if (!isEntryInputModalOpen()) return;
+  if (!isPortraitViewport() || document.body.classList.contains('manual-landscape')) return;
+  try {
+    if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.lock === 'function') {
+      await screen.orientation.lock('portrait');
+      entryPortraitLockActive = true;
+    }
+  } catch (err) {
+    console.debug('Portrait lock during entry input skipped:', err);
+  }
+}
+
+function unlockPortraitAfterEntryInput() {
+  if (!entryPortraitLockActive) return;
+  entryPortraitLockActive = false;
+  try {
+    if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.unlock === 'function') {
+      screen.orientation.unlock();
+    }
+  } catch (err) {
+    console.debug('Portrait unlock after entry input skipped:', err);
+  }
+}
+
 function clearOrientationTimer(timer) {
   if (timer) clearTimeout(timer);
   return null;
@@ -1300,6 +1350,10 @@ function schedulePhysicalLandscape(value, delay) {
 }
 
 function onPhysicalOrientation(event) {
+  if (shouldSuspendAutoLandscapeForEntryInput()) {
+    suspendAutoLandscapeForEntryInput();
+    return;
+  }
   const gamma = Math.abs(Number(event.gamma) || 0);
   const beta = Math.abs(Number(event.beta) || 0);
   if (!gamma && !beta) return;
@@ -7326,6 +7380,8 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   scheduleAutoAuthorLookup(document.getElementById('fBook').value);
   document.getElementById('suggestList').style.display='none';
   document.getElementById('modalOverlay').classList.add('open');
+  suspendAutoLandscapeForEntryInput();
+  lockPortraitDuringEntryInput();
   setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
 }
 function closeModal(force) {
@@ -7339,6 +7395,7 @@ function closeModal(force) {
   fixedTagEditOnly=false;
   bookWideEditOriginalBook = '';
   bookWideEditOriginalKey = '';
+  unlockPortraitAfterEntryInput();
   return true;
 }
 function editEntry(id) { openModal(id); }
@@ -8646,7 +8703,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v144';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v145';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
