@@ -26,7 +26,34 @@
     --stone-600: #57534e; --stone-800: #292524;
   }
   body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); min-height: 100vh; color: var(--stone-800); }
-  .orientation-shell { min-height: 100vh; }
+  .orientation-shell { min-height: 100vh; transform: translateZ(0); backface-visibility: hidden; }
+  body.orientation-animating::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: #fdf8f0;
+    animation: orientationFade 280ms ease both;
+  }
+  body.orientation-animating .orientation-shell {
+    will-change: transform, opacity, filter;
+    transition: opacity 180ms ease, filter 180ms ease, transform 240ms cubic-bezier(0.22, 0.9, 0.22, 1);
+  }
+  body.orientation-entering .orientation-shell,
+  body.orientation-leaving .orientation-shell {
+    opacity: 0.98;
+    filter: saturate(0.98);
+  }
+  @keyframes orientationFade {
+    0% { opacity: 0; }
+    38% { opacity: 0.18; }
+    100% { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body.orientation-animating::after { animation: none; }
+    body.orientation-animating .orientation-shell { transition: none; }
+  }
   .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(circle at 20% 20%, #fde68a22 0%, transparent 50%), radial-gradient(circle at 80% 80%, #fed7aa22 0%, transparent 50%); }
   .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
@@ -89,7 +116,7 @@
   .tag-expanded-label { width: 100%; font-size: 0.68rem; font-weight: 800; color: var(--stone-400); }
   .tag-filter-drag-row { display:flex; flex-wrap:wrap; gap:0.4rem; width:100%; }
   .tag-filter-drag-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
-  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; -webkit-user-select:none; touch-action:pan-y; }
+  .tag-btn[data-folder-tag-chip] { cursor:grab; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
   .tag-btn[data-folder-tag-chip]:active { cursor:grabbing; }
   .tag-btn[data-folder-tag-chip].dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .filter-controls { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; margin-left: auto; }
@@ -410,7 +437,7 @@
   .tag-folder-card-title { font-size:0.84rem; font-weight:800; color:var(--stone-800); }
   .tag-folder-chip-row { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.65rem; min-height:1.65rem; }
   .tag-folder-chip-row.is-dragging { padding:0.2rem; margin:-0.2rem -0.2rem 0.45rem; border-radius:0.75rem; background:#fffbeb; box-shadow:inset 0 0 0 1px #fde68a; }
-  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:pan-y; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
+  .tag-folder-chip { display:inline-flex; align-items:center; gap:0.22rem; border:1px solid var(--stone-200); border-radius:999px; background:var(--stone-50); color:var(--stone-700); padding:0.2rem 0.38rem 0.2rem 0.62rem; font-size:0.7rem; font-weight:600; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:manipulation; transition:transform 0.12s, box-shadow 0.12s, border-color 0.12s, opacity 0.12s; }
   .tag-folder-chip:active { cursor:grabbing; }
   .tag-folder-chip.dragging { opacity:0.78; transform:scale(1.06); border-color:var(--amber); background:#fff7ed; box-shadow:0 8px 22px rgba(120,113,108,0.24); z-index:3; }
   .tag-folder-chip button { border:0; background:none; cursor:pointer; color:var(--stone-400); font:inherit; line-height:1; padding:0; }
@@ -547,7 +574,7 @@
 
   @media (orientation: portrait) {
     body.manual-landscape { width: 100vw; height: 100vh; overflow: hidden; background: #fdf8f0; }
-    body.manual-landscape .orientation-shell { position: fixed; left: var(--manual-landscape-height, 100vw); top: 0; width: var(--manual-landscape-width, 100vh); height: var(--manual-landscape-height, 100vw); min-height: 0; overflow: auto; transform: rotate(90deg); transform-origin: top left; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    body.manual-landscape .orientation-shell { position: fixed; left: var(--manual-landscape-height, 100vw); top: 0; width: var(--manual-landscape-width, 100vh); height: var(--manual-landscape-height, 100vw); min-height: 0; overflow: auto; transform: rotate(90deg) translateZ(0); transform-origin: top left; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     body.manual-landscape .bg-orbs { position: absolute; width: 100%; height: 100%; }
     body.manual-landscape .container { width: 100%; max-width: none; padding: 0.55rem 0.75rem 3.25rem; }
     body.manual-landscape header { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.55rem; }
@@ -906,7 +933,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v141';
+const APP_VERSION   = 'tag-auto-folder v143';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -950,10 +977,12 @@ const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
 const ORIENTATION_FALLBACK_KEY = 'reading_log_manual_landscape_fallback';
 const ORIENTATION_ENTER_GAMMA = 42;
 const ORIENTATION_ENTER_BETA = 95;
-const ORIENTATION_STAY_GAMMA = 18;
+const ORIENTATION_STAY_GAMMA = 19;
 const ORIENTATION_STAY_BETA = 130;
 const ORIENTATION_ENTER_DELAY_MS = 220;
-const ORIENTATION_EXIT_DELAY_MS = 1400;
+const ORIENTATION_EXIT_DELAY_MS = 1250;
+const TAG_FOLDER_TOUCH_DRAG_DELAY_MS = 420;
+const TAG_FOLDER_TOUCH_SCROLL_CANCEL_PX = 10;
 const NOTE_TYPE_DEFAULT = 'knowledge_memo';
 const NOTE_TYPES = [
   { value: 'chapter_summary', label: '章まとめ', className: 'chapter' },
@@ -1058,6 +1087,7 @@ let orientationMotionListening = false;
 let lastPhysicalLandscape = false;
 let orientationEnterTimer = null;
 let orientationExitTimer = null;
+let orientationAnimationTimer = null;
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
@@ -1144,10 +1174,29 @@ function updateManualLandscapeMetrics() {
   document.documentElement.style.setProperty('--manual-landscape-height', `${Math.round(landscapeHeight)}px`);
 }
 
+function pulseOrientationAnimation(kind) {
+  if (!document.body) return;
+  document.body.classList.remove('orientation-entering', 'orientation-leaving');
+  if (kind) document.body.classList.add(kind);
+  document.body.classList.add('orientation-animating');
+  if (orientationAnimationTimer) clearTimeout(orientationAnimationTimer);
+  orientationAnimationTimer = setTimeout(function() {
+    document.body.classList.remove('orientation-animating', 'orientation-entering', 'orientation-leaving');
+  }, 320);
+}
+
+function applyManualLandscapeClass(shouldRotate) {
+  const wasRotated = document.body.classList.contains('manual-landscape');
+  if (wasRotated !== shouldRotate) {
+    pulseOrientationAnimation(shouldRotate ? 'orientation-entering' : 'orientation-leaving');
+  }
+  document.body.classList.toggle('manual-landscape', shouldRotate);
+}
+
 function setLandscapeFallback(enabled) {
   updateManualLandscapeMetrics();
   const shouldRotate = !!enabled && isPortraitViewport();
-  document.body.classList.toggle('manual-landscape', shouldRotate);
+  applyManualLandscapeClass(shouldRotate);
   manualLandscapeFallback = shouldRotate;
   updateOrientationButton();
 }
@@ -1197,16 +1246,12 @@ async function toggleLandscapeFallback() {
 function syncOrientationState() {
   updateManualLandscapeMetrics();
   if (!isPortraitViewport()) {
-    document.body.classList.remove('manual-landscape');
+    applyManualLandscapeClass(false);
     manualLandscapeFallback = false;
     updateOrientationButton();
     return;
   }
-  if (manualLandscapeFallback || lastPhysicalLandscape) {
-    document.body.classList.add('manual-landscape');
-  } else {
-    document.body.classList.remove('manual-landscape');
-  }
+  applyManualLandscapeClass(manualLandscapeFallback || lastPhysicalLandscape);
   updateOrientationButton();
 }
 
@@ -6732,7 +6777,7 @@ function onTagFolderChipPointerDown(event) {
     canceled: false,
     longPressTimer: null
   };
-  tagFolderChipDrag.longPressTimer = setTimeout(startTagFolderChipDrag, event.pointerType === 'mouse' ? 70 : 220);
+  tagFolderChipDrag.longPressTimer = setTimeout(startTagFolderChipDrag, event.pointerType === 'mouse' ? 70 : TAG_FOLDER_TOUCH_DRAG_DELAY_MS);
   document.addEventListener('pointermove', onTagFolderChipPointerMove, {passive:false});
   document.addEventListener('pointerup', finishTagFolderChipDrag, {passive:false});
   document.addEventListener('pointercancel', cancelTagFolderChipDrag, {passive:false});
@@ -6744,13 +6789,14 @@ function onTagFolderChipPointerMove(event) {
   const dy = event.clientY - tagFolderChipDrag.startY;
   const distance = Math.hypot(dx, dy);
   if (!tagFolderChipDrag.dragging) {
+    if (event.pointerType !== 'mouse' && distance > TAG_FOLDER_TOUCH_SCROLL_CANCEL_PX) {
+      tagFolderChipDrag.canceled = true;
+      cancelTagFolderChipDrag(event);
+      return;
+    }
     if (event.pointerType === 'mouse' && distance > 4) {
       startTagFolderChipDrag();
       return;
-    }
-    if (event.pointerType !== 'mouse' && distance > 32) {
-      tagFolderChipDrag.canceled = true;
-      cancelTagFolderChipDrag(event);
     }
     return;
   }
@@ -8428,6 +8474,9 @@ function attachHorizontalSwipeScroll(el) {
   el.dataset.horizontalSwipeScroll = '1';
   let state = null;
   let suppressClick = false;
+  const isTagScroller = el.id === 'tagFilters' || el.id === 'tagExpandedTags';
+  const startDistance = isTagScroller ? 4 : 8;
+  const directionRatio = isTagScroller ? 0.45 : 0.75;
 
   el.addEventListener('pointerdown', function(event) {
     if (!shouldAssistHorizontalSwipeScroll(el)) return;
@@ -8446,7 +8495,7 @@ function attachHorizontalSwipeScroll(el) {
     const primary = horizontalSwipePrimaryDistance(event, state.start);
     const cross = horizontalSwipeCrossDistance(event, state.start);
     if (!state.dragging) {
-      if (Math.abs(primary) < 8 || Math.abs(primary) < Math.abs(cross) * 0.75) return;
+      if (Math.abs(primary) < startDistance || Math.abs(primary) < Math.abs(cross) * directionRatio) return;
       state.dragging = true;
       el.classList.add('is-touch-scrolling');
     }
@@ -8551,7 +8600,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v141';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v143';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
