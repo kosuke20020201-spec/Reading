@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="読書ノート">
+<meta name="screen-orientation" content="auto">
+<meta name="x5-orientation" content="auto">
 <meta name="theme-color" content="#f59e0b">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -24,6 +26,7 @@
     --stone-600: #57534e; --stone-800: #292524;
   }
   body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); min-height: 100vh; color: var(--stone-800); }
+  .orientation-shell { min-height: 100vh; }
   .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(circle at 20% 20%, #fde68a22 0%, transparent 50%), radial-gradient(circle at 80% 80%, #fed7aa22 0%, transparent 50%); }
   .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
@@ -50,6 +53,8 @@
   .sync-dot.busy { background: #0ea5e9; animation: syncPulse 0.9s ease-in-out infinite alternate; }
   .sync-info-btn { width: 2rem; height: 2rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-500); font: inherit; font-size: 0.76rem; font-weight: 800; cursor: pointer; box-shadow: 0 1px 4px #00000008; }
   .sync-info-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  .orientation-btn { font-size: 0.9rem; }
+  .orientation-btn.active { border-color: var(--stone-800); background: var(--stone-800); color: white; }
   .entry-sync-badge { display:inline-flex; align-items:center; gap:0.3rem; margin-top:0.35rem; padding:0.16rem 0.5rem; border-radius:999px; border:1px solid var(--stone-200); background:var(--stone-50); color:var(--stone-500); font-size:0.66rem; font-weight:800; }
   .entry-sync-badge.ok { border-color:#bbf7d0; background:#f0fdf4; color:#15803d; }
   .entry-sync-badge.pending { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
@@ -525,9 +530,96 @@
     .viewer-btn { min-width: 2rem; height: 2rem; padding: 0 0.55rem; font-size: 0.7rem; }
     .viewer-close-btn { width: 2.15rem; height: 2.15rem; top: max(0.45rem, env(safe-area-inset-top)); right: max(0.45rem, env(safe-area-inset-right)); }
   }
+
+  @media (orientation: portrait) {
+    body.manual-landscape { width: 100vw; height: 100vh; overflow: hidden; background: #fdf8f0; }
+    body.manual-landscape .orientation-shell { position: fixed; left: 100vw; top: 0; width: 100vh; height: 100vw; min-height: 0; overflow: auto; transform: rotate(90deg); transform-origin: top left; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); -webkit-overflow-scrolling: touch; }
+    body.manual-landscape .bg-orbs { position: absolute; width: 100%; height: 100%; }
+    body.manual-landscape .container { width: min(100%, 960px); max-width: none; padding: 0.55rem 0.75rem 3.25rem; }
+    body.manual-landscape header { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.55rem; }
+    body.manual-landscape .header-left { align-self: auto; min-width: 0; flex: 1 1 auto; }
+    body.manual-landscape .header-eyebrow { margin-bottom: 0.1rem; font-size: 0.56rem; letter-spacing: 0.18em; }
+    body.manual-landscape .header-title { font-size: 1.32rem; line-height: 1.08; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.manual-landscape .header-meta { margin-top: 0.12rem; font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.manual-landscape .header-btns { width: auto; min-width: min(22rem, 58vw); max-width: 58vw; flex-direction: row; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.28rem; }
+    body.manual-landscape .header-btns-row { width: auto; gap: 0.28rem; justify-content: flex-end; }
+    body.manual-landscape .sync-strip { width: auto; align-self: auto; justify-content: flex-end; }
+    body.manual-landscape .btn-add { padding: 0.42rem 0.9rem; font-size: 0.76rem; }
+    body.manual-landscape .btn-sub,
+    body.manual-landscape .sync-pill { min-height: 1.78rem; padding: 0.28rem 0.62rem; font-size: 0.68rem; }
+    body.manual-landscape .sync-info-btn { width: 1.78rem; height: 1.78rem; font-size: 0.68rem; }
+    body.manual-landscape .sticky-controls { display: grid; grid-template-columns: minmax(13rem, 0.78fr) minmax(0, 1.22fr); gap: 0.3rem 0.45rem; align-items: start; margin: 0 -0.35rem 0.55rem; padding: 0.34rem 0.35rem 0.42rem; }
+    body.manual-landscape .search-wrap { grid-column: 1; margin-bottom: 0; }
+    body.manual-landscape .search-input { padding: 0.48rem 2.2rem 0.48rem 2rem; border-radius: 0.82rem; font-size: 0.78rem; }
+    body.manual-landscape .search-icon { left: 0.72rem; font-size: 0.78rem; }
+    body.manual-landscape .filter-bar { grid-column: 2; align-items: center; gap: 0.35rem; flex-wrap: nowrap; }
+    body.manual-landscape .tag-filters { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; max-height: none; padding: 0 0 0.12rem; scrollbar-width: thin; }
+    body.manual-landscape .tag-filters > * { flex: 0 0 auto; }
+    body.manual-landscape .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
+    body.manual-landscape .tag-folder-inner-tags { flex-direction: row; align-items: center; gap: 0.22rem; }
+    body.manual-landscape .tag-folder-child-row { flex-wrap: nowrap; margin-left: 0; }
+    body.manual-landscape .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: 45vw; overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding-bottom: 0.12rem; scrollbar-width: thin; }
+    body.manual-landscape .theme-select { min-width: 7.2rem; }
+    body.manual-landscape .tag-btn,
+    body.manual-landscape .tag-folder-btn,
+    body.manual-landscape .tag-folder-child-btn,
+    body.manual-landscape .note-type-filter-pill,
+    body.manual-landscape .sort-select,
+    body.manual-landscape .view-mode-btn { font-size: 0.66rem; }
+    body.manual-landscape .tag-btn,
+    body.manual-landscape .tag-folder-btn,
+    body.manual-landscape .tag-folder-child-btn { padding: 0.17rem 0.55rem; }
+    body.manual-landscape .tag-expanded-tags { grid-column: 1 / -1; flex-wrap: nowrap; align-items: center; overflow-x: auto; overflow-y: hidden; max-height: 2.45rem; margin-top: 0; padding: 0.32rem 0.42rem; border-radius: 0.7rem; overscroll-behavior-x: contain; scrollbar-width: thin; }
+    body.manual-landscape .tag-expanded-tags > * { flex: 0 0 auto; }
+    body.manual-landscape .tag-expanded-label { width: auto; }
+    body.manual-landscape .note-type-filter-row { grid-column: 1 / -1; flex-wrap: nowrap; overflow-x: auto; margin-top: 0; gap: 0.28rem; padding-bottom: 0.08rem; scrollbar-width: thin; }
+    body.manual-landscape .note-type-filter-row > * { flex: 0 0 auto; }
+    body.manual-landscape .results-count { margin-bottom: 0.45rem; font-size: 0.68rem; }
+    body.manual-landscape .bookshelf-main { gap: 0.82rem 0.56rem; padding: 0.75rem 0.65rem 1.65rem; border-bottom-width: 10px; }
+    body.manual-landscape .book-group { min-height: 14.45rem; }
+    body.manual-landscape .book-shell { min-height: 14.25rem; padding-bottom: 0.72rem; }
+    body.manual-landscape .book-shell::before { height: 12.72rem; }
+    body.manual-landscape .book-spine { height: 12.7rem; width: var(--spine-width-mobile, var(--spine-width, 4.05rem)); padding: 0.62rem 0.34rem 0.55rem; }
+    body.manual-landscape .book-spine-title { height: 8.75rem; font-size: var(--title-size, 0.74rem); }
+    body.manual-landscape .book-spine-author { height: 1.95rem; font-size: 0.55rem; }
+    body.manual-landscape .book-spine-tag,
+    body.manual-landscape .book-spine-date,
+    body.manual-landscape .book-spine-count { font-size: 0.54rem; }
+    body.manual-landscape .book-group.open .book-group-cards { padding: 0.62rem 0.7rem 3.25rem; }
+    body.manual-landscape .records-list-main { gap: 0.7rem; }
+    body.manual-landscape .record-book-section { grid-template-columns: minmax(4.2rem, 5rem) minmax(0,1fr); }
+    body.manual-landscape .record-book-cards { padding: 0.62rem; gap: 0.62rem; }
+    body.manual-landscape .record-book-cards .card { flex-basis: min(56vw, 24rem); }
+    body.manual-landscape .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(100vw - 1rem)); }
+    body.manual-landscape .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
+    body.manual-landscape .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
+    body.manual-landscape .modal-overlay { position: absolute; align-items: stretch; padding: 0.35rem 0.55rem; }
+    body.manual-landscape .modal { max-width: min(45rem, calc(100% - 1.1rem)); max-height: calc(100% - 0.7rem); border-radius: 1rem; }
+    body.manual-landscape .modal-header { padding: 0.62rem 0.95rem 0.48rem; }
+    body.manual-landscape .modal-title { font-size: 0.9rem; }
+    body.manual-landscape .modal-body { padding: 0.68rem 0.95rem; gap: 0.6rem; }
+    body.manual-landscape .modal-footer { padding: 0.55rem 0.95rem 0.65rem; }
+    body.manual-landscape .field label { font-size: 0.64rem; margin-bottom: 0.22rem; }
+    body.manual-landscape .field input,
+    body.manual-landscape .field textarea,
+    body.manual-landscape .field select { padding: 0.48rem 0.62rem; font-size: 0.76rem; border-radius: 0.55rem; }
+    body.manual-landscape .note-type-choice-grid { gap: 0.36rem; }
+    body.manual-landscape .note-type-choice { min-height: 1.82rem; padding: 0.22rem 0.56rem; font-size: 0.7rem; }
+    body.manual-landscape .text-format-toolbar { gap: 0.25rem; margin-top: 0.26rem; }
+    body.manual-landscape .text-format-btn { min-width: 1.9rem; min-height: 1.68rem; font-size: 0.68rem; }
+    body.manual-landscape .drawing-tools { margin: 0 -0.95rem 0.5rem; padding: 0.52rem 0.95rem 0.48rem; gap: 0.28rem; }
+    body.manual-landscape .drawing-tool-btn { padding: 0.32rem 0.62rem; font-size: 0.66rem; }
+    body.manual-landscape #drawingCanvas { max-height: 48vh; }
+    body.manual-landscape .viewer-overlay { position: absolute; }
+    body.manual-landscape .viewer-img { max-height: 76vh; max-width: 86vw; }
+    body.manual-landscape .viewer-toolbar { bottom: 0.55rem; padding: 0.32rem; gap: 0.28rem; }
+    body.manual-landscape .viewer-btn { min-width: 2rem; height: 2rem; padding: 0 0.55rem; font-size: 0.7rem; }
+    body.manual-landscape .viewer-close-btn { width: 2.15rem; height: 2.15rem; top: 0.45rem; right: 0.45rem; }
+  }
 </style>
 </head>
 <body>
+<div id="orientationShell" class="orientation-shell">
 <div class="bg-orbs"></div>
 
 <div id="installBanner" style="display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);z-index:200;width:calc(100% - 2rem);max-width:400px;background:white;border-radius:1rem;border:1px solid #fde68a;box-shadow:0 8px 24px #00000015;padding:1rem;align-items:center;gap:0.75rem">
@@ -555,6 +647,7 @@
           <span class="sync-dot" id="syncDot"></span>
           <span id="syncPanelText">Sync now</span>
         </button>
+        <button class="sync-info-btn orientation-btn" id="orientationBtn" onclick="toggleLandscapeFallback()" type="button" title="横向き表示" aria-label="横向き表示">↻</button>
         <button class="sync-info-btn" onclick="showSyncDiagnostics()" type="button" title="Sync help">?</button>
       </div>
     </div>
@@ -779,10 +872,11 @@
 
 <div class="toast" id="toast"></div>
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()" type="button" title="一番上へ" aria-label="一番上へ">↑</button>
+</div>
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v135';
+const APP_VERSION   = 'tag-auto-folder v136';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -824,6 +918,7 @@ const BOOK_ORDER_KEY = 'reading_log_book_order';
 const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
+const ORIENTATION_FALLBACK_KEY = 'reading_log_manual_landscape_fallback';
 const NOTE_TYPE_DEFAULT = 'knowledge_memo';
 const NOTE_TYPES = [
   { value: 'chapter_summary', label: '章まとめ', className: 'chapter' },
@@ -924,6 +1019,9 @@ let tagFolderTargetPath = '';
 let shelfTheme = localStorage.getItem(SHELF_THEME_KEY) || 'classic';
 if (!SPINE_THEMES[shelfTheme]) shelfTheme = 'classic';
 let displayMode = localStorage.getItem(VIEW_MODE_KEY) === 'list' ? 'list' : 'shelf';
+let manualLandscapeFallback = localStorage.getItem(ORIENTATION_FALLBACK_KEY) === '1';
+let orientationMotionListening = false;
+let lastPhysicalLandscape = false;
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
@@ -971,6 +1069,130 @@ function isDeletedEntry(entry) {
   if (!entry) return false;
   const value = entry.deleted;
   return value === true || value === 1 || String(value).toLowerCase() === 'true' || String(value) === '1' || !!entry.deletedAt;
+}
+
+function isPortraitViewport() {
+  return window.innerHeight >= window.innerWidth;
+}
+
+function orientationButton() {
+  return document.getElementById('orientationBtn');
+}
+
+function updateOrientationButton() {
+  const btn = orientationButton();
+  if (!btn) return;
+  const active = document.body.classList.contains('manual-landscape');
+  btn.classList.toggle('active', active);
+  btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  btn.title = active ? '横向き表示を解除' : '横向き表示';
+  btn.setAttribute('aria-label', btn.title);
+}
+
+function setLandscapeFallback(enabled) {
+  const shouldRotate = !!enabled && isPortraitViewport();
+  document.body.classList.toggle('manual-landscape', shouldRotate);
+  manualLandscapeFallback = shouldRotate;
+  updateOrientationButton();
+}
+
+async function unlockNativeOrientation() {
+  try {
+    if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.unlock === 'function') {
+      screen.orientation.unlock();
+    }
+  } catch (err) {
+    console.debug('Orientation unlock skipped:', err);
+  }
+}
+
+async function requestNativeLandscape() {
+  try {
+    if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.lock === 'function') {
+      await screen.orientation.lock('landscape');
+      return true;
+    }
+  } catch (err) {
+    console.debug('Native landscape lock failed:', err);
+  }
+  return false;
+}
+
+async function toggleLandscapeFallback() {
+  if (manualLandscapeFallback || document.body.classList.contains('manual-landscape')) {
+    setLandscapeFallback(false);
+    await unlockNativeOrientation();
+    showToast('横向き表示を解除しました');
+    return;
+  }
+  await startOrientationMotionListener(true);
+  const nativeLocked = await requestNativeLandscape();
+  setTimeout(function() {
+    if (isPortraitViewport()) {
+      setLandscapeFallback(true);
+      showToast(nativeLocked ? '端末回転が反映されないため横向き表示にしました' : '横向き表示にしました');
+    } else {
+      setLandscapeFallback(false);
+      showToast('端末の横向き表示を使います');
+    }
+  }, nativeLocked ? 300 : 0);
+}
+
+function syncOrientationState() {
+  if (!isPortraitViewport()) {
+    document.body.classList.remove('manual-landscape');
+    manualLandscapeFallback = false;
+    updateOrientationButton();
+    return;
+  }
+  if (manualLandscapeFallback || lastPhysicalLandscape) {
+    document.body.classList.add('manual-landscape');
+  } else {
+    document.body.classList.remove('manual-landscape');
+  }
+  updateOrientationButton();
+}
+
+function onPhysicalOrientation(event) {
+  const gamma = Math.abs(Number(event.gamma) || 0);
+  const beta = Math.abs(Number(event.beta) || 0);
+  const sideways = gamma > 55 && beta < 75;
+  if (sideways === lastPhysicalLandscape) return;
+  lastPhysicalLandscape = sideways;
+  if (!manualLandscapeFallback) syncOrientationState();
+}
+
+async function startOrientationMotionListener(userRequested) {
+  if (orientationMotionListening || !('DeviceOrientationEvent' in window)) return;
+  try {
+    const eventCtor = window.DeviceOrientationEvent;
+    if (userRequested && eventCtor && typeof eventCtor.requestPermission === 'function') {
+      const result = await eventCtor.requestPermission();
+      if (result !== 'granted') return;
+    }
+    window.addEventListener('deviceorientation', onPhysicalOrientation, {passive:true});
+    orientationMotionListening = true;
+  } catch (err) {
+    console.debug('Device orientation listener unavailable:', err);
+  }
+}
+
+function initOrientationSupport() {
+  unlockNativeOrientation();
+  updateOrientationButton();
+  startOrientationMotionListener(false);
+  window.addEventListener('resize', syncOrientationState);
+  window.addEventListener('orientationchange', function() { setTimeout(syncOrientationState, 120); });
+  if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.addEventListener === 'function') {
+    screen.orientation.addEventListener('change', syncOrientationState);
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      unlockNativeOrientation();
+      setTimeout(syncOrientationState, 80);
+    }
+  });
+  syncOrientationState();
 }
 function normalizeNoteType(value) {
   const key = noteTypeKeyFromAny(value);
@@ -8137,12 +8359,13 @@ document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
   });
 });
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
+initOrientationSupport();
 
 // 過去のService Worker/キャッシュが原因で、ホーム画面のショートカットから開くと
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v135';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v136';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
