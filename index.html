@@ -533,9 +533,9 @@
 
   @media (orientation: portrait) {
     body.manual-landscape { width: 100vw; height: 100vh; overflow: hidden; background: #fdf8f0; }
-    body.manual-landscape .orientation-shell { position: fixed; left: 100vw; top: 0; width: 100vh; height: 100vw; min-height: 0; overflow: auto; transform: rotate(90deg); transform-origin: top left; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); -webkit-overflow-scrolling: touch; }
+    body.manual-landscape .orientation-shell { position: fixed; left: var(--manual-landscape-height, 100vw); top: 0; width: var(--manual-landscape-width, 100vh); height: var(--manual-landscape-height, 100vw); min-height: 0; overflow: auto; transform: rotate(90deg); transform-origin: top left; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     body.manual-landscape .bg-orbs { position: absolute; width: 100%; height: 100%; }
-    body.manual-landscape .container { width: min(100%, 960px); max-width: none; padding: 0.55rem 0.75rem 3.25rem; }
+    body.manual-landscape .container { width: 100%; max-width: none; padding: 0.55rem 0.75rem 3.25rem; }
     body.manual-landscape header { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.55rem; }
     body.manual-landscape .header-left { align-self: auto; min-width: 0; flex: 1 1 auto; }
     body.manual-landscape .header-eyebrow { margin-bottom: 0.1rem; font-size: 0.56rem; letter-spacing: 0.18em; }
@@ -543,6 +543,7 @@
     body.manual-landscape .header-meta { margin-top: 0.12rem; font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     body.manual-landscape .header-btns { width: auto; min-width: min(22rem, 58vw); max-width: 58vw; flex-direction: row; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.28rem; }
     body.manual-landscape .header-btns-row { width: auto; gap: 0.28rem; justify-content: flex-end; }
+    body.manual-landscape .header-btns-row .btn-sub { flex: 0 0 auto; }
     body.manual-landscape .sync-strip { width: auto; align-self: auto; justify-content: flex-end; }
     body.manual-landscape .btn-add { padding: 0.42rem 0.9rem; font-size: 0.76rem; }
     body.manual-landscape .btn-sub,
@@ -558,8 +559,10 @@
     body.manual-landscape .tag-folder-group { flex: 0 0 auto; gap: 0.22rem; padding: 0.12rem 0.22rem; }
     body.manual-landscape .tag-folder-inner-tags { flex-direction: row; align-items: center; gap: 0.22rem; }
     body.manual-landscape .tag-folder-child-row { flex-wrap: nowrap; margin-left: 0; }
-    body.manual-landscape .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: 45vw; overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding-bottom: 0.12rem; scrollbar-width: thin; }
+    body.manual-landscape .filter-controls { flex: 0 0 auto; flex-wrap: nowrap; max-width: min(46rem, calc(var(--manual-landscape-width, 100vh) * 0.52)); overflow-x: auto; overscroll-behavior-x: contain; gap: 0.3rem; padding-bottom: 0.12rem; scrollbar-width: thin; }
     body.manual-landscape .theme-select { min-width: 7.2rem; }
+    body.manual-landscape .view-mode-toggle { width: auto; flex: 0 0 auto; }
+    body.manual-landscape .view-mode-btn { flex: 0 0 auto; padding-inline: 0.72rem; }
     body.manual-landscape .tag-btn,
     body.manual-landscape .tag-folder-btn,
     body.manual-landscape .tag-folder-child-btn,
@@ -585,12 +588,23 @@
     body.manual-landscape .book-spine-tag,
     body.manual-landscape .book-spine-date,
     body.manual-landscape .book-spine-count { font-size: 0.54rem; }
-    body.manual-landscape .book-group.open .book-group-cards { padding: 0.62rem 0.7rem 3.25rem; }
+    body.manual-landscape .book-group.open { flex-direction: column; align-items: stretch; gap: 0.56rem; }
+    body.manual-landscape .book-group.open .book-shell { width: 100%; min-height: auto; padding: 0; align-items: stretch; justify-content: flex-start; }
+    body.manual-landscape .book-group.open .book-spine { width: 100%; height: auto; min-height: 3.45rem; padding: 0.62rem 0.72rem; border-radius: 0.82rem; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-auto-rows: auto; align-items: center; gap: 0.14rem 0.58rem; text-align: left; transform: none; }
+    body.manual-landscape .book-group.open .book-spine-title,
+    body.manual-landscape .book-group.open .book-spine-author { width: auto; height: auto; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.manual-landscape .book-group.open .book-spine-title { grid-column: 1; grid-row: 1; font-size: 0.86rem; line-height: 1.25; }
+    body.manual-landscape .book-group.open .book-spine-author { grid-column: 1; grid-row: 2; font-size: 0.62rem; line-height: 1.3; }
+    body.manual-landscape .book-group.open .book-spine-meta { grid-column: 2; grid-row: 1 / span 2; justify-self: end; align-self: center; }
+    body.manual-landscape .book-group.open .book-spine-detail { grid-column: 1 / -1; grid-row: 3; width: 100%; margin-top: 0.18rem; flex-direction: row; justify-content: flex-start; gap: 0.32rem; }
+    body.manual-landscape .book-group.open .book-group-cards { width: 100%; min-width: 0; padding: 0.62rem 0.7rem 3.25rem; }
     body.manual-landscape .records-list-main { gap: 0.7rem; }
     body.manual-landscape .record-book-section { grid-template-columns: minmax(4.2rem, 5rem) minmax(0,1fr); }
     body.manual-landscape .record-book-cards { padding: 0.62rem; gap: 0.62rem; }
-    body.manual-landscape .record-book-cards .card { flex-basis: min(56vw, 24rem); }
-    body.manual-landscape .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(100vw - 1rem)); }
+    body.manual-landscape .record-book-cards .card { flex-basis: min(24rem, calc(var(--manual-landscape-width, 100vh) * 0.46)); }
+    body.manual-landscape .field-row { grid-template-columns: 1fr 1fr; }
+    body.manual-landscape .card-actions { opacity: 1; }
+    body.manual-landscape .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(var(--manual-landscape-width, 100vh) - 1rem)); }
     body.manual-landscape .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
     body.manual-landscape .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
     body.manual-landscape .modal-overlay { position: absolute; align-items: stretch; padding: 0.35rem 0.55rem; }
@@ -611,7 +625,7 @@
     body.manual-landscape .drawing-tool-btn { padding: 0.32rem 0.62rem; font-size: 0.66rem; }
     body.manual-landscape #drawingCanvas { max-height: 48vh; }
     body.manual-landscape .viewer-overlay { position: absolute; }
-    body.manual-landscape .viewer-img { max-height: 76vh; max-width: 86vw; }
+    body.manual-landscape .viewer-img { max-height: calc(var(--manual-landscape-height, 100vw) * 0.76); max-width: calc(var(--manual-landscape-width, 100vh) * 0.86); }
     body.manual-landscape .viewer-toolbar { bottom: 0.55rem; padding: 0.32rem; gap: 0.28rem; }
     body.manual-landscape .viewer-btn { min-width: 2rem; height: 2rem; padding: 0 0.55rem; font-size: 0.7rem; }
     body.manual-landscape .viewer-close-btn { width: 2.15rem; height: 2.15rem; top: 0.45rem; right: 0.45rem; }
@@ -876,7 +890,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v136';
+const APP_VERSION   = 'tag-auto-folder v137';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -919,6 +933,12 @@ const SHELF_THEME_KEY = 'reading_log_shelf_theme';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
 const ORIENTATION_FALLBACK_KEY = 'reading_log_manual_landscape_fallback';
+const ORIENTATION_ENTER_GAMMA = 45;
+const ORIENTATION_ENTER_BETA = 85;
+const ORIENTATION_STAY_GAMMA = 24;
+const ORIENTATION_STAY_BETA = 115;
+const ORIENTATION_ENTER_DELAY_MS = 220;
+const ORIENTATION_EXIT_DELAY_MS = 950;
 const NOTE_TYPE_DEFAULT = 'knowledge_memo';
 const NOTE_TYPES = [
   { value: 'chapter_summary', label: '章まとめ', className: 'chapter' },
@@ -1022,6 +1042,8 @@ let displayMode = localStorage.getItem(VIEW_MODE_KEY) === 'list' ? 'list' : 'she
 let manualLandscapeFallback = localStorage.getItem(ORIENTATION_FALLBACK_KEY) === '1';
 let orientationMotionListening = false;
 let lastPhysicalLandscape = false;
+let orientationEnterTimer = null;
+let orientationExitTimer = null;
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
 let syncInFlight = false, syncRetryTimer = null;
@@ -1089,7 +1111,27 @@ function updateOrientationButton() {
   btn.setAttribute('aria-label', btn.title);
 }
 
+function updateManualLandscapeMetrics() {
+  const viewport = window.visualViewport || null;
+  const portraitWidth = Math.max(
+    window.innerWidth || 0,
+    document.documentElement.clientWidth || 0,
+    viewport ? viewport.width || 0 : 0
+  );
+  const portraitHeight = Math.max(
+    window.innerHeight || 0,
+    document.documentElement.clientHeight || 0,
+    viewport ? viewport.height || 0 : 0
+  );
+  const landscapeWidth = Math.max(portraitWidth, portraitHeight);
+  const landscapeHeight = Math.min(portraitWidth, portraitHeight);
+  if (!landscapeWidth || !landscapeHeight) return;
+  document.documentElement.style.setProperty('--manual-landscape-width', `${Math.round(landscapeWidth)}px`);
+  document.documentElement.style.setProperty('--manual-landscape-height', `${Math.round(landscapeHeight)}px`);
+}
+
 function setLandscapeFallback(enabled) {
+  updateManualLandscapeMetrics();
   const shouldRotate = !!enabled && isPortraitViewport();
   document.body.classList.toggle('manual-landscape', shouldRotate);
   manualLandscapeFallback = shouldRotate;
@@ -1139,6 +1181,7 @@ async function toggleLandscapeFallback() {
 }
 
 function syncOrientationState() {
+  updateManualLandscapeMetrics();
   if (!isPortraitViewport()) {
     document.body.classList.remove('manual-landscape');
     manualLandscapeFallback = false;
@@ -1153,13 +1196,50 @@ function syncOrientationState() {
   updateOrientationButton();
 }
 
+function clearOrientationTimer(timer) {
+  if (timer) clearTimeout(timer);
+  return null;
+}
+
+function commitPhysicalLandscape(value) {
+  orientationEnterTimer = clearOrientationTimer(orientationEnterTimer);
+  orientationExitTimer = clearOrientationTimer(orientationExitTimer);
+  if (lastPhysicalLandscape === value) return;
+  lastPhysicalLandscape = value;
+  if (!manualLandscapeFallback) syncOrientationState();
+}
+
+function schedulePhysicalLandscape(value, delay) {
+  if (value) {
+    orientationExitTimer = clearOrientationTimer(orientationExitTimer);
+    if (lastPhysicalLandscape || orientationEnterTimer) return;
+    orientationEnterTimer = setTimeout(function() { commitPhysicalLandscape(true); }, delay);
+    return;
+  }
+  orientationEnterTimer = clearOrientationTimer(orientationEnterTimer);
+  if (!lastPhysicalLandscape || orientationExitTimer) return;
+  orientationExitTimer = setTimeout(function() { commitPhysicalLandscape(false); }, delay);
+}
+
 function onPhysicalOrientation(event) {
   const gamma = Math.abs(Number(event.gamma) || 0);
   const beta = Math.abs(Number(event.beta) || 0);
-  const sideways = gamma > 55 && beta < 75;
-  if (sideways === lastPhysicalLandscape) return;
-  lastPhysicalLandscape = sideways;
-  if (!manualLandscapeFallback) syncOrientationState();
+  if (!gamma && !beta) return;
+  const enterLandscape = gamma >= ORIENTATION_ENTER_GAMMA && beta <= ORIENTATION_ENTER_BETA;
+  const stayLandscape = gamma >= ORIENTATION_STAY_GAMMA && beta <= ORIENTATION_STAY_BETA;
+  if (lastPhysicalLandscape) {
+    if (stayLandscape) {
+      orientationExitTimer = clearOrientationTimer(orientationExitTimer);
+      return;
+    }
+    schedulePhysicalLandscape(false, ORIENTATION_EXIT_DELAY_MS);
+    return;
+  }
+  if (enterLandscape) {
+    schedulePhysicalLandscape(true, ORIENTATION_ENTER_DELAY_MS);
+  } else {
+    orientationEnterTimer = clearOrientationTimer(orientationEnterTimer);
+  }
 }
 
 async function startOrientationMotionListener(userRequested) {
@@ -1179,9 +1259,19 @@ async function startOrientationMotionListener(userRequested) {
 
 function initOrientationSupport() {
   unlockNativeOrientation();
+  updateManualLandscapeMetrics();
   updateOrientationButton();
   startOrientationMotionListener(false);
-  window.addEventListener('resize', syncOrientationState);
+  window.addEventListener('resize', function() {
+    updateManualLandscapeMetrics();
+    syncOrientationState();
+  });
+  if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+    window.visualViewport.addEventListener('resize', function() {
+      updateManualLandscapeMetrics();
+      syncOrientationState();
+    }, {passive:true});
+  }
   window.addEventListener('orientationchange', function() { setTimeout(syncOrientationState, 120); });
   if (typeof screen !== 'undefined' && screen.orientation && typeof screen.orientation.addEventListener === 'function') {
     screen.orientation.addEventListener('change', syncOrientationState);
@@ -8365,7 +8455,7 @@ initOrientationSupport();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v136';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v137';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
