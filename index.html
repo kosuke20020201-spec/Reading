@@ -227,8 +227,8 @@
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
   .record-floating-actions { position: fixed; left: 50%; bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 90; width: min(23rem, calc(100vw - 2rem)); display: grid; grid-template-columns: minmax(0,0.9fr) minmax(0,1.1fr); gap: 0.45rem; opacity: 1; transition: opacity 0.16s, transform 0.16s; }
   .record-view-controls .record-floating-actions { display: none !important; }
-  .global-record-actions { z-index: 260; visibility: hidden; }
-  #globalRecordActions[data-visible="true"] { display: grid !important; visibility: visible; opacity: 1; pointer-events: auto; transform: translateX(-50%); }
+  .global-record-actions { z-index: 260; visibility: hidden; transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms; }
+  #globalRecordActions[data-visible="true"] { display: grid !important; visibility: visible; opacity: 1; pointer-events: auto; transform: translateX(-50%); transition-delay: 0s, 0s, 0s; }
   .record-floating-actions.is-hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 0.45rem); }
   .record-add-btn, .book-info-btn { min-height: 2.9rem; padding: 0.58rem 0.78rem; border-radius: 999px; font: inherit; font-size: 0.82rem; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 10px 28px rgba(41,37,36,0.2); }
   .record-add-btn { border: 1px solid var(--stone-800); background: var(--stone-800); color: white; }
@@ -941,7 +941,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v150';
+const APP_VERSION   = 'tag-auto-folder v151';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -8584,12 +8584,10 @@ function isOpenedBookStillRelevantForActions() {
   if (openVisibleLength < 2) return false;
 
   const anotherBookIsVisible = [...document.querySelectorAll('.book-group:not(.open)')].some(function(group) {
-    return visibleBookLength(group.getBoundingClientRect(), useHorizontalAxis, viewportLength) >= 48;
+    return visibleBookLength(group.getBoundingClientRect(), useHorizontalAxis, viewportLength) >= 24;
   });
-  if (!anotherBookIsVisible) return true;
-
-  // Once another book is in view, hide the bar after the opened book has become only a small remnant.
-  return openVisibleLength >= Math.min(112, Math.max(64, viewportLength * 0.18));
+  // The actions belong only to the opened book, so yield as soon as the next book enters the viewport.
+  return !anotherBookIsVisible;
 }
 
 function updateRecordAddButtonVisibility() {
@@ -8835,7 +8833,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v150';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v151';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
