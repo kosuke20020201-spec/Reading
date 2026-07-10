@@ -26,6 +26,7 @@
     --stone-600: #57534e; --stone-800: #292524;
   }
   body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); min-height: 100vh; color: var(--stone-800); }
+  body.modal-open { overflow: hidden; }
   .orientation-shell { min-height: 100vh; transform: translateZ(0); backface-visibility: hidden; }
   html.orientation-transitioning::view-transition-old(root),
   html.orientation-transitioning::view-transition-new(root) {
@@ -313,14 +314,14 @@
   .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
   .empty p { font-size: 0.85rem; }
 
-  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 1rem; background: rgba(28,22,15,0.5); backdrop-filter: blur(4px); }
+  .modal-overlay { display: none; position: fixed; top: var(--visual-viewport-top, 0px); left: var(--visual-viewport-left, 0px); width: var(--visual-viewport-width, 100vw); height: var(--visual-viewport-height, 100dvh); z-index: 100; align-items: center; justify-content: center; padding: 1rem; background: rgba(28,22,15,0.5); backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 1.5rem; box-shadow: 0 20px 60px #00000022; width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal { background: white; border-radius: 1.5rem; box-shadow: 0 20px 60px #00000022; width: 100%; max-width: 520px; max-height: min(90vh, calc(var(--visual-viewport-height, 100dvh) - 2rem)); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
   .modal-header { padding: 1.25rem 1.5rem 0.875rem; border-bottom: 1px solid var(--stone-100); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .modal-title { font-family: 'Noto Serif JP', serif; font-weight: 700; font-size: 1.05rem; }
   .modal-close { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 999px; font-size: 1.1rem; color: var(--stone-400); line-height: 1; }
   .modal-close:hover { background: var(--stone-100); }
-  .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+  .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; overscroll-behavior: contain; overflow-anchor: none; }
   .modal-footer { padding: 0.875rem 1.5rem 1.25rem; border-top: 1px solid var(--stone-100); display: flex; justify-content: flex-end; gap: 0.5rem; flex-shrink: 0; }
   .field label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--stone-500); margin-bottom: 0.3rem; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -549,7 +550,7 @@
     .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
     .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
     .modal-overlay { align-items: stretch; padding: max(0.35rem, env(safe-area-inset-top)) max(0.55rem, env(safe-area-inset-right)) max(0.35rem, env(safe-area-inset-bottom)) max(0.55rem, env(safe-area-inset-left)); }
-    .modal { max-width: min(45rem, calc(100vw - 1.1rem)); max-height: calc(100dvh - 0.7rem); border-radius: 1rem; }
+    .modal { max-width: min(45rem, calc(100vw - 1.1rem)); max-height: calc(var(--visual-viewport-height, 100dvh) - 0.7rem); border-radius: 1rem; }
     .modal-header { padding: 0.62rem 0.95rem 0.48rem; }
     .modal-title { font-size: 0.9rem; }
     .modal-body { padding: 0.68rem 0.95rem; gap: 0.6rem; }
@@ -658,7 +659,7 @@
     body.manual-landscape .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(var(--manual-landscape-width, 100vh) - 1rem)); }
     body.manual-landscape .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
     body.manual-landscape .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
-    body.manual-landscape .modal-overlay { position: absolute; align-items: stretch; padding: 0.35rem 0.55rem; }
+    body.manual-landscape .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: stretch; padding: 0.35rem 0.55rem; }
     body.manual-landscape .modal { max-width: min(45rem, calc(100% - 1.1rem)); max-height: calc(100% - 0.7rem); border-radius: 1rem; }
     body.manual-landscape .modal-header { padding: 0.62rem 0.95rem 0.48rem; }
     body.manual-landscape .modal-title { font-size: 0.9rem; }
@@ -932,7 +933,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v145';
+const APP_VERSION   = 'tag-auto-folder v146';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1174,6 +1175,35 @@ function updateManualLandscapeMetrics() {
   document.documentElement.style.setProperty('--manual-landscape-height', `${Math.round(landscapeHeight)}px`);
 }
 
+function updateVisualViewportVars() {
+  const viewport = window.visualViewport || null;
+  const width = viewport ? viewport.width : window.innerWidth;
+  const height = viewport ? viewport.height : window.innerHeight;
+  const left = viewport ? viewport.offsetLeft : 0;
+  const top = viewport ? viewport.offsetTop : 0;
+  const root = document.documentElement;
+  root.style.setProperty('--visual-viewport-width', `${Math.round(width || 0)}px`);
+  root.style.setProperty('--visual-viewport-height', `${Math.round(height || window.innerHeight || 0)}px`);
+  root.style.setProperty('--visual-viewport-left', `${Math.round(left || 0)}px`);
+  root.style.setProperty('--visual-viewport-top', `${Math.round(top || 0)}px`);
+}
+
+function modalBodyElement() {
+  return document.querySelector('#modalOverlay .modal-body');
+}
+
+function resetEntryModalLayout() {
+  updateVisualViewportVars();
+  const overlay = document.getElementById('modalOverlay');
+  const body = modalBodyElement();
+  if (overlay) overlay.scrollTop = 0;
+  if (body) body.scrollTop = 0;
+}
+
+function isCoarsePointerDevice() {
+  return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+
 function runOrientationTransition(applyChange) {
   if (typeof applyChange !== 'function') return;
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1391,17 +1421,24 @@ async function startOrientationMotionListener(userRequested) {
 
 function initOrientationSupport() {
   unlockNativeOrientation();
+  updateVisualViewportVars();
   updateManualLandscapeMetrics();
   updateOrientationButton();
   startOrientationMotionListener(false);
   window.addEventListener('resize', function() {
+    updateVisualViewportVars();
     updateManualLandscapeMetrics();
     syncOrientationState();
   });
   if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
     window.visualViewport.addEventListener('resize', function() {
+      updateVisualViewportVars();
       updateManualLandscapeMetrics();
       syncOrientationState();
+      if (isEntryInputModalOpen()) requestAnimationFrame(resetEntryModalLayout);
+    }, {passive:true});
+    window.visualViewport.addEventListener('scroll', function() {
+      updateVisualViewportVars();
     }, {passive:true});
   }
   window.addEventListener('orientationchange', function() { setTimeout(syncOrientationState, 120); });
@@ -7379,10 +7416,16 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   updateNoteFieldProfile();
   scheduleAutoAuthorLookup(document.getElementById('fBook').value);
   document.getElementById('suggestList').style.display='none';
+  resetEntryModalLayout();
+  document.body.classList.add('modal-open');
   document.getElementById('modalOverlay').classList.add('open');
   suspendAutoLandscapeForEntryInput();
   lockPortraitDuringEntryInput();
-  setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
+  requestAnimationFrame(resetEntryModalLayout);
+  setTimeout(resetEntryModalLayout, 80);
+  if (!isCoarsePointerDevice()) {
+    setTimeout(function(){ document.getElementById('fBook').focus(); }, 50);
+  }
 }
 function closeModal(force) {
   if (!force && entryDraftDirty && !confirm('保存していない記録があります。閉じますか？')) return false;
@@ -7390,6 +7433,7 @@ function closeModal(force) {
   if (force || entryDraftDirty) clearEntryDraft();
   document.getElementById('modalOverlay').classList.remove('open');
   document.getElementById('modalOverlay').classList.remove('book-wide-edit');
+  document.body.classList.remove('modal-open');
   document.getElementById('suggestList').style.display='none';
   document.getElementById('tagSuggestList').style.display='none';
   fixedTagEditOnly=false;
@@ -8703,7 +8747,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v145';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v146';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
