@@ -224,7 +224,7 @@
   .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
   .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
-  .record-floating-actions { position: fixed; left: 50%; bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 230; width: min(23rem, calc(100vw - 2rem)); display: grid; grid-template-columns: minmax(0,0.9fr) minmax(0,1.1fr); gap: 0.45rem; opacity: 1; transition: opacity 0.16s, transform 0.16s; }
+  .record-floating-actions { position: fixed; left: 50%; bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 90; width: min(23rem, calc(100vw - 2rem)); display: grid; grid-template-columns: minmax(0,0.9fr) minmax(0,1.1fr); gap: 0.45rem; opacity: 1; transition: opacity 0.16s, transform 0.16s; }
   .record-floating-actions.is-hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 0.45rem); }
   .record-add-btn, .book-info-btn { min-height: 2.9rem; padding: 0.58rem 0.78rem; border-radius: 999px; font: inherit; font-size: 0.82rem; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 10px 28px rgba(41,37,36,0.2); }
   .record-add-btn { border: 1px solid var(--stone-800); background: var(--stone-800); color: white; }
@@ -933,7 +933,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v146';
+const APP_VERSION   = 'tag-auto-folder v147';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -7419,6 +7419,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   resetEntryModalLayout();
   document.body.classList.add('modal-open');
   document.getElementById('modalOverlay').classList.add('open');
+  scheduleRecordAddButtonVisibility();
   suspendAutoLandscapeForEntryInput();
   lockPortraitDuringEntryInput();
   requestAnimationFrame(resetEntryModalLayout);
@@ -7434,6 +7435,7 @@ function closeModal(force) {
   document.getElementById('modalOverlay').classList.remove('open');
   document.getElementById('modalOverlay').classList.remove('book-wide-edit');
   document.body.classList.remove('modal-open');
+  scheduleRecordAddButtonVisibility();
   document.getElementById('suggestList').style.display='none';
   document.getElementById('tagSuggestList').style.display='none';
   fixedTagEditOnly=false;
@@ -8533,16 +8535,8 @@ function updateRecordAddButtonVisibility() {
     if (bar !== activeBar) bar.classList.add('is-hidden');
   });
   if (!activeBar) return;
-
-  const cards = activeBar.closest('.book-group-cards');
-  if (!cards) {
-    activeBar.classList.add('is-hidden');
-    return;
-  }
-  const cardsRect = cards.getBoundingClientRect();
-  const btnRect = activeBar.getBoundingClientRect();
-  const overlapsOpenRecords = cardsRect.top < btnRect.bottom && cardsRect.bottom > btnRect.top + 12;
-  activeBar.classList.toggle('is-hidden', !overlapsOpenRecords);
+  const frontLayerOpen = !!document.querySelector('.modal-overlay.open, .viewer-overlay.open');
+  activeBar.classList.toggle('is-hidden', frontLayerOpen);
 }
 
 function scheduleRecordAddButtonVisibility() {
@@ -8747,7 +8741,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v146';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v147';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
