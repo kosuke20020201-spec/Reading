@@ -941,7 +941,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v149';
+const APP_VERSION   = 'tag-auto-folder v150';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -8564,6 +8564,34 @@ function hasVisibleFrontLayer() {
   });
 }
 
+function visibleBookLength(rect, useHorizontalAxis, viewportLength) {
+  const start = useHorizontalAxis ? rect.left : rect.top;
+  const end = useHorizontalAxis ? rect.right : rect.bottom;
+  return Math.max(0, Math.min(end, viewportLength) - Math.max(start, 0));
+}
+
+function isOpenedBookStillRelevantForActions() {
+  const openGroup = document.querySelector('.book-group.open');
+  if (!openGroup) return false;
+  const useHorizontalAxis = document.body.classList.contains('manual-landscape');
+  const viewport = window.visualViewport || null;
+  const viewportLength = useHorizontalAxis
+    ? (viewport ? viewport.width : window.innerWidth)
+    : (viewport ? viewport.height : window.innerHeight);
+  if (!viewportLength) return true;
+
+  const openVisibleLength = visibleBookLength(openGroup.getBoundingClientRect(), useHorizontalAxis, viewportLength);
+  if (openVisibleLength < 2) return false;
+
+  const anotherBookIsVisible = [...document.querySelectorAll('.book-group:not(.open)')].some(function(group) {
+    return visibleBookLength(group.getBoundingClientRect(), useHorizontalAxis, viewportLength) >= 48;
+  });
+  if (!anotherBookIsVisible) return true;
+
+  // Once another book is in view, hide the bar after the opened book has become only a small remnant.
+  return openVisibleLength >= Math.min(112, Math.max(64, viewportLength * 0.18));
+}
+
 function updateRecordAddButtonVisibility() {
   document.querySelectorAll('.record-view-controls .record-floating-actions').forEach(function(bar) {
     bar.classList.add('is-hidden');
@@ -8571,7 +8599,7 @@ function updateRecordAddButtonVisibility() {
   const activeBar = document.getElementById('globalRecordActions');
   if (!activeBar) return;
   const activeBook = activeOpenBookForActions();
-  const shouldShow = !!activeBook && !hasVisibleFrontLayer() && displayMode === 'shelf';
+  const shouldShow = !!activeBook && !hasVisibleFrontLayer() && displayMode === 'shelf' && isOpenedBookStillRelevantForActions();
   activeBar.dataset.visible = shouldShow ? 'true' : 'false';
   activeBar.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
   document.body.classList.toggle('has-open-book-actions', shouldShow);
@@ -8807,7 +8835,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v149';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v150';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -8848,6 +8876,7 @@ window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0
 window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('scroll',handleWindowScroll, {passive:true});
+document.getElementById('orientationShell')?.addEventListener('scroll', handleWindowScroll, {passive:true});
 window.addEventListener('resize', scheduleRecordAddButtonVisibility, {passive:true});
 document.getElementById('tagFilters')?.addEventListener('click', e => {
   if (tagFolderDragJustSaved) {
