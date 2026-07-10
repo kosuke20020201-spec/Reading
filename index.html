@@ -27,7 +27,8 @@
   }
   body { font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #fdf8f0 0%, #fef9ef 50%, #fdfaf5 100%); min-height: 100vh; color: var(--stone-800); }
   body.modal-open { overflow: hidden; }
-  .orientation-shell { min-height: 100vh; transform: translateZ(0); backface-visibility: hidden; }
+  /* Keep viewport-fixed controls attached to the viewport in normal layouts. */
+  .orientation-shell { min-height: 100vh; backface-visibility: hidden; }
   html.orientation-transitioning::view-transition-old(root),
   html.orientation-transitioning::view-transition-new(root) {
     animation-duration: 220ms;
@@ -226,7 +227,8 @@
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
   .record-floating-actions { position: fixed; left: 50%; bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 90; width: min(23rem, calc(100vw - 2rem)); display: grid; grid-template-columns: minmax(0,0.9fr) minmax(0,1.1fr); gap: 0.45rem; opacity: 1; transition: opacity 0.16s, transform 0.16s; }
   .record-view-controls .record-floating-actions { display: none !important; }
-  .global-record-actions { z-index: 95; }
+  .global-record-actions { z-index: 260; visibility: hidden; }
+  #globalRecordActions[data-visible="true"] { display: grid !important; visibility: visible; opacity: 1; pointer-events: auto; transform: translateX(-50%); }
   .record-floating-actions.is-hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 0.45rem); }
   .record-add-btn, .book-info-btn { min-height: 2.9rem; padding: 0.58rem 0.78rem; border-radius: 999px; font: inherit; font-size: 0.82rem; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 10px 28px rgba(41,37,36,0.2); }
   .record-add-btn { border: 1px solid var(--stone-800); background: var(--stone-800); color: white; }
@@ -939,7 +941,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v148';
+const APP_VERSION   = 'tag-auto-folder v149';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1113,6 +1115,7 @@ let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffset
 let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
 let searchRenderTimer = null;
 let scrollUpdateQueued = false;
+let recordActionVisibilityTimer = null;
 let tagFolderChipDrag = null;
 let tagFolderDragJustSaved = false;
 
@@ -8545,12 +8548,20 @@ function activeOpenBookForActions() {
     };
   }
   if (openBookKey) {
-    const group = [...bookGroups().values()].find(g => bookKey(g.book) === openBookKey);
+    const group = [...bookGroups().entries()].find(function(pair) { return pair[0] === openBookKey; });
     if (group) {
-      return { key: openBookKey, book: group.book || '', author: group.author || '' };
+      const book = group[1];
+      return { key: openBookKey, book: book.book || '', author: book.author || '' };
     }
   }
   return null;
+}
+
+function hasVisibleFrontLayer() {
+  return [...document.querySelectorAll('.modal-overlay.open, .viewer-overlay.open')].some(function(layer) {
+    const style = window.getComputedStyle(layer);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
 }
 
 function updateRecordAddButtonVisibility() {
@@ -8560,8 +8571,11 @@ function updateRecordAddButtonVisibility() {
   const activeBar = document.getElementById('globalRecordActions');
   if (!activeBar) return;
   const activeBook = activeOpenBookForActions();
-  const frontLayerOpen = !!document.querySelector('.modal-overlay.open, .viewer-overlay.open');
-  if (!activeBook || frontLayerOpen || displayMode !== 'shelf') {
+  const shouldShow = !!activeBook && !hasVisibleFrontLayer() && displayMode === 'shelf';
+  activeBar.dataset.visible = shouldShow ? 'true' : 'false';
+  activeBar.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  document.body.classList.toggle('has-open-book-actions', shouldShow);
+  if (!shouldShow) {
     activeBar.classList.add('is-hidden');
     return;
   }
@@ -8581,7 +8595,10 @@ function updateRecordAddButtonVisibility() {
 }
 
 function scheduleRecordAddButtonVisibility() {
+  updateRecordAddButtonVisibility();
   requestAnimationFrame(updateRecordAddButtonVisibility);
+  if (recordActionVisibilityTimer) clearTimeout(recordActionVisibilityTimer);
+  recordActionVisibilityTimer = setTimeout(updateRecordAddButtonVisibility, 120);
 }
 
 function handleWindowScroll() {
@@ -8790,7 +8807,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v148';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v149';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
