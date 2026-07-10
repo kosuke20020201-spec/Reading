@@ -87,7 +87,7 @@
   .entry-sync-badge.error { border-color:#fecaca; background:#fef2f2; color:#b91c1c; }
   @keyframes syncPulse { from { opacity: 0.45; } to { opacity: 1; } }
 
-  .sticky-controls { position: sticky; top: 0; z-index: 120; margin: 0 -0.45rem 1.25rem; padding: 0.5rem 0.45rem 0.65rem; background: linear-gradient(135deg, rgba(253,248,240,0.99) 0%, rgba(254,249,239,0.99) 50%, rgba(253,250,245,0.99) 100%); border-bottom: 1px solid rgba(231,229,228,0.82); }
+  .sticky-controls { position: sticky; top: 0; z-index: 120; margin: 0 -0.45rem 1.25rem; padding: 0.5rem 0.45rem 0.65rem; background: linear-gradient(135deg, rgba(253,248,240,0.96) 0%, rgba(254,249,239,0.96) 50%, rgba(253,250,245,0.96) 100%); border-bottom: 1px solid rgba(231,229,228,0.82); backdrop-filter: blur(10px); }
   .search-wrap { position: relative; margin-bottom: 0.75rem; }
   .search-icon { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
   .search-input { width: 100%; padding: 0.75rem 2.5rem 0.75rem 2.25rem; border-radius: 1rem; border: 1px solid var(--stone-200); background: white; box-shadow: 0 1px 4px #00000008; font-size: 0.85rem; font-family: inherit; outline: none; transition: border-color 0.1s; }
@@ -131,6 +131,14 @@
   .bookshelf-main.theme-library { border-color: #79512d; border-bottom-color: #5b3f24; background-color: #ead7b8; background-image: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0.06) 42%, rgba(41,37,36,0.1) 100%), linear-gradient(90deg, rgba(41,37,36,0.16) 0 0.5rem, transparent 0.5rem calc(100% - 0.5rem), rgba(41,37,36,0.16) calc(100% - 0.5rem)), repeating-linear-gradient(90deg, rgba(41,37,36,0.06) 0 1px, transparent 1px 8px); }
   .bookshelf-main.theme-quiet { border-color: #78716c; border-bottom-color: #3f3f46; background-color: #e9e4da; background-image: linear-gradient(180deg, rgba(255,255,255,0.48), rgba(255,255,255,0.08) 42%, rgba(28,25,23,0.08) 100%), linear-gradient(90deg, rgba(28,25,23,0.1) 0 0.5rem, transparent 0.5rem calc(100% - 0.5rem), rgba(28,25,23,0.1) calc(100% - 0.5rem)), repeating-linear-gradient(90deg, rgba(28,25,23,0.045) 0 1px, transparent 1px 8px); }
   .book-group { position: relative; z-index: 1; display: flex; align-items: flex-end; gap: 0.75rem; min-height: 17.35rem; margin: 0; order: 0; contain: layout; }
+  @supports (content-visibility: auto) {
+    .bookshelf-main:not(.book-reorder-mode) .book-group:not(.open) {
+      content-visibility: auto;
+      contain-intrinsic-inline-size: calc(var(--spine-width-mobile, var(--spine-width, 4.6rem)) + 0.44rem);
+      contain-intrinsic-block-size: 17.35rem;
+    }
+    .bookshelf-main .book-group.open { content-visibility: visible; }
+  }
   .book-shell { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.38rem; min-height: 17.15rem; padding: 0 0.22rem 0.86rem; }
   .book-shell::before { content: ""; position: absolute; z-index: 0; left: -0.3rem; right: -0.3rem; bottom: 0.55rem; height: 15.7rem; border-radius: 0.5rem 0.5rem 0.2rem 0.2rem; background: linear-gradient(90deg, rgba(92,64,51,0.16), rgba(255,255,255,0.12) 45%, rgba(41,37,36,0.12)); box-shadow: inset 0 0 0 1px rgba(92,64,51,0.1), inset 0 -1.1rem 1.1rem rgba(92,64,51,0.12); pointer-events: none; }
   .book-shell::after { content: ""; position: absolute; z-index: 0; left: -0.52rem; right: -0.52rem; bottom: 0; height: 0.78rem; border-radius: 0.18rem 0.18rem 0.45rem 0.45rem; background: linear-gradient(180deg, #b77935 0%, #8a5a2b 48%, #5f3518 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -2px 0 rgba(41,37,36,0.22), 0 0.34rem 0.55rem rgba(41,37,36,0.2); pointer-events: none; }
@@ -397,9 +405,10 @@
 
   .toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%); background: #292524; color: white; font-size: 0.8rem; font-weight: 500; padding: 0.6rem 1.2rem; border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
   .toast.show { opacity: 1; }
-  .scroll-top-btn { position: fixed; left: 1rem; bottom: 1.1rem; width: 3.6rem; height: 3.6rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-700); box-shadow: 0 8px 22px #00000018; font: inherit; font-size: 1.45rem; font-weight: 900; cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(0.4rem); transition: opacity 0.18s, transform 0.18s, border-color 0.12s, color 0.12s; z-index: 220; }
+  .scroll-top-btn { position: fixed; left: 1rem; bottom: 1.1rem; width: 3.6rem; height: 3.6rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-700); box-shadow: 0 8px 22px #00000018; font: inherit; font-size: 1.45rem; font-weight: 900; cursor: pointer; opacity: 0; pointer-events: none; transform: translateY(0.4rem); transition: opacity 0.18s, transform 0.18s, bottom 0.18s ease, border-color 0.12s, color 0.12s; z-index: 220; }
   .scroll-top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
   .scroll-top-btn:hover { border-color: var(--amber); color: var(--amber); background: #fffbeb; }
+  body.has-open-book-actions .scroll-top-btn { bottom: calc(7.9rem + env(safe-area-inset-bottom, 0px)); }
 
   /* 固定タグ */
   .fixed-tag-chips { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.4rem; min-height:0.5rem; }
@@ -467,6 +476,9 @@
     .card-actions { opacity: 1; }
     .bookshelf-main { gap: 0.95rem 0.45rem; padding: 0.85rem 0.5rem 1.85rem; border-bottom-width: 11px; border-radius: 0.78rem 0.78rem 0.45rem 0.45rem; }
     .book-group { min-height: 15.95rem; }
+    @supports (content-visibility: auto) {
+      .bookshelf-main:not(.book-reorder-mode) .book-group:not(.open) { contain-intrinsic-block-size: 15.95rem; }
+    }
     .book-shell { min-height: 15.75rem; padding-bottom: 0.76rem; }
     .book-shell::before { height: 14.1rem; }
     .book-shell::after { left: -0.42rem; right: -0.42rem; height: 0.68rem; }
@@ -538,6 +550,9 @@
     .results-count { margin-bottom: 0.45rem; font-size: 0.68rem; }
     .bookshelf-main { gap: 0.82rem 0.56rem; padding: 0.75rem 0.65rem 1.65rem; border-bottom-width: 10px; }
     .book-group { min-height: 14.45rem; }
+    @supports (content-visibility: auto) {
+      .bookshelf-main:not(.book-reorder-mode) .book-group:not(.open) { contain-intrinsic-block-size: 14.45rem; }
+    }
     .book-shell { min-height: 14.25rem; padding-bottom: 0.72rem; }
     .book-shell::before { height: 12.72rem; }
     .book-spine { height: 12.7rem; width: var(--spine-width-mobile, var(--spine-width, 4.05rem)); padding: 0.62rem 0.34rem 0.55rem; }
@@ -552,6 +567,7 @@
     .record-book-cards .card { flex: 1 1 min(18rem, calc(50% - 0.35rem)); max-width: none; scroll-snap-align: none; }
     .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(100vw - 1rem)); }
     .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
+    body.has-open-book-actions .scroll-top-btn { bottom: calc(4.2rem + env(safe-area-inset-bottom, 0px)); }
     .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
     .modal-overlay { align-items: stretch; padding: max(0.35rem, env(safe-area-inset-top)) max(0.55rem, env(safe-area-inset-right)) max(0.35rem, env(safe-area-inset-bottom)) max(0.55rem, env(safe-area-inset-left)); }
     .modal { max-width: min(45rem, calc(100vw - 1.1rem)); max-height: calc(var(--visual-viewport-height, 100dvh) - 0.7rem); border-radius: 1rem; }
@@ -635,6 +651,9 @@
     body.manual-landscape .results-count { margin-bottom: 0.45rem; font-size: 0.68rem; }
     body.manual-landscape .bookshelf-main { gap: 0.82rem 0.56rem; padding: 0.75rem 0.65rem 1.65rem; border-bottom-width: 10px; }
     body.manual-landscape .book-group { min-height: 14.45rem; }
+    @supports (content-visibility: auto) {
+      body.manual-landscape .bookshelf-main:not(.book-reorder-mode) .book-group:not(.open) { contain-intrinsic-block-size: 14.45rem; }
+    }
     body.manual-landscape .book-shell { min-height: 14.25rem; padding-bottom: 0.72rem; }
     body.manual-landscape .book-shell::before { height: 12.72rem; }
     body.manual-landscape .book-spine { height: 12.7rem; width: var(--spine-width-mobile, var(--spine-width, 4.05rem)); padding: 0.62rem 0.34rem 0.55rem; }
@@ -662,6 +681,7 @@
     body.manual-landscape .card-actions { opacity: 1; }
     body.manual-landscape .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(var(--manual-landscape-width, 100vh) - 1rem)); }
     body.manual-landscape .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
+    body.manual-landscape.has-open-book-actions .scroll-top-btn { bottom: calc(4.2rem + env(safe-area-inset-bottom, 0px)); }
     body.manual-landscape .toast { bottom: 3.45rem; font-size: 0.72rem; padding: 0.5rem 0.95rem; }
     body.manual-landscape .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; align-items: stretch; padding: 0.35rem 0.55rem; }
     body.manual-landscape .modal { max-width: min(45rem, calc(100% - 1.1rem)); max-height: calc(100% - 0.7rem); border-radius: 1rem; }
@@ -941,7 +961,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v153';
+const APP_VERSION   = 'tag-auto-folder v156';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1115,10 +1135,10 @@ let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffset
 let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
 let searchRenderTimer = null;
 let scrollUpdateQueued = false;
+let scrollTopButtonVisible = false;
 let recordActionVisibilityTimer = null;
 let bookActionVisibilityObserver = null;
 let observedBookActionVisibility = new Map();
-let bookCoverObserver = null;
 let tagFolderChipDrag = null;
 let tagFolderDragJustSaved = false;
 
@@ -6081,10 +6101,6 @@ function expandedRecordsForGroup(group) {
 // ── Render ─────────────────────────────────────────
 function render() {
   resetRenderCaches();
-  if (bookCoverObserver) {
-    bookCoverObserver.disconnect();
-    bookCoverObserver = null;
-  }
   const tags=allTags(),groups=bookGroups();
   const folders = getTagFolders();
   if (displayMode === 'list' && shelfReorderMode) {
@@ -6193,16 +6209,16 @@ function render() {
     const spineVars = spineStyle(g.book || 'タイトル未入力', gi);
     const metaInfo = getBookMetaInfo(g.book);
     const coverVar = cssUrlValue(metaInfo.coverUrl);
-    const spineStyleText = spineVars;
+    const spineStyleText = spineVars + (coverVar ? ';--book-cover:' + coverVar : '');
     const isOpen = openBookKey === k;
     const primaryTag = bookPrimaryTag(g);
     const latestLabel = bookLatestLabel(g);
     const spineTitle = spineDisplayTitle(g.book || metaInfo.title || 'タイトル未入力');
     metaInfo.title = spineTitle;
     return `
-<div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" data-book-key="${esc(k)}" data-book-name="${esc(g.book || '')}" data-book-author="${esc(g.author || '')}">
+<div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" style="${spineVars}" data-book-key="${esc(k)}" data-book-name="${esc(g.book || '')}" data-book-author="${esc(g.author || '')}">
   <div class="book-shell" style="${spineVars}">
-    <button type="button" class="book-spine" style="${spineStyleText}"${coverVar ? ` data-book-cover="${esc(metaInfo.coverUrl || '')}"` : ''}
+    <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}"
       data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
       <span class="book-spine-title">${formatSpineText(metaInfo.title||g.book||'タイトル未入力')}</span>
       ${bookAuthorLabel(g) && bookAuthorLabel(g) !== '著者未入力' ? `<span class="book-spine-author">${formatSpineText(bookAuthorLabel(g).split('、')[0])}</span>` : ''}
@@ -6214,11 +6230,10 @@ function render() {
     </button>
     ${bookMoveActionsHTML(k)}
   </div>
-  <div class="book-group-cards" id="grp-${gi}-cards">${expandedRecordsHTML(g)}</div>
+  <div class="book-group-cards" id="grp-${gi}-cards">${isOpen ? expandedRecordsHTML(g) : ''}</div>
 </div>`;
   }).join('')}</div>`;
   observeLazyImages();
-  observeBookCovers();
   setupBookActionVisibilityObserver();
   scheduleRecordAddButtonVisibility();
 }
@@ -6364,29 +6379,17 @@ function toggleBookGroup(index) {
   if (!group) return;
   const shouldOpen = !group.classList.contains('open');
   const nextOpenKey = shouldOpen ? (group.dataset.bookKey || null) : null;
-  document.querySelectorAll('.book-group.open').forEach(function(openGroup) {
-    openGroup.classList.remove('open');
-    const openButton = openGroup.querySelector('.book-spine');
-    if (openButton) {
-      openButton.setAttribute('aria-expanded', 'false');
-      openButton.setAttribute('aria-label', openButton.dataset.bookTitle + 'の記録を開く');
-    }
-  });
+  const selectedBook = group.dataset.bookName || '';
+  const selectedAuthor = group.dataset.bookAuthor || '';
   openBookKey = nextOpenKey;
   openBookOverviewKey = shouldOpen ? (nextOpenKey || '') : '';
   bookOverviewClosedKey = '';
-  if (shouldOpen) group.classList.add('open');
-  setupBookActionVisibilityObserver();
-  const button = group.querySelector('.book-spine');
-  if (button) {
-    button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-    button.setAttribute('aria-label', button.dataset.bookTitle + 'の記録を' + (shouldOpen ? '閉じる' : '開く'));
-  }
+  render();
   if (shouldOpen) {
-    autoFetchBookInfoForOpenedBook(group.dataset.bookName || '', group.dataset.bookAuthor || '');
+    autoFetchBookInfoForOpenedBook(selectedBook, selectedAuthor);
     requestAnimationFrame(function() {
       window.scrollTo({top:0, behavior:'smooth'});
-      updateRecordAddButtonVisibility();
+      scheduleRecordAddButtonVisibility();
     });
   } else {
     scheduleRecordAddButtonVisibility();
@@ -6465,32 +6468,6 @@ function observeLazyImages() {
     }, {rootMargin:'700px 700px'});
   }
   images.forEach(img => lazyImageObserver.observe(img));
-}
-
-function loadLazyBookCover(spine) {
-  if (!spine || !spine.dataset || !spine.dataset.bookCover) return;
-  const cover = cssUrlValue(spine.dataset.bookCover);
-  if (cover) {
-    spine.style.setProperty('--book-cover', cover);
-    spine.classList.add('has-cover');
-  }
-  delete spine.dataset.bookCover;
-  if (bookCoverObserver) bookCoverObserver.unobserve(spine);
-}
-
-function observeBookCovers() {
-  const spines = [...document.querySelectorAll('.book-spine[data-book-cover]')];
-  if (!spines.length) return;
-  if (!('IntersectionObserver' in window)) {
-    spines.forEach(loadLazyBookCover);
-    return;
-  }
-  bookCoverObserver = new IntersectionObserver(function(items) {
-    items.forEach(function(item) {
-      if (item.isIntersecting) loadLazyBookCover(item.target);
-    });
-  }, {rootMargin:'600px 0px'});
-  spines.forEach(function(spine) { bookCoverObserver.observe(spine); });
 }
 
 function clampViewerScale(value) {
@@ -8576,7 +8553,14 @@ function showToast(msg) {
 function updateScrollTopButton() {
   const btn = document.getElementById('scrollTopBtn');
   if (!btn) return;
-  btn.classList.toggle('show', window.scrollY > 500);
+  const shell = document.getElementById('orientationShell');
+  const scrollTop = document.body.classList.contains('manual-landscape') && shell
+    ? shell.scrollTop
+    : (window.scrollY || document.documentElement.scrollTop || 0);
+  const shouldShow = scrollTop > 500;
+  if (shouldShow === scrollTopButtonVisible) return;
+  scrollTopButtonVisible = shouldShow;
+  btn.classList.toggle('show', shouldShow);
 }
 
 function activeOpenBookForActions() {
@@ -8709,6 +8693,11 @@ function handleWindowScroll() {
 }
 
 function scrollToTop() {
+  const shell = document.getElementById('orientationShell');
+  if (document.body.classList.contains('manual-landscape') && shell) {
+    shell.scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -8904,7 +8893,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v153';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v156';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
