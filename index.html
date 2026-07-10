@@ -941,7 +941,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v151';
+const APP_VERSION   = 'tag-auto-folder v152';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1116,6 +1116,8 @@ let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
 let searchRenderTimer = null;
 let scrollUpdateQueued = false;
 let recordActionVisibilityTimer = null;
+let bookActionVisibilityObserver = null;
+let observedBookActionVisibility = new Map();
 let tagFolderChipDrag = null;
 let tagFolderDragJustSaved = false;
 
@@ -1249,6 +1251,10 @@ function applyManualLandscapeClass(shouldRotate) {
   if (wasRotated === shouldRotate) return;
   runOrientationTransition(function() {
     document.body.classList.toggle('manual-landscape', shouldRotate);
+    requestAnimationFrame(function() {
+      setupBookActionVisibilityObserver();
+      scheduleRecordAddButtonVisibility();
+    });
   });
 }
 
@@ -6161,7 +6167,7 @@ function render() {
   }
   const list=getFiltered(),container=document.getElementById('cardsContainer'),empty=document.getElementById('emptyState'),countEl=document.getElementById('resultsCount');
   if(searchQuery||activeTag||activeTagFolder||activeNoteTypes.length){countEl.style.display='block';countEl.textContent=`${list.length}件 ヒット`;}else{countEl.style.display='none';}
-  if(!list.length){container.innerHTML='';empty.style.display='block';scheduleRecordAddButtonVisibility();return;}
+  if(!list.length){container.innerHTML='';empty.style.display='block';setupBookActionVisibilityObserver();scheduleRecordAddButtonVisibility();return;}
   empty.style.display='none';
 
   let grouped=new Map();
@@ -6174,6 +6180,7 @@ function render() {
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
     observeLazyImages();
+    setupBookActionVisibilityObserver();
     scheduleRecordAddButtonVisibility();
     return;
   }
@@ -6206,6 +6213,7 @@ function render() {
 </div>`;
   }).join('')}</div>`;
   observeLazyImages();
+  setupBookActionVisibilityObserver();
   scheduleRecordAddButtonVisibility();
 }
 
@@ -6362,6 +6370,7 @@ function toggleBookGroup(index) {
   openBookOverviewKey = shouldOpen ? (nextOpenKey || '') : '';
   bookOverviewClosedKey = '';
   if (shouldOpen) group.classList.add('open');
+  setupBookActionVisibilityObserver();
   const button = group.querySelector('.book-spine');
   if (button) {
     button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
@@ -8570,9 +8579,39 @@ function visibleBookLength(rect, useHorizontalAxis, viewportLength) {
   return Math.max(0, Math.min(end, viewportLength) - Math.max(start, 0));
 }
 
+function setupBookActionVisibilityObserver() {
+  if (bookActionVisibilityObserver) bookActionVisibilityObserver.disconnect();
+  bookActionVisibilityObserver = null;
+  observedBookActionVisibility = new Map();
+  const groups = [...document.querySelectorAll('.book-group')];
+  if (!groups.length || !('IntersectionObserver' in window)) return;
+  bookActionVisibilityObserver = new IntersectionObserver(function(records) {
+    const useHorizontalAxis = document.body.classList.contains('manual-landscape');
+    records.forEach(function(record) {
+      const visibleLength = useHorizontalAxis ? record.intersectionRect.width : record.intersectionRect.height;
+      observedBookActionVisibility.set(record.target, record.isIntersecting && visibleLength >= 1);
+    });
+    updateRecordAddButtonVisibility();
+  }, { threshold: [0, 0.01] });
+  groups.forEach(function(group) { bookActionVisibilityObserver.observe(group); });
+}
+
+function observedBookActionsAreRelevant(openGroup) {
+  if (!bookActionVisibilityObserver || !observedBookActionVisibility.has(openGroup)) return null;
+  if (!observedBookActionVisibility.get(openGroup)) return false;
+  for (const [group, visible] of observedBookActionVisibility) {
+    if (group !== openGroup && visible) return false;
+  }
+  return true;
+}
+
 function isOpenedBookStillRelevantForActions() {
   const openGroup = document.querySelector('.book-group.open');
   if (!openGroup) return false;
+  const observedResult = observedBookActionsAreRelevant(openGroup);
+  if (observedResult !== null) return observedResult;
+
+  // Fallback only for older browsers and the very first observer callback.
   const useHorizontalAxis = document.body.classList.contains('manual-landscape');
   const viewport = window.visualViewport || null;
   const viewportLength = useHorizontalAxis
@@ -8633,7 +8672,7 @@ function handleWindowScroll() {
   requestAnimationFrame(function() {
     scrollUpdateQueued = false;
     updateScrollTopButton();
-    updateRecordAddButtonVisibility();
+    if (!bookActionVisibilityObserver) updateRecordAddButtonVisibility();
   });
 }
 
@@ -8833,7 +8872,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v151';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v152';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
@@ -8875,7 +8914,10 @@ window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0)
 document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
 window.addEventListener('scroll',handleWindowScroll, {passive:true});
 document.getElementById('orientationShell')?.addEventListener('scroll', handleWindowScroll, {passive:true});
-window.addEventListener('resize', scheduleRecordAddButtonVisibility, {passive:true});
+window.addEventListener('resize', function() {
+  setupBookActionVisibilityObserver();
+  scheduleRecordAddButtonVisibility();
+}, {passive:true});
 document.getElementById('tagFilters')?.addEventListener('click', e => {
   if (tagFolderDragJustSaved) {
     e.preventDefault();
