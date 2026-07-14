@@ -230,6 +230,8 @@
   .record-book-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.65rem 0.85rem 0; }
   .record-book-cards { display: flex; flex-direction: row; gap: 0.75rem; padding: 0.75rem 0.85rem 0.9rem; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: thin; }
   .record-book-cards .card { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; content-visibility: auto; contain-intrinsic-size: 34rem; }
+  .record-book-cards .chapter-record-group { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; }
+  .record-book-cards .chapter-record-group .card { flex: 0 0 auto; max-width: none; scroll-snap-align: none; }
   .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
   .record-view-select { font-size: 0.72rem; color: var(--stone-600); background: white; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit; outline: none; }
   .record-view-select:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -290,18 +292,18 @@
   .page-number-row input { min-width: 0; text-align: center; }
   .page-number-joiner { color: var(--stone-500); font-size: 0.72rem; font-weight: 900; white-space: nowrap; }
   .chapter-link-count { display: inline-flex; align-items: center; border: 1px solid #bbf7d0; border-radius: 999px; padding: 0.12rem 0.52rem; background: #f0fdf4; color: #047857; font-size: 0.66rem; font-weight: 900; line-height: 1.25; white-space: nowrap; }
-  .chapter-linked-knowledge { background: #f0fdf4 !important; border: 1px solid #bbf7d0; }
-  .chapter-linked-knowledge-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.55rem; }
-  .chapter-linked-knowledge-title { color: #047857; font-size: 0.74rem; font-weight: 900; }
-  .chapter-linked-knowledge-add { flex: 0 0 auto; border: 1px solid #86efac; border-radius: 999px; background: white; color: #047857; padding: 0.28rem 0.58rem; font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; }
-  .chapter-linked-knowledge-add:hover { background: #dcfce7; border-color: #4ade80; }
-  .chapter-linked-knowledge-list { display: grid; gap: 0.45rem; }
-  .chapter-linked-knowledge-item { border: 1px solid rgba(134,239,172,0.72); border-radius: 0.64rem; background: rgba(255,255,255,0.86); padding: 0.58rem 0.64rem; }
-  .chapter-linked-knowledge-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
-  .chapter-linked-knowledge-item-title { color: var(--stone-700); font-size: 0.76rem; font-weight: 900; overflow-wrap: anywhere; }
-  .chapter-linked-knowledge-item-page { flex: 0 0 auto; color: var(--stone-400); font-size: 0.64rem; font-weight: 800; }
-  .chapter-linked-knowledge-item-section { margin-top: 0.34rem; color: var(--stone-600); font-size: 0.72rem; line-height: 1.65; overflow-wrap: anywhere; }
-  .chapter-linked-knowledge-item-label { margin-right: 0.25rem; color: #047857; font-size: 0.64rem; font-weight: 900; }
+  .chapter-record-group { min-width: 0; display: flex; flex-direction: column; gap: 0.48rem; }
+  .chapter-linked-knowledge { margin: 0 0 0 0.72rem; padding: 0.62rem 0.68rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.72rem; }
+  .chapter-linked-knowledge-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .chapter-linked-knowledge-title { min-width: 0; color: #047857; font-size: 0.74rem; font-weight: 900; }
+  .chapter-linked-knowledge-controls { display: flex; align-items: center; gap: 0.35rem; flex: 0 0 auto; }
+  .chapter-linked-knowledge-add, .chapter-linked-knowledge-toggle { border: 1px solid #86efac; border-radius: 999px; background: white; color: #047857; font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; }
+  .chapter-linked-knowledge-add { padding: 0.28rem 0.58rem; }
+  .chapter-linked-knowledge-toggle { width: 1.86rem; height: 1.86rem; padding: 0; font-size: 1rem; line-height: 1; }
+  .chapter-linked-knowledge-add:hover, .chapter-linked-knowledge-toggle:hover { background: #dcfce7; border-color: #4ade80; }
+  .chapter-linked-knowledge-list { display: grid; gap: 0.48rem; margin: 0.54rem 0 0 0.22rem; padding-left: 0.58rem; border-left: 2px solid rgba(74,222,128,0.48); }
+  .chapter-linked-knowledge-list .card { border-color: rgba(134,239,172,0.9); box-shadow: 0 1px 3px rgba(4,120,87,0.08); }
+  .chapter-linked-knowledge-empty { margin: 0.5rem 0 0; color: var(--stone-500); font-size: 0.72rem; font-weight: 700; line-height: 1.6; }
   .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
   .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
@@ -522,6 +524,8 @@
     .record-book-edit-btn { font-size: 0.62rem; padding-inline: 0.3rem; }
     .record-book-cards { padding: 0.65rem; gap: 0.65rem; }
     .record-book-cards .card { flex-basis: min(78vw, 21rem); }
+    .record-book-cards .chapter-record-group { flex-basis: min(78vw, 21rem); }
+    .record-book-cards .chapter-record-group .card { flex-basis: auto; }
   }
 
   @media (orientation: landscape) and (max-height: 540px) and (max-width: 960px) {
@@ -587,6 +591,8 @@
     .record-book-lane { overflow: visible; }
     .record-book-cards { flex-wrap: wrap; align-items: stretch; padding: 0.62rem; gap: 0.62rem; overflow: visible; overscroll-behavior: auto; scroll-snap-type: none; touch-action: auto; }
     .record-book-cards .card { flex: 1 1 min(18rem, calc(50% - 0.35rem)); max-width: none; scroll-snap-align: none; }
+    .record-book-cards .chapter-record-group { flex: 1 1 min(18rem, calc(50% - 0.35rem)); max-width: none; }
+    .record-book-cards .chapter-record-group .card { flex: 0 0 auto; }
     .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(100vw - 1rem)); }
     .scroll-top-btn { width: 2.65rem; height: 2.65rem; left: 0.65rem; bottom: 0.65rem; font-size: 1.05rem; }
     body.has-open-book-actions .scroll-top-btn { bottom: calc(4.2rem + env(safe-area-inset-bottom, 0px)); }
@@ -699,6 +705,8 @@
     body.manual-landscape .record-book-lane { overflow: visible; }
     body.manual-landscape .record-book-cards { flex-wrap: wrap; align-items: stretch; padding: 0.62rem; gap: 0.62rem; overflow: visible; overscroll-behavior: auto; scroll-snap-type: none; touch-action: auto; }
     body.manual-landscape .record-book-cards .card { flex: 1 1 min(18rem, calc(50% - 0.35rem)); max-width: none; scroll-snap-align: none; }
+    body.manual-landscape .record-book-cards .chapter-record-group { flex: 1 1 min(18rem, calc(50% - 0.35rem)); max-width: none; }
+    body.manual-landscape .record-book-cards .chapter-record-group .card { flex: 0 0 auto; }
     body.manual-landscape .field-row { grid-template-columns: 1fr 1fr; }
     body.manual-landscape .card-actions { opacity: 1; }
     body.manual-landscape .record-floating-actions { bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: min(22rem, calc(var(--manual-landscape-width, 100vh) - 1rem)); }
@@ -1000,13 +1008,14 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v160';
+const APP_VERSION   = 'tag-auto-folder v161';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const LAST_GOOD_ENTRIES_KEY = 'reading_log_last_good_entries_v1';
 const NOTE_TYPES_LOCAL_KEY = 'reading_log_note_types_map_v1';
 const CHAPTER_LINKS_LOCAL_KEY = 'reading_log_chapter_links_map_v1';
+const CHAPTER_KNOWLEDGE_COLLAPSE_KEY = 'reading_log_chapter_knowledge_collapsed_v1';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
 const GEMINI_MODEL  = 'gemini-2.5-flash-lite';
 const GEMINI_SUMMARY_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
@@ -1172,6 +1181,7 @@ let childFoldersCacheKey = '', childFoldersCache = new Map();
 let bookFixedTagsCache = new Map();
 let tagClassCache = new Map();
 let chapterKnowledgeLinkCache = new Map();
+let collapsedChapterKnowledgeIds = readCollapsedChapterKnowledgeIds();
 let lazyImageObserver = null;
 let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0;
 let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
@@ -3913,6 +3923,28 @@ function getRakutenAccessKey() { return localStorage.getItem(RAKUTEN_ACCESS_KEY_
 function setRakutenAccessKey(k) { k ? localStorage.setItem(RAKUTEN_ACCESS_KEY_KEY,k) : localStorage.removeItem(RAKUTEN_ACCESS_KEY_KEY); }
 
 // ── Helpers ────────────────────────────────────────
+function readCollapsedChapterKnowledgeIds() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CHAPTER_KNOWLEDGE_COLLAPSE_KEY) || '[]');
+    return new Set(Array.isArray(stored) ? stored.map(String).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveCollapsedChapterKnowledgeIds() {
+  localStorage.setItem(CHAPTER_KNOWLEDGE_COLLAPSE_KEY, JSON.stringify([...collapsedChapterKnowledgeIds].sort()));
+}
+
+function toggleChapterKnowledge(id) {
+  const key = String(id == null ? '' : id);
+  if (!key) return;
+  if (collapsedChapterKnowledgeIds.has(key)) collapsedChapterKnowledgeIds.delete(key);
+  else collapsedChapterKnowledgeIds.add(key);
+  saveCollapsedChapterKnowledgeIds();
+  render();
+}
+
 function rebuildChapterKnowledgeLinkCache() {
   const byChapter = new Map();
   entries.forEach(function(entry) {
@@ -6577,6 +6609,72 @@ function render() {
   scheduleRecordAddButtonVisibility();
 }
 
+function recordTreeForDisplay(records) {
+  const list = Array.isArray(records) ? records : [];
+  const chapterIds = new Set();
+  list.forEach(function(entry) {
+    if (entry && entry.id != null && isChapterSummaryTypes(entryStoredNoteTypes(entry))) {
+      chapterIds.add(String(entry.id));
+    }
+  });
+  if (!chapterIds.size) return list.map(entry => ({ entry, children: null }));
+
+  const childrenByChapter = new Map();
+  list.forEach(function(entry) {
+    if (!entry || entry.id == null) return;
+    const types = entryStoredNoteTypes(entry);
+    if (!isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return;
+    const parentId = normalizeChapterSummaryId(entry.chapterSummaryId);
+    if (!chapterIds.has(parentId)) return;
+    if (!childrenByChapter.has(parentId)) childrenByChapter.set(parentId, []);
+    childrenByChapter.get(parentId).push(entry);
+  });
+
+  const nestedIds = new Set();
+  childrenByChapter.forEach(function(children) {
+    children.forEach(entry => nestedIds.add(String(entry.id)));
+  });
+  return list
+    .filter(entry => !nestedIds.has(String(entry && entry.id)))
+    .map(function(entry) {
+      const id = String(entry && entry.id);
+      return {
+        entry,
+        children: chapterIds.has(id) ? (childrenByChapter.get(id) || []) : null
+      };
+    });
+}
+
+function chapterKnowledgeChildrenHTML(chapter, linked) {
+  const children = Array.isArray(linked) ? linked : [];
+  const chapterId = String(chapter && chapter.id);
+  const collapsed = collapsedChapterKnowledgeIds.has(chapterId);
+  const countLabel = children.length ? `この章の知識メモ ${children.length}件` : 'この章の知識メモ';
+  const stateLabel = collapsed ? '知識メモを展開' : '知識メモを折りたたむ';
+  const content = collapsed
+    ? ''
+    : (children.length
+      ? `<div class="chapter-linked-knowledge-list">${children.map(entry => cardHTML(entry, {chapterChild:true})).join('')}</div>`
+      : '<div class="chapter-linked-knowledge-empty">まだ知識メモはありません。この章の内容を補足するメモをここに集められます。</div>');
+  return `<section class="chapter-linked-knowledge" data-chapter-knowledge="${esc(chapterId)}">
+    <div class="chapter-linked-knowledge-head">
+      <div class="chapter-linked-knowledge-title">📚 ${esc(countLabel)}</div>
+      <div class="chapter-linked-knowledge-controls">
+        <button type="button" class="chapter-linked-knowledge-add" onclick="openKnowledgeMemoForChapter(${esc(JSON.stringify(chapter.id))})">＋ 知識メモ</button>
+        <button type="button" class="chapter-linked-knowledge-toggle" onclick="toggleChapterKnowledge(${esc(JSON.stringify(chapter.id))})" aria-expanded="${collapsed ? 'false' : 'true'}" title="${stateLabel}" aria-label="${stateLabel}">${collapsed ? '＋' : '－'}</button>
+      </div>
+    </div>
+    ${content}
+  </section>`;
+}
+
+function recordCardsHTML(records) {
+  return recordTreeForDisplay(records).map(function(item) {
+    if (!Array.isArray(item.children)) return cardHTML(item.entry);
+    return `<div class="chapter-record-group">${cardHTML(item.entry)}${chapterKnowledgeChildrenHTML(item.entry, item.children)}</div>`;
+  }).join('');
+}
+
 function expandedRecordsHTML(group) {
   const records = expandedRecordsForGroup(group);
   const hasTagFilter = !!(activeTag || activeTagFolder);
@@ -6598,7 +6696,7 @@ function expandedRecordsHTML(group) {
       </div>
     </div>
     ${bookOverviewHTML(group)}
-    ${records.length ? records.map(e=>cardHTML(e)).join('') : '<div class="record-empty">該当する記録がありません</div>'}`;
+    ${records.length ? recordCardsHTML(records) : '<div class="record-empty">該当する記録がありません</div>'}`;
 }
 
 function recordsListHTML(bookEntries) {
@@ -6622,7 +6720,7 @@ function recordsListHTML(bookEntries) {
       </header>
       <div class="record-book-lane">
         ${tags.length ? `<div class="record-book-tags">${tags.map(tag=>`<span class="tag-pill ${tagClass(tag)}">${esc(tag)}</span>`).join('')}</div>` : ''}
-        <div class="record-book-cards">${records.map(e=>cardHTML(e)).join('')}</div>
+        <div class="record-book-cards">${recordCardsHTML(records)}</div>
       </div>
     </section>`;
   }).join('')}</div>`;
@@ -6776,7 +6874,8 @@ function chapterKnowledgeMemosHTML(chapter) {
   </section>`;
 }
 
-function cardHTML(e) {
+function cardHTML(e, options) {
+  options = options || {};
   // BOOK_META_KEYから取得。無ければ旧形式のe.fixedTagsをフォールバックで使用
   let fixedTags = getBookFixedTags(e.book);
   if (fixedTags.length === 0 && Array.isArray(e.fixedTags) && e.fixedTags.length > 0) {
@@ -6795,7 +6894,7 @@ function cardHTML(e) {
       <div class="sketch-grid">${media.map((d,i)=>`<img src="${LAZY_IMAGE_PLACEHOLDER}" data-lazy-src="${esc(d)}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="openMediaViewer(${esc(JSON.stringify(e.id))},${i})">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
-  return `<div class="card" id="card-${e.id}">
+  return `<div class="card${options.chapterChild ? ' chapter-linked-child' : ''}" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
     <div class="card-header">
@@ -6816,7 +6915,6 @@ function cardHTML(e) {
       ${sec('content-bg','📖',fieldProfile.contentCardLabel,e.content)}
       ${sec('lesson-bg','💡',fieldProfile.lessonCardLabel,e.lesson)}
       ${sec('supplement-bg','🔍',fieldProfile.supplementCardLabel,e.supplement)}
-      ${chapterKnowledgeMemosHTML(e)}
       ${sketchHTML}
     </div>
     <div class="ai-area">
@@ -7763,7 +7861,7 @@ function openEntryForBook(book, author) {
 
 function openKnowledgeMemoForChapter(id) {
   const chapter = entries.find(entry => String(entry.id) === String(id));
-  if (!chapter || !isChapterSummaryTypes(entryNoteTypes(chapter))) return;
+  if (!chapter || !isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return;
   openModal(null, chapter.book || '', chapter.author || '', false, {skipDraft:true});
   setNoteTypeInputs(['knowledge_memo']);
   setPageFormValue(chapter.page || '');
@@ -9356,7 +9454,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v160';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v161';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
