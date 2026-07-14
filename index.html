@@ -1008,14 +1008,14 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v161';
+const APP_VERSION   = 'tag-auto-folder v162';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
 const LAST_GOOD_ENTRIES_KEY = 'reading_log_last_good_entries_v1';
 const NOTE_TYPES_LOCAL_KEY = 'reading_log_note_types_map_v1';
 const CHAPTER_LINKS_LOCAL_KEY = 'reading_log_chapter_links_map_v1';
-const CHAPTER_KNOWLEDGE_COLLAPSE_KEY = 'reading_log_chapter_knowledge_collapsed_v1';
+const CHAPTER_KNOWLEDGE_EXPANDED_KEY = 'reading_log_chapter_knowledge_expanded_v1';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
 const GEMINI_MODEL  = 'gemini-2.5-flash-lite';
 const GEMINI_SUMMARY_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
@@ -1181,7 +1181,7 @@ let childFoldersCacheKey = '', childFoldersCache = new Map();
 let bookFixedTagsCache = new Map();
 let tagClassCache = new Map();
 let chapterKnowledgeLinkCache = new Map();
-let collapsedChapterKnowledgeIds = readCollapsedChapterKnowledgeIds();
+let expandedChapterKnowledgeIds = readExpandedChapterKnowledgeIds();
 let lazyImageObserver = null;
 let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0;
 let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
@@ -3923,25 +3923,25 @@ function getRakutenAccessKey() { return localStorage.getItem(RAKUTEN_ACCESS_KEY_
 function setRakutenAccessKey(k) { k ? localStorage.setItem(RAKUTEN_ACCESS_KEY_KEY,k) : localStorage.removeItem(RAKUTEN_ACCESS_KEY_KEY); }
 
 // ── Helpers ────────────────────────────────────────
-function readCollapsedChapterKnowledgeIds() {
+function readExpandedChapterKnowledgeIds() {
   try {
-    const stored = JSON.parse(localStorage.getItem(CHAPTER_KNOWLEDGE_COLLAPSE_KEY) || '[]');
+    const stored = JSON.parse(localStorage.getItem(CHAPTER_KNOWLEDGE_EXPANDED_KEY) || '[]');
     return new Set(Array.isArray(stored) ? stored.map(String).filter(Boolean) : []);
   } catch {
     return new Set();
   }
 }
 
-function saveCollapsedChapterKnowledgeIds() {
-  localStorage.setItem(CHAPTER_KNOWLEDGE_COLLAPSE_KEY, JSON.stringify([...collapsedChapterKnowledgeIds].sort()));
+function saveExpandedChapterKnowledgeIds() {
+  localStorage.setItem(CHAPTER_KNOWLEDGE_EXPANDED_KEY, JSON.stringify([...expandedChapterKnowledgeIds].sort()));
 }
 
 function toggleChapterKnowledge(id) {
   const key = String(id == null ? '' : id);
   if (!key) return;
-  if (collapsedChapterKnowledgeIds.has(key)) collapsedChapterKnowledgeIds.delete(key);
-  else collapsedChapterKnowledgeIds.add(key);
-  saveCollapsedChapterKnowledgeIds();
+  if (expandedChapterKnowledgeIds.has(key)) expandedChapterKnowledgeIds.delete(key);
+  else expandedChapterKnowledgeIds.add(key);
+  saveExpandedChapterKnowledgeIds();
   render();
 }
 
@@ -6648,7 +6648,7 @@ function recordTreeForDisplay(records) {
 function chapterKnowledgeChildrenHTML(chapter, linked) {
   const children = Array.isArray(linked) ? linked : [];
   const chapterId = String(chapter && chapter.id);
-  const collapsed = collapsedChapterKnowledgeIds.has(chapterId);
+  const collapsed = !expandedChapterKnowledgeIds.has(chapterId);
   const countLabel = children.length ? `この章の知識メモ ${children.length}件` : 'この章の知識メモ';
   const stateLabel = collapsed ? '知識メモを展開' : '知識メモを折りたたむ';
   const content = collapsed
@@ -9454,7 +9454,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v161';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v162';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
