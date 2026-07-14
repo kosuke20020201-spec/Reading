@@ -1000,7 +1000,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v159';
+const APP_VERSION   = 'tag-auto-folder v160';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1171,6 +1171,7 @@ let folderTagsCacheKey = '', folderTagsCache = new Map();
 let childFoldersCacheKey = '', childFoldersCache = new Map();
 let bookFixedTagsCache = new Map();
 let tagClassCache = new Map();
+let chapterKnowledgeLinkCache = new Map();
 let lazyImageObserver = null;
 let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0;
 let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
@@ -1722,7 +1723,7 @@ function noteTypeClass(value) {
   return 'note-type-' + NOTE_TYPE_MAP.get(normalizeNoteType(value)).className;
 }
 function noteTypeBadgesHTML(entry) {
-  return entryNoteTypes(entry).map(type => `<span class="note-type-badge ${noteTypeClass(type)}">${esc(noteTypeLabel(type))}</span>`).join('');
+  return entryStoredNoteTypes(entry).map(type => `<span class="note-type-badge ${noteTypeClass(type)}">${esc(noteTypeLabel(type))}</span>`).join('');
 }
 
 function isChapterSummaryTypes(types) {
@@ -1731,6 +1732,11 @@ function isChapterSummaryTypes(types) {
 
 function isKnowledgeMemoTypes(types) {
   return parseNoteTypesStrict(types).includes('knowledge_memo');
+}
+
+function entryStoredNoteTypes(entry) {
+  const parsed = parseNoteTypesStrict(entry && (entry.noteTypes || entry.noteType));
+  return parsed.length ? parsed : NOTE_TYPE_DEFAULTS;
 }
 
 function normalizeChapterSummaryId(value) {
@@ -1743,7 +1749,7 @@ function chapterSummariesForBook(book, excludedId) {
   if (!key) return [];
   return sortExpandedRecords(entries.filter(function(entry) {
     return bookKey(entry.book) === key
-      && isChapterSummaryTypes(entryNoteTypes(entry))
+      && isChapterSummaryTypes(entryStoredNoteTypes(entry))
       && String(entry.id) !== String(excludedId == null ? '' : excludedId);
   }));
 }
@@ -1767,7 +1773,8 @@ function entryPagesFitChapter(knowledgeEntry, chapterEntry) {
 }
 
 function matchingChapterSummariesForEntry(entry, source) {
-  if (!entry || !isKnowledgeMemoTypes(entryNoteTypes(entry)) || isChapterSummaryTypes(entryNoteTypes(entry))) return [];
+  const types = entryStoredNoteTypes(entry);
+  if (!entry || !isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return [];
   const key = bookKey(entry.book);
   if (!key || !entryPageNumbers(entry).length) return [];
   return chapterSummariesForBook(entry.book, entry.id)
@@ -1816,14 +1823,8 @@ function autoAssignChapterLinks(source) {
 }
 
 function linkedKnowledgeMemosForChapter(chapter) {
-  if (!chapter || chapter.id == null || !isChapterSummaryTypes(entryNoteTypes(chapter))) return [];
-  const chapterId = String(chapter.id);
-  const key = bookKey(chapter.book);
-  return sortExpandedRecords(entries.filter(function(entry) {
-    return automaticChapterSummaryIdForEntry(entry, entries) === chapterId
-      && bookKey(entry.book) === key
-      && isKnowledgeMemoTypes(entryNoteTypes(entry));
-  }));
+  if (!chapter || chapter.id == null || !isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return [];
+  return chapterKnowledgeLinkCache.get(String(chapter.id)) || [];
 }
 
 function chapterSummaryLabel(entry) {
@@ -3912,9 +3913,25 @@ function getRakutenAccessKey() { return localStorage.getItem(RAKUTEN_ACCESS_KEY_
 function setRakutenAccessKey(k) { k ? localStorage.setItem(RAKUTEN_ACCESS_KEY_KEY,k) : localStorage.removeItem(RAKUTEN_ACCESS_KEY_KEY); }
 
 // ── Helpers ────────────────────────────────────────
+function rebuildChapterKnowledgeLinkCache() {
+  const byChapter = new Map();
+  entries.forEach(function(entry) {
+    const chapterId = String(entry && entry.chapterSummaryId || '');
+    const types = entryStoredNoteTypes(entry);
+    if (!chapterId || !isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return;
+    if (!byChapter.has(chapterId)) byChapter.set(chapterId, []);
+    byChapter.get(chapterId).push(entry);
+  });
+  byChapter.forEach(function(list, chapterId) {
+    byChapter.set(chapterId, sortExpandedRecords(list));
+  });
+  chapterKnowledgeLinkCache = byChapter;
+}
+
 function resetRenderCaches() {
   bookFixedTagsCache.clear();
   tagClassCache.clear();
+  rebuildChapterKnowledgeLinkCache();
 }
 
 function tagClass(t) {
@@ -4723,7 +4740,7 @@ function getFiltered() {
     } else if(folderTagList.length) {
       if(!folderTagList.some(tag => entryHasTag(e, tag))) return false;
     }
-    if(activeNoteTypes.length && !activeNoteTypes.some(type => entryNoteTypes(e).includes(type))) return false;
+    if(activeNoteTypes.length && !activeNoteTypes.some(type => entryStoredNoteTypes(e).includes(type))) return false;
     return entryMatchesSearch(e, q);
   }).sort((a,b)=>Number(b.id||0)-Number(a.id||0));
 }
@@ -4736,7 +4753,7 @@ function entryHasTag(entry, tag) {
 function entryMatchesSearch(entry, query) {
   if (!query) return true;
   const fixedTags = getBookFixedTags(entry.book);
-  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,...entryNoteTypes(entry).map(noteTypeLabel),...(entry.tags||[]),...fixedTags]
+  return [entry.title,entry.book,entry.author,entry.content,entry.lesson,entry.supplement,...entryStoredNoteTypes(entry).map(noteTypeLabel),...(entry.tags||[]),...fixedTags]
     .some(s=>(s||'').toLowerCase().includes(query));
 }
 
@@ -6407,7 +6424,7 @@ function expandedRecordsForGroup(group) {
     return bookKey(entry.book) === key && entryMatchesSearch(entry, q);
   });
   if (activeNoteTypes.length) {
-    list = list.filter(entry => activeNoteTypes.some(type => entryNoteTypes(entry).includes(type)));
+    list = list.filter(entry => activeNoteTypes.some(type => entryStoredNoteTypes(entry).includes(type)));
   }
   if (expandedRecordScope === 'activeTag' && (activeTag || activeTagFolder)) {
     if (activeTag) {
@@ -6719,7 +6736,7 @@ function toggleBookGroup(index) {
 }
 
 function chapterKnowledgeLinkBadgeHTML(chapter) {
-  if (!isChapterSummaryTypes(entryNoteTypes(chapter))) return '';
+  if (!isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return '';
   const count = linkedKnowledgeMemosForChapter(chapter).length;
   return `<span class="chapter-link-count">関連知識 ${count}件</span>`;
 }
@@ -6736,7 +6753,7 @@ function chapterKnowledgeMemoSectionsHTML(entry) {
 }
 
 function chapterKnowledgeMemosHTML(chapter) {
-  if (!isChapterSummaryTypes(entryNoteTypes(chapter))) return '';
+  if (!isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return '';
   const linked = linkedKnowledgeMemosForChapter(chapter);
   const title = linked.length ? `この章の知識メモ ${linked.length}件` : 'この章の知識メモ';
   const list = linked.length
@@ -6768,7 +6785,7 @@ function cardHTML(e) {
   const fixedPills = fixedTags.map(t=>`<span class="tag-pill tag-pill-fixed">${esc(t)}</span>`).join('');
   const freePills  = (e.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)} tag-pill-free">${esc(t)}</span>`).join('');
   const pills = fixedPills + freePills;
-  const fieldProfile = noteFieldProfileForTypes(entryNoteTypes(e));
+  const fieldProfile = noteFieldProfileForTypes(entryStoredNoteTypes(e));
 
   const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${formatRecordText(txt)}</div></div>`:'';
   const media = entryMedia(e);
@@ -9339,7 +9356,7 @@ initHorizontalSwipeScroll();
 // 古いバージョン（タイトル・イラスト未対応の初期版など）が表示されることがあった。
 // そのため、初回のみ既存のService Workerとキャッシュを完全に削除してリロードし、
 // その後はキャッシュを経由せず常に最新のsw.jsを取得・登録するようにする。
-const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v159';
+const SW_CLEANUP_FLAG = 'reading_log_sw_tag_auto_folder_v160';
 if ('serviceWorker' in navigator) {
   (async () => {
     try {
