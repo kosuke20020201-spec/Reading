@@ -6329,11 +6329,9 @@ async function refreshBookInfoChoice(book, author) {
   showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
     const candidates = await fetchBookInfoCandidates(book, author);
-    let info = candidates.length
-      ? await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author), {forceChoice:true})
-      : originalBookInfoCandidate(book, author);
+    let info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author), {forceChoice:true});
     if (!info) {
-      showToast(candidates.length ? '\u5019\u88dc\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f' : '\u672c\u60c5\u5831\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
+      showToast(candidates.length ? '\u5019\u88dc\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f' : '\u5916\u90e8\u306e\u5019\u88dc\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
       return;
     }
     info = await ensureBookOverviewDescription(book, author, info, {promptForKey:true});
