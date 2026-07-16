@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260714-tag-auto-folder-v162';
+const CACHE_NAME = 'reading-note-pwa-20260716-focus-pull-sync-v163';
 const APP_SHELL = [
   './',
   './index.html',

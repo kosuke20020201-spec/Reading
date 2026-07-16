@@ -9491,9 +9491,20 @@ window.addEventListener('beforeunload',e=>{
   e.preventDefault();
   e.returnValue='';
 });
-window.addEventListener('online',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
-window.addEventListener('focus',()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
-document.addEventListener('visibilitychange',()=>{ if (!document.hidden && hasPendingSync()) scheduleCloudSync(0); });
+let lastCloudRefreshAt = 0;
+function scheduleCloudRefresh() {
+  const now = Date.now();
+  // 直近10秒以内に確認済みならAPIを叩かず、未送信分のpushだけ行う
+  if (now - lastCloudRefreshAt < 10000) {
+    if (hasPendingSync()) scheduleCloudSync(0);
+    return;
+  }
+  lastCloudRefreshAt = now;
+  loadFromCloud({quiet:true}).then(()=>{ if (hasPendingSync()) scheduleCloudSync(0); });
+}
+window.addEventListener('online',()=>{ scheduleCloudRefresh(); });
+window.addEventListener('focus',()=>{ scheduleCloudRefresh(); });
+document.addEventListener('visibilitychange',()=>{ if (!document.hidden) scheduleCloudRefresh(); });
 window.addEventListener('scroll',handleWindowScroll, {passive:true});
 document.getElementById('orientationShell')?.addEventListener('scroll', handleWindowScroll, {passive:true});
 window.addEventListener('resize', function() {
