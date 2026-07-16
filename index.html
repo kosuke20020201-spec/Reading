@@ -9539,7 +9539,7 @@ document.getElementById('tagExpandedTags')?.addEventListener('click', e => {
 });
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
-load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud();
+load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud(); if (hasPendingSync()) scheduleCloudSync(0);
 </script>
 </body>
 </html>
