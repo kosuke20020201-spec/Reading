@@ -5047,6 +5047,12 @@ function ndlOpenSearchParamSets(book, author) {
     const p = new URLSearchParams();
     p.set('cnt', '10');
     p.set('title', title);
+    add(p);
+  }
+  if (title) {
+    const p = new URLSearchParams();
+    p.set('cnt', '10');
+    p.set('title', title);
     if (writer) p.set('creator', writer);
     p.set('dpid', 'iss-ndl-opac');
     add(p);
@@ -5071,7 +5077,7 @@ function ndlOpenSearchParamSets(book, author) {
 async function fetchNdlBookInfo(book, author) {
   let best = null;
   const parser = new DOMParser();
-  const searches = ndlOpenSearchParamSets(book, author).slice(0, 3);
+  const searches = ndlOpenSearchParamSets(book, author).slice(0, 4);
   for (const params of searches) {
     const res = await fetchBookApi('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString());
     if (!res.ok) continue;
@@ -5592,7 +5598,7 @@ async function fetchOpenBdBookCandidates(book, author) {
 async function fetchNdlBookCandidates(book, author) {
   const list = [];
   const parser = new DOMParser();
-  for (const params of ndlOpenSearchParamSets(book, author).slice(0, 3)) {
+  for (const params of ndlOpenSearchParamSets(book, author).slice(0, 4)) {
     const res = await fetchBookApi('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString());
     if (!res.ok) continue;
     const xmlText = await res.text();
