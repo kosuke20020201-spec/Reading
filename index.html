@@ -5482,7 +5482,7 @@ function sortBookInfoCandidates(candidates, book, author) {
 }
 
 async function fetchGoogleBookCandidates(book, author) {
-  if (googleBooksCooldownActive()) return [];
+  if (googleBooksCooldownActive()) { console.warn('[\u672c\u60c5\u5831\u691c\u7d22] Google Books \u30af\u30fc\u30eb\u30c0\u30a6\u30f3\u4e2d\u306e\u305f\u3081\u30b9\u30ad\u30c3\u30d7'); return []; }
   const list = [];
   for (const q of bookSearchQueries(book, author).slice(0, 3)) {
     const url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&printType=books&maxResults=10';
@@ -5627,6 +5627,7 @@ async function fetchNdlBookCandidates(book, author) {
 
 async function fetchBookInfoCandidates(book, author) {
   if (navigator.onLine === false) return [];
+  const sourceNames = ['Google Books', 'OpenLibrary', 'Rakuten', 'openBD/\u7248\u5143\u30c9\u30c3\u30c8\u30b3\u30e0', 'NDL Search'];
   const results = await Promise.allSettled([
     fetchGoogleBookCandidates(book, author),
     fetchOpenLibraryBookCandidates(book, author),
@@ -5635,8 +5636,13 @@ async function fetchBookInfoCandidates(book, author) {
     fetchNdlBookCandidates(book, author)
   ]);
   const list = [];
-  results.forEach(function(result) {
-    if (result.status !== 'fulfilled') return;
+  results.forEach(function(result, sourceIndex) {
+    const name = sourceNames[sourceIndex];
+    if (result.status !== 'fulfilled') {
+      console.warn('[\u672c\u60c5\u5831\u691c\u7d22]', name, '\u5931\u6557:', result.reason);
+      return;
+    }
+    console.log('[\u672c\u60c5\u5831\u691c\u7d22]', name, result.value.length + '\u4ef6');
     (result.value || []).forEach(function(info, index) {
       addBookInfoCandidate(list, info, 30 - index);
     });
