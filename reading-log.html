@@ -283,8 +283,6 @@
   .note-type-choice:has(input:checked).note-type-knowledge { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
   .note-type-choice:has(input:checked).note-type-quote { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
   .chapter-link-field[hidden] { display: none !important; }
-  .chapter-link-select { width: 100%; padding: 0.55rem 0.65rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; font: inherit; font-size: 0.8rem; color: var(--stone-800); margin-bottom: 0.4rem; }
-  .chapter-link-select:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px #f59e0b22; }
   .chapter-link-status { min-height: 2.12rem; display: flex; align-items: center; padding: 0.48rem 0.62rem; border: 1px solid #bbf7d0; border-radius: 0.55rem; background: #f0fdf4; color: #047857; font-size: 0.74rem; font-weight: 800; line-height: 1.45; }
   .chapter-link-hint { margin: 0.35rem 0 0; color: var(--stone-400); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
   .page-mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 0.38rem; }
@@ -295,10 +293,11 @@
   .page-number-joiner { color: var(--stone-500); font-size: 0.72rem; font-weight: 900; white-space: nowrap; }
   .chapter-link-count { display: inline-flex; align-items: center; border: 1px solid #bbf7d0; border-radius: 999px; padding: 0.12rem 0.52rem; background: #f0fdf4; color: #047857; font-size: 0.66rem; font-weight: 900; line-height: 1.25; white-space: nowrap; }
   .chapter-record-group { min-width: 0; display: flex; flex-direction: column; gap: 0.48rem; }
+  .chapter-record-subgroup { padding-left: 0.4rem; border-left: 2px solid #86efac; }
   .chapter-linked-knowledge { margin: 0 0 0 0.72rem; padding: 0.62rem 0.68rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.72rem; }
   .chapter-linked-knowledge-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .chapter-linked-knowledge-title { min-width: 0; color: #047857; font-size: 0.74rem; font-weight: 900; }
-  .chapter-linked-knowledge-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; flex: 0 0 auto; }
+  .chapter-linked-knowledge-controls { display: flex; align-items: center; gap: 0.35rem; flex: 0 0 auto; }
   .chapter-linked-knowledge-add, .chapter-linked-knowledge-toggle { border: 1px solid #86efac; border-radius: 999px; background: white; color: #047857; font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; }
   .chapter-linked-knowledge-add { padding: 0.28rem 0.58rem; }
   .chapter-linked-knowledge-toggle { width: 1.86rem; height: 1.86rem; padding: 0; font-size: 1rem; line-height: 1; }
@@ -843,8 +842,8 @@
         </div>
       </div>
       <div class="field entry-only-field chapter-link-field" id="chapterLinkField" hidden>
-        <label id="chapterLinkLabel">🔗 章まとめとの関連</label>
-        <select id="fChapterSummaryId" class="chapter-link-select" onchange="onChapterSummarySelectChange()"></select>
+        <label>🔗 上位の章・パートとの関連</label>
+        <select id="fChapterSummaryId" class="chapter-link-select" onchange="onChapterSummarySelectChange(this)"></select>
         <div class="chapter-link-status" id="chapterLinkStatus"></div>
         <p class="chapter-link-hint" id="chapterLinkHint"></p>
       </div>
@@ -1010,7 +1009,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'nested-chapter-summary v163';
+const APP_VERSION   = 'tag-auto-folder v162';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1183,6 +1182,7 @@ let childFoldersCacheKey = '', childFoldersCache = new Map();
 let bookFixedTagsCache = new Map();
 let tagClassCache = new Map();
 let chapterKnowledgeLinkCache = new Map();
+let chapterSubChaptersCache = new Map();
 let expandedChapterKnowledgeIds = readExpandedChapterKnowledgeIds();
 let lazyImageObserver = null;
 let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0;
@@ -1756,14 +1756,31 @@ function normalizeChapterSummaryId(value) {
   return text && !isSheetCellErrorValue(text) ? text : '';
 }
 
-function chapterSummariesForBook(book, excludedId) {
+function chapterSummariesForBook(book, excluded) {
   const key = bookKey(book);
   if (!key) return [];
+  const excludedIds = excluded instanceof Set ? excluded : new Set([String(excluded == null ? '' : excluded)]);
   return sortExpandedRecords(entries.filter(function(entry) {
     return bookKey(entry.book) === key
       && isChapterSummaryTypes(entryStoredNoteTypes(entry))
-      && String(entry.id) !== String(excludedId == null ? '' : excludedId);
+      && !excludedIds.has(String(entry.id));
   }));
+}
+
+function chapterSelfAndDescendantIds(id) {
+  const result = new Set([String(id == null ? '' : id)]);
+  if (id == null) return result;
+  const queue = [String(id)];
+  while (queue.length) {
+    const current = queue.shift();
+    (chapterSubChaptersCache.get(current) || []).forEach(function(child) {
+      const childId = String(child.id);
+      if (result.has(childId)) return; // cycle-safe
+      result.add(childId);
+      queue.push(childId);
+    });
+  }
+  return result;
 }
 
 function entryPageNumbers(entry) {
@@ -1786,12 +1803,13 @@ function entryPagesFitChapter(knowledgeEntry, chapterEntry) {
 
 function matchingChapterSummariesForEntry(entry, source) {
   const types = entryStoredNoteTypes(entry);
-  // 知識メモだけでなく、章まとめ自体も上位の章まとめ（例: 部のまとめ）に
-  // 自動でひも付けられるようにする（章まとめの入れ子構造）。
-  if (!entry || !(isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types))) return [];
+  if (!entry) return [];
+  const isChapter = isChapterSummaryTypes(types);
+  if (!isChapter && !isKnowledgeMemoTypes(types)) return [];
   const key = bookKey(entry.book);
   if (!key || !entryPageNumbers(entry).length) return [];
-  return chapterSummariesForBook(entry.book, entry.id)
+  const excluded = isChapter ? chapterSelfAndDescendantIds(entry.id) : new Set([String(entry.id)]);
+  return chapterSummariesForBook(entry.book, excluded)
     .map(function(chapter) {
       return { chapter, range: entryPageRange(chapter) };
     })
@@ -1820,38 +1838,12 @@ function automaticChapterSummaryIdForEntry(entry, source) {
   return chapter ? String(chapter.id) : '';
 }
 
-// 保存時に使う値は「フォームで実際に選ばれている値（自動提案 or 手動選択）」を採用する。
-// 自分自身や自分の子孫（章まとめの場合）を親にしてしまう循環だけは防ぐ。
-function resolveChapterSummaryIdForSave(entryId, bookName, selectedNoteTypes) {
-  const canLink = !!bookKey(bookName) && (isKnowledgeMemoTypes(selectedNoteTypes) || isChapterSummaryTypes(selectedNoteTypes));
-  if (!canLink) return '';
-  const chosen = getSelectedChapterSummaryId();
-  if (!chosen) return '';
-  if (String(chosen) === String(entryId)) return '';
-  if (isChapterSummaryTypes(selectedNoteTypes) && chapterDescendantIds(bookName, entryId).has(String(chosen))) return '';
-  const target = entries.find(e => String(e.id) === String(chosen));
-  if (!target || !isChapterSummaryTypes(entryStoredNoteTypes(target)) || bookKey(target.book) !== bookKey(bookName)) return '';
-  return String(chosen);
-}
-
-// 既存の関連付け（自動 or 手動で選ばれたもの）は尊重し、
-// 未設定・または対象が消えた/無効になった場合だけ自動判定で補う。
-// これにより、章まとめ同士の入れ子構造をユーザーが自由に組んでも
-// リロード時に自動判定で上書きされてしまうことを防ぐ。
 function autoAssignChapterLinks(source) {
   const list = Array.isArray(source) ? source : entries;
-  const byId = new Map(list.filter(e => e && e.id != null).map(e => [String(e.id), e]));
   const links = getLocalChapterLinksMap();
   let changed = false;
   list.filter(entry => entry && entry.id != null && !isSyncMetaEntry(entry) && !isDeletedEntry(entry)).forEach(function(entry) {
-    const current = normalizeChapterSummaryId(entry.chapterSummaryId);
-    const currentTarget = current ? byId.get(current) : null;
-    const currentValid = !!current
-      && current !== String(entry.id)
-      && currentTarget
-      && isChapterSummaryTypes(entryStoredNoteTypes(currentTarget))
-      && bookKey(currentTarget.book) === bookKey(entry.book);
-    const next = currentValid ? current : automaticChapterSummaryIdForEntry(entry, list);
+    const next = automaticChapterSummaryIdForEntry(entry, list);
     if (normalizeChapterSummaryId(entry.chapterSummaryId) !== next) {
       entry.chapterSummaryId = next;
       changed = true;
@@ -1874,152 +1866,64 @@ function chapterSummaryLabel(entry) {
   return [title || '無題の章まとめ', page || date].filter(Boolean).join(' · ');
 }
 
-// 章まとめは章まとめ同士で自由に、段数制限なく入れ子にできる（例: 第一部 → 第一章 → 知識メモ）。
-// 循環（自分自身や自分の子孫を親にしてしまう）を防ぐため、指定した章まとめの
-// 子孫（その章まとめを直接・間接に親としている章まとめ）のID集合を求める。
-function chapterDescendantIds(book, rootId) {
-  const rootKey = String(rootId == null ? '' : rootId);
-  const result = new Set();
-  if (!rootKey) return result;
-  const chapters = chapterSummariesForBook(book);
-  const childrenByParent = new Map();
-  chapters.forEach(function(c) {
-    const pid = entryChapterSummaryId(c);
-    if (!pid) return;
-    if (!childrenByParent.has(pid)) childrenByParent.set(pid, []);
-    childrenByParent.get(pid).push(String(c.id));
-  });
-  const stack = [rootKey];
-  const seen = new Set([rootKey]);
-  while (stack.length) {
-    const cur = stack.pop();
-    (childrenByParent.get(cur) || []).forEach(function(childId) {
-      if (seen.has(childId)) return;
-      seen.add(childId);
-      result.add(childId);
-      stack.push(childId);
-    });
-  }
-  return result;
-}
-
-// 本の中の章まとめを、親子関係に沿ってツリー順（深さ優先）に並べ、
-// depth（入れ子の深さ）を付与した一覧を返す。プルダウンの表示に使う。
-function buildChapterHierarchyOptions(book, excludeIds) {
-  const chapters = chapterSummariesForBook(book);
-  const byId = new Map(chapters.map(c => [String(c.id), c]));
-  const childrenByParent = new Map();
-  chapters.forEach(function(c) {
-    const pid = entryChapterSummaryId(c);
-    const key = (pid && byId.has(pid)) ? pid : '';
-    if (!childrenByParent.has(key)) childrenByParent.set(key, []);
-    childrenByParent.get(key).push(c);
-  });
-  childrenByParent.forEach(function(list) {
-    list.sort(function(a, b) {
-      const ra = entryPageRange(a), rb = entryPageRange(b);
-      const sa = ra ? ra.start : Infinity, sb = rb ? rb.start : Infinity;
-      if (sa !== sb) return sa - sb;
-      return String(a.id).localeCompare(String(b.id));
-    });
-  });
-  const result = [];
-  const MAX_DEPTH = 64; // 段数制限なしだが、循環などによる無限ループを避ける安全上限
-  (function walk(parentKey, depth) {
-    if (depth > MAX_DEPTH) return;
-    (childrenByParent.get(parentKey) || []).forEach(function(c) {
-      result.push({ chapter: c, depth: depth });
-      walk(String(c.id), depth + 1);
-    });
-  })('', 0);
-  const exclude = excludeIds instanceof Set ? excludeIds : new Set(excludeIds || []);
-  return result.filter(item => !exclude.has(String(item.chapter.id)));
-}
-
-function setChapterSummaryInput(value, manual) {
-  const input = document.getElementById('fChapterSummaryId');
-  if (!input) return;
+function setChapterSummaryInput(value) {
+  const select = document.getElementById('fChapterSummaryId');
+  if (!select) return;
   const normalized = normalizeChapterSummaryId(value);
-  input.value = normalized;
-  input.dataset.selected = normalized;
-  if (manual !== undefined) input.dataset.manual = manual ? '1' : '';
+  select.dataset.selected = normalized;
+  select.dataset.userChosen = normalized ? '1' : '0';
 }
 
-function onChapterSummarySelectChange() {
-  const input = document.getElementById('fChapterSummaryId');
-  if (!input) return;
-  input.dataset.manual = '1';
-  input.dataset.selected = normalizeChapterSummaryId(input.value);
+function onChapterSummarySelectChange(select) {
+  if (!select) return;
+  select.dataset.selected = select.value;
+  select.dataset.userChosen = '1';
 }
 
 function getSelectedChapterSummaryId() {
-  const input = document.getElementById('fChapterSummaryId');
-  return normalizeChapterSummaryId(input && (input.value || input.dataset.selected));
+  const select = document.getElementById('fChapterSummaryId');
+  return normalizeChapterSummaryId(select && select.value);
 }
 
 function updateChapterLinkChoices() {
   const field = document.getElementById('chapterLinkField');
-  const input = document.getElementById('fChapterSummaryId');
+  const select = document.getElementById('fChapterSummaryId');
   const status = document.getElementById('chapterLinkStatus');
   const hint = document.getElementById('chapterLinkHint');
-  const label = document.getElementById('chapterLinkLabel');
   const book = document.getElementById('fBook')?.value || '';
   const page = currentPageFormValue();
-  if (!field || !input || !status || !hint) return;
+  if (!field || !select || !status || !hint) return;
   const selectedTypes = getSelectedNoteTypes();
-  const isChapterType = isChapterSummaryTypes(selectedTypes);
-  // 知識メモ・引用メモだけでなく、章まとめ自身も上位の章まとめとひも付けられる
-  // （章まとめ同士を自由に、段数制限なく入れ子にできる）。
-  const canLink = !fixedTagEditOnly && !!bookKey(book) && (isKnowledgeMemoTypes(selectedTypes) || isChapterType);
+  const isChapter = isChapterSummaryTypes(selectedTypes);
+  const canLink = !fixedTagEditOnly && (isKnowledgeMemoTypes(selectedTypes) || isChapter) && !!bookKey(book);
   field.hidden = !canLink;
   if (!canLink) {
-    setChapterSummaryInput('', false);
-    input.innerHTML = '';
+    select.innerHTML = '';
     return;
   }
-  if (label) label.textContent = isChapterType ? '🔗 上位の章まとめとの関連（入れ子にできます）' : '🔗 章まとめとの関連';
-
-  const excludeIds = new Set();
-  if (editingId != null) {
-    excludeIds.add(String(editingId));
-    if (isChapterType) chapterDescendantIds(book, editingId).forEach(id => excludeIds.add(id));
-  }
-  const options = buildChapterHierarchyOptions(book, excludeIds);
-  const previousValue = getSelectedChapterSummaryId();
-  input.innerHTML = ['<option value="">（関連付けない）</option>']
-    .concat(options.map(function(item) {
-      const indent = '　'.repeat(item.depth) + (item.depth ? '└ ' : '');
-      return `<option value="${esc(String(item.chapter.id))}">${esc(indent + chapterSummaryLabel(item.chapter))}</option>`;
-    }))
-    .join('');
-
-  const validIds = new Set(options.map(item => String(item.chapter.id)));
-  validIds.add('');
+  const excluded = isChapter ? chapterSelfAndDescendantIds(editingId) : new Set([String(editingId == null ? '' : editingId)]);
   const probe = { id: editingId, book, page, noteTypes: selectedTypes };
+  const candidates = chapterSummariesForBook(book, excluded);
   const autoChapter = automaticChapterSummaryForEntry(probe, entries);
-  const autoId = autoChapter ? String(autoChapter.id) : '';
-  const autoValid = autoId && validIds.has(autoId);
-
-  let nextValue;
-  if (input.dataset.manual === '1' && validIds.has(previousValue)) {
-    nextValue = previousValue; // ユーザーが自分で選んだ値を尊重する
-  } else {
-    nextValue = autoValid ? autoId : '';
-  }
-  setChapterSummaryInput(nextValue, input.dataset.manual === '1');
-
+  const stickyValue = select.dataset.userChosen === '1' ? normalizeChapterSummaryId(select.dataset.selected) : '';
+  select.innerHTML = ['<option value="">リンクしない（自動判定にまかせる）</option>']
+    .concat(candidates.map(c => `<option value="${esc(String(c.id))}">${esc(chapterSummaryLabel(c))}</option>`))
+    .join('');
+  const desiredValue = stickyValue && candidates.some(c => String(c.id) === stickyValue)
+    ? stickyValue
+    : (autoChapter ? String(autoChapter.id) : '');
+  select.value = desiredValue;
+  select.dataset.selected = desiredValue;
   if (!entryPageRange(probe)) {
-    status.textContent = isChapterType
-      ? 'ページを入力すると、上位の章まとめ候補を自動で提案します。下のリストから選ぶこともできます。'
-      : 'ページを入力すると、章まとめとの関連を自動判定します。下のリストから選ぶこともできます。';
-  } else if (autoValid) {
-    status.textContent = '「' + chapterSummaryLabel(autoChapter) + '」に自動でひも付きます（下のリストで変更できます）。';
+    status.textContent = 'ページを入力すると、自動候補を判定します。';
+  } else if (autoChapter) {
+    status.textContent = '「' + chapterSummaryLabel(autoChapter) + '」が自動候補です。必要ならプルダウンで選び直せます。';
   } else {
-    status.textContent = 'ページ範囲に合う章まとめ候補はありません。下のリストから選ぶこともできます。';
+    status.textContent = 'ページ範囲に合う自動候補はありません。必要ならプルダウンで手動選択できます。';
   }
-  hint.textContent = isChapterType
-    ? '章まとめ同士は自由に、段数の制限なく入れ子にできます（例: 第一部のまとめ → 第一章のまとめ → 知識メモ）。'
-    : '知識メモのページ範囲が章まとめの範囲に収まる場合、自動で関連付けを提案します。リストから変更もできます。';
+  hint.textContent = isChapter
+    ? 'この章・パートの上位（親のパート・章）を選べます。ページ範囲が親の範囲に収まる候補を自動で提案します。'
+    : 'ページ範囲が章まとめの範囲に収まる候補を自動で提案します。必要ならプルダウンで選び直せます。';
 }
 
 function noteFieldProfileForTypes(types) {
@@ -4084,20 +3988,34 @@ function toggleChapterKnowledge(id) {
 }
 
 function rebuildChapterKnowledgeLinkCache() {
-  // 章まとめの直接の子には、知識メモ・引用メモだけでなく、
-  // 下位の章まとめ（例: 第一部の子としての第一章）も含める（入れ子構造）。
   const byChapter = new Map();
+  const subChaptersByParent = new Map();
   entries.forEach(function(entry) {
-    if (!entry || entry.id == null || isSyncMetaEntry(entry) || isDeletedEntry(entry)) return;
-    const chapterId = normalizeChapterSummaryId(entry.chapterSummaryId);
-    if (!chapterId || chapterId === String(entry.id)) return;
+    const chapterId = String(entry && entry.chapterSummaryId || '');
+    if (!chapterId) return;
+    const types = entryStoredNoteTypes(entry);
+    if (isChapterSummaryTypes(types)) {
+      if (!subChaptersByParent.has(chapterId)) subChaptersByParent.set(chapterId, []);
+      subChaptersByParent.get(chapterId).push(entry);
+      return;
+    }
+    if (!isKnowledgeMemoTypes(types)) return;
     if (!byChapter.has(chapterId)) byChapter.set(chapterId, []);
     byChapter.get(chapterId).push(entry);
   });
   byChapter.forEach(function(list, chapterId) {
     byChapter.set(chapterId, sortExpandedRecords(list));
   });
+  subChaptersByParent.forEach(function(list, chapterId) {
+    subChaptersByParent.set(chapterId, sortExpandedRecords(list));
+  });
   chapterKnowledgeLinkCache = byChapter;
+  chapterSubChaptersCache = subChaptersByParent;
+}
+
+function subChaptersForChapter(chapter) {
+  if (!chapter || chapter.id == null || !isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return [];
+  return chapterSubChaptersCache.get(String(chapter.id)) || [];
 }
 
 function resetRenderCaches() {
@@ -5771,8 +5689,9 @@ async function fetchNdlBookCandidates(book, author) {
   return sortBookInfoCandidates(list, book, author);
 }
 
-async function fetchBookInfoCandidates(book, author) {
+async function fetchBookInfoCandidates(book, author, options) {
   if (navigator.onLine === false) return [];
+  const wide = !!(options && options.wide);
   const sourceNames = ['Google Books', 'OpenLibrary', 'Rakuten', 'openBD/\u7248\u5143\u30c9\u30c3\u30c8\u30b3\u30e0', 'NDL Search'];
   const results = await Promise.allSettled([
     fetchGoogleBookCandidates(book, author),
@@ -5794,7 +5713,7 @@ async function fetchBookInfoCandidates(book, author) {
     });
   });
   const candidates = sortBookInfoCandidates(list, book, author).slice(0, 12);
-  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, 8);
+  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, wide ? 8 : 2);
   await Promise.all(isbnCandidates.map(async function(info) {
     const isbn = pickIsbn(info);
     const [g, ol, rk, obd] = await Promise.allSettled([
@@ -6475,7 +6394,7 @@ async function refreshBookInfoChoice(book, author) {
   openBookOverviewKey = key;
   showToast('\u672c\u60c5\u5831\u3092\u53d6\u5f97\u4e2d...');
   try {
-    const candidates = await fetchBookInfoCandidates(book, author);
+    const candidates = await fetchBookInfoCandidates(book, author, {wide:true});
     let info = await chooseBookInfoCandidate(candidates, originalBookInfoCandidate(book, author), {forceChoice:true});
     if (!info) {
       showToast(candidates.length ? '\u5019\u88dc\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f' : '\u5916\u90e8\u306e\u5019\u88dc\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f');
@@ -6717,6 +6636,7 @@ function render() {
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
     observeLazyImages();
+    verifyBookCoverImages();
     setupBookActionVisibilityObserver();
     scheduleRecordAddButtonVisibility();
     return;
@@ -6734,7 +6654,7 @@ function render() {
     return `
 <div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" style="${spineVars}" data-book-key="${esc(k)}" data-book-name="${esc(g.book || '')}" data-book-author="${esc(g.author || '')}">
   <div class="book-shell" style="${spineVars}">
-    <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}"
+    <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''}
       data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
       <span class="book-spine-title">${formatSpineText(metaInfo.title||g.book||'タイトル未入力')}</span>
       ${bookAuthorLabel(g) && bookAuthorLabel(g) !== '著者未入力' ? `<span class="book-spine-author">${formatSpineText(bookAuthorLabel(g).split('、')[0])}</span>` : ''}
@@ -6750,13 +6670,11 @@ function render() {
 </div>`;
   }).join('')}</div>`;
   observeLazyImages();
+  verifyBookCoverImages();
   setupBookActionVisibilityObserver();
   scheduleRecordAddButtonVisibility();
 }
 
-// 章まとめは段数の制限なく、自由に入れ子にできる（例: 第一部 → 第一章 → 知識メモ）。
-// entry.children は、その entry が章まとめの場合のみ配列（空配列を含む）になり、
-// 配列の各要素はさらに同じ形（{entry, children}）を持つ再帰的なツリー構造。
 function recordTreeForDisplay(records) {
   const list = Array.isArray(records) ? records : [];
   const chapterIds = new Set();
@@ -6765,72 +6683,47 @@ function recordTreeForDisplay(records) {
       chapterIds.add(String(entry.id));
     }
   });
-  if (!chapterIds.size) return list.map(entry => ({ entry, children: null }));
+  if (!chapterIds.size) return list.map(entry => ({ entry, isChapter: false }));
 
-  const childrenByParent = new Map();
+  const nestedIds = new Set();
   list.forEach(function(entry) {
     if (!entry || entry.id == null) return;
     const parentId = normalizeChapterSummaryId(entry.chapterSummaryId);
-    if (!parentId || parentId === String(entry.id) || !chapterIds.has(parentId)) return;
-    if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
-    childrenByParent.get(parentId).push(entry);
+    if (!parentId || !chapterIds.has(parentId)) return;
+    const types = entryStoredNoteTypes(entry);
+    const isLeafChild = isKnowledgeMemoTypes(types) && !isChapterSummaryTypes(types);
+    const isSubChapter = isChapterSummaryTypes(types) && String(entry.id) !== parentId;
+    if (isLeafChild || isSubChapter) nestedIds.add(String(entry.id));
   });
-
-  const nestedIds = new Set();
-  childrenByParent.forEach(function(children) {
-    children.forEach(entry => nestedIds.add(String(entry.id)));
-  });
-
-  const MAX_DEPTH = 64; // 循環データが万一あっても無限ループにならないための安全上限
-  function buildChildren(parentId, chain) {
-    return (childrenByParent.get(parentId) || []).map(function(child) {
-      const cid = String(child.id);
-      if (chapterIds.has(cid) && !chain.includes(cid) && chain.length < MAX_DEPTH) {
-        return { entry: child, children: buildChildren(cid, chain.concat(cid)) };
-      }
-      return { entry: child, children: null };
-    });
-  }
-
   return list
     .filter(entry => !nestedIds.has(String(entry && entry.id)))
     .map(function(entry) {
       const id = String(entry && entry.id);
-      return {
-        entry,
-        children: chapterIds.has(id) ? buildChildren(id, [id]) : null
-      };
+      return { entry, isChapter: chapterIds.has(id) };
     });
 }
 
-// items は recordTreeForDisplay と同じ {entry, children} の再帰ツリー配列。
-// children が配列の要素（＝章まとめ）は、さらにその中で入れ子に表示する。
-function chapterTreeItemsHTML(items) {
-  return (items || []).map(function(item) {
-    if (Array.isArray(item.children)) {
-      return `<div class="chapter-record-group">${cardHTML(item.entry, {chapterChild:true})}${chapterKnowledgeChildrenHTML(item.entry, item.children)}</div>`;
-    }
-    return cardHTML(item.entry, {chapterChild:true});
-  }).join('');
-}
-
-function chapterKnowledgeChildrenHTML(chapter, items) {
-  const children = Array.isArray(items) ? items : [];
+function chapterKnowledgeChildrenHTML(chapter) {
   const chapterId = String(chapter && chapter.id);
+  const subChapters = subChaptersForChapter(chapter);
+  const leafMemos = linkedKnowledgeMemosForChapter(chapter);
+  const totalCount = subChapters.length + leafMemos.length;
   const collapsed = !expandedChapterKnowledgeIds.has(chapterId);
-  const countLabel = children.length ? `この章に含まれる項目 ${children.length}件` : 'この章に含まれる項目';
-  const stateLabel = collapsed ? '展開' : '折りたたむ';
-  const content = collapsed
-    ? ''
-    : (children.length
-      ? `<div class="chapter-linked-knowledge-list">${chapterTreeItemsHTML(children)}</div>`
-      : '<div class="chapter-linked-knowledge-empty">まだ項目はありません。この章の内容を補足する知識メモや、下位の章まとめ（例: 第一章のまとめ）をここに集められます。</div>');
+  const countLabel = totalCount ? `この章の関連 ${totalCount}件` : 'この章の関連';
+  const stateLabel = collapsed ? '関連を展開' : '関連を折りたたむ';
+  const subChaptersHTML = subChapters.map(function(sub) {
+    return `<div class="chapter-record-group chapter-record-subgroup">${cardHTML(sub, {chapterChild:true})}${chapterKnowledgeChildrenHTML(sub)}</div>`;
+  }).join('');
+  const leafHTML = leafMemos.length
+    ? `<div class="chapter-linked-knowledge-list">${leafMemos.map(entry => cardHTML(entry, {chapterChild:true})).join('')}</div>`
+    : '';
+  const emptyHTML = totalCount ? '' : '<div class="chapter-linked-knowledge-empty">まだ関連メモ・下位の章はありません。この章を補足するメモや、下位の章まとめをここに集められます。</div>';
+  const content = collapsed ? '' : (subChaptersHTML + leafHTML + emptyHTML);
   return `<section class="chapter-linked-knowledge" data-chapter-knowledge="${esc(chapterId)}">
     <div class="chapter-linked-knowledge-head">
       <div class="chapter-linked-knowledge-title">📚 ${esc(countLabel)}</div>
       <div class="chapter-linked-knowledge-controls">
         <button type="button" class="chapter-linked-knowledge-add" onclick="openKnowledgeMemoForChapter(${esc(JSON.stringify(chapter.id))})">＋ 知識メモ</button>
-        <button type="button" class="chapter-linked-knowledge-add" onclick="openChildChapterSummaryForChapter(${esc(JSON.stringify(chapter.id))})">＋ 下位の章まとめ</button>
         <button type="button" class="chapter-linked-knowledge-toggle" onclick="toggleChapterKnowledge(${esc(JSON.stringify(chapter.id))})" aria-expanded="${collapsed ? 'false' : 'true'}" title="${stateLabel}" aria-label="${stateLabel}">${collapsed ? '＋' : '－'}</button>
       </div>
     </div>
@@ -6840,8 +6733,8 @@ function chapterKnowledgeChildrenHTML(chapter, items) {
 
 function recordCardsHTML(records) {
   return recordTreeForDisplay(records).map(function(item) {
-    if (!Array.isArray(item.children)) return cardHTML(item.entry);
-    return `<div class="chapter-record-group">${cardHTML(item.entry)}${chapterKnowledgeChildrenHTML(item.entry, item.children)}</div>`;
+    if (!item.isChapter) return cardHTML(item.entry);
+    return `<div class="chapter-record-group">${cardHTML(item.entry)}${chapterKnowledgeChildrenHTML(item.entry)}</div>`;
   }).join('');
 }
 
@@ -6880,7 +6773,7 @@ function recordsListHTML(bookEntries) {
     const records = sortExpandedRecords(g.entries || []);
     return `<section class="record-book-section" style="${spineVars}">
       <header class="record-book-header">
-        <div class="record-book-marker${coverVar ? ' has-cover' : ''}" style="${markerStyle}" aria-label="${esc(g.book || metaInfo.title || '')}">${coverVar ? '' : esc(compactBookTitle(g.book))}</div>
+        <div class="record-book-marker${coverVar ? ' has-cover' : ''}" style="${markerStyle}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''} aria-label="${esc(g.book || metaInfo.title || '')}">${esc(compactBookTitle(g.book))}</div>
         <div class="record-book-heading">
           <div class="record-book-title">${esc(g.book || 'タイトル未入力')}</div>
           <div class="record-book-meta">${esc(bookAuthorLabel(g))}${latestLabel ? ' ・ ' + esc(latestLabel) : ''}</div>
@@ -7006,7 +6899,7 @@ function toggleBookGroup(index) {
 function chapterKnowledgeLinkBadgeHTML(chapter) {
   if (!isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return '';
   const count = linkedKnowledgeMemosForChapter(chapter).length;
-  return `<span class="chapter-link-count">子要素 ${count}件</span>`;
+  return `<span class="chapter-link-count">関連知識 ${count}件</span>`;
 }
 
 function chapterKnowledgeMemoSectionsHTML(entry) {
@@ -7100,6 +6993,27 @@ function loadLazyImage(img) {
   img.src = img.dataset.lazySrc;
   delete img.dataset.lazySrc;
   if (lazyImageObserver) lazyImageObserver.unobserve(img);
+}
+
+let brokenCoverUrls = new Set();
+
+function verifyBookCoverImages() {
+  const els = [...document.querySelectorAll('[data-cover-src]')];
+  els.forEach(function(el) {
+    const src = el.dataset.coverSrc;
+    if (!src) return;
+    if (brokenCoverUrls.has(src)) {
+      el.classList.remove('has-cover');
+      return;
+    }
+    const img = new Image();
+    img.onerror = function() {
+      brokenCoverUrls.add(src);
+      el.classList.remove('has-cover');
+      el.style.removeProperty('--book-cover');
+    };
+    img.src = src;
+  });
 }
 
 function observeLazyImages() {
@@ -8039,19 +7953,6 @@ function openKnowledgeMemoForChapter(id) {
   showToast('この章にひもづく知識メモを追加');
 }
 
-// 章まとめを段数の制限なく入れ子にできるようにするため、
-// 「この章の下位の章まとめ（例: 第一部の子としての第一章）」を追加するショートカット。
-function openChildChapterSummaryForChapter(id) {
-  const chapter = entries.find(entry => String(entry.id) === String(id));
-  if (!chapter || !isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return;
-  openModal(null, chapter.book || '', chapter.author || '', false, {skipDraft:true});
-  setNoteTypeInputs(['chapter_summary']);
-  updateNoteFieldProfile();
-  setChapterSummaryInput(String(chapter.id), true);
-  updateChapterLinkChoices();
-  showToast('この章の下位の章まとめを追加');
-}
-
 function openBookWideEdit(book, author) {
   const key = bookKey(book);
   const group = [...bookGroups().values()].find(g => bookKey(g.book) === key);
@@ -8081,7 +7982,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   ['fBook','fAuthor','fTitle','fContent','fLesson','fSupplement','fTags'].forEach(function(fid){ document.getElementById(fid).value=''; });
   setPageFormValue('');
   setNoteTypeInputs(NOTE_TYPE_DEFAULTS);
-  setChapterSummaryInput('', false);
+  setChapterSummaryInput('');
   currentFixedTags = [];
   currentDrawings  = [];
   currentImages    = [];
@@ -8096,7 +7997,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
       setPageFormValue(e.page||'');
       document.getElementById('fTitle').value      = e.title||'';
       setNoteTypeInputs(entryNoteTypes(e));
-      setChapterSummaryInput(e.chapterSummaryId, !!normalizeChapterSummaryId(e.chapterSummaryId));
+      setChapterSummaryInput(e.chapterSummaryId);
       document.getElementById('fContent').value    = e.content||'';
       document.getElementById('fLesson').value     = e.lesson||'';
       document.getElementById('fSupplement').value = e.supplement||'';
@@ -8154,13 +8055,6 @@ function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？'))return;
   const target = entries.find(e=>e.id===id || String(e.id)===String(id));
   const deletedId = String(id);
-  // 削除する記録が章まとめだった場合、その子要素（下位の章まとめ・知識メモなど）は
-  // 孤立させず、削除した章まとめ自身の親（あれば）へ繋ぎ直す。これにより
-  // 「第一部 → 第一章 → 知識メモ」のような入れ子構造で、途中の章まとめを
-  // 削除しても残りの構造がなるべく維持される。
-  const reattachTo = (target && isChapterSummaryTypes(entryStoredNoteTypes(target)))
-    ? normalizeChapterSummaryId(entryChapterSummaryId(target))
-    : '';
   const unlinkedAt = new Date().toISOString();
   addDeletedId(id);
   removeLocalNoteTypes(id);
@@ -8171,8 +8065,8 @@ function deleteEntry(id) {
     .filter(e=>String(e.id)!==deletedId)
     .map(function(entry) {
       if (String(entry.chapterSummaryId || '') !== deletedId) return entry;
-      chapterLinks[String(entry.id)] = reattachTo;
-      return {...entry, chapterSummaryId: reattachTo, updatedAt:unlinkedAt};
+      chapterLinks[String(entry.id)] = '';
+      return {...entry, chapterSummaryId:'', updatedAt:unlinkedAt};
     });
   setLocalChapterLinksMap(chapterLinks);
   persist();
@@ -8244,7 +8138,7 @@ async function saveEntry() {
   const isEditingEntry = editingId !== null && editingId !== undefined;
   const entryId = isEditingEntry ? editingId : Date.now();
   const page = currentPageFormValue();
-  const chapterSummaryId = resolveChapterSummaryIdForSave(entryId, bookName, selectedNoteTypes);
+  const chapterSummaryId = automaticChapterSummaryIdForEntry({ id: entryId, book: bookName, page, noteTypes: selectedNoteTypes }, entries);
   const data = {
     id:         entryId,
     book:       bookName,
@@ -8540,7 +8434,7 @@ function applyEntryDraftData(data) {
     setPageFormValue(data.fPage || '');
   }
   setNoteTypeInputs(data.noteTypes || data.fNoteType || NOTE_TYPE_DEFAULTS);
-  setChapterSummaryInput(data.chapterSummaryId || data.fChapterSummaryId || '', !!(data.chapterSummaryId || data.fChapterSummaryId));
+  setChapterSummaryInput(data.chapterSummaryId || data.fChapterSummaryId || '');
   currentFixedTags = getBookFixedTags(document.getElementById('fBook').value || '');
   renderFixedTagChips();
   updateNoteFieldProfile();
