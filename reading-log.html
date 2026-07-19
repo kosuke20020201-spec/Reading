@@ -6493,10 +6493,11 @@ function bookOverviewHTML(group) {
     cleanSource && cleanSource !== 'Original entry' ? 'Source: ' + cleanSource : ''
   ].filter(Boolean).join(' / ');
   const cover = safeBookImageUrl(info.coverUrl);
+  const showCover = cover && !brokenCoverUrls.has(cover);
   const body = descriptionIsSuspicious ? '概要生成の形式が崩れていたため表示していません。「概要を作り直す」を押してください。' : (info.description || (meta ? '取得できた本情報を表示しています。概要文は見つかった場合だけ表示されます。' : (navigator.onLine === false ? 'オンライン時に本情報を取得できます。' : '本情報はまだ取得されていません。本を開くと自動取得します。')));
   return `<div class="book-overview-panel">
     <div class="book-overview-head">
-      ${cover ? `<img class="book-overview-cover" src="${esc(cover)}" alt="">` : ''}
+      ${showCover ? `<img class="book-overview-cover" src="${esc(cover)}" alt="" onerror="markCoverUrlBroken(this.src); this.remove();">` : ''}
       <div>
         <div class="book-overview-title">${esc(title)}</div>
         ${meta ? `<div class="book-overview-meta">${esc(meta)}</div>` : ''}
@@ -6998,6 +6999,17 @@ function loadLazyImage(img) {
 let brokenCoverUrls = new Set();
 let verifiedGoodCoverUrls = new Set();
 
+let pendingCoverChecks = new Set();
+
+function markCoverUrlBroken(src) {
+  if (!src) return;
+  brokenCoverUrls.add(src);
+  document.querySelectorAll('[data-cover-src="' + CSS.escape(src) + '"]').forEach(function(el) {
+    el.classList.remove('has-cover');
+    el.style.removeProperty('--book-cover');
+  });
+}
+
 function verifyBookCoverImages() {
   const els = [...document.querySelectorAll('[data-cover-src]')];
   els.forEach(function(el) {
@@ -7007,15 +7019,30 @@ function verifyBookCoverImages() {
       el.classList.remove('has-cover');
       return;
     }
-    if (verifiedGoodCoverUrls.has(src)) return;
+    if (verifiedGoodCoverUrls.has(src) || pendingCoverChecks.has(src)) return;
+    pendingCoverChecks.add(src);
     const img = new Image();
+    let settled = false;
+    const timer = setTimeout(function() {
+      if (settled) return;
+      settled = true;
+      pendingCoverChecks.delete(src);
+      markCoverUrlBroken(src);
+      img.src = '';
+    }, 6000);
     img.onload = function() {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      pendingCoverChecks.delete(src);
       verifiedGoodCoverUrls.add(src);
     };
     img.onerror = function() {
-      brokenCoverUrls.add(src);
-      el.classList.remove('has-cover');
-      el.style.removeProperty('--book-cover');
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      pendingCoverChecks.delete(src);
+      markCoverUrlBroken(src);
     };
     img.src = src;
   });
