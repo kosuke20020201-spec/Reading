@@ -5657,35 +5657,43 @@ async function fetchOpenBdBookCandidates(book, author) {
 async function fetchNdlBookCandidates(book, author) {
   const list = [];
   const parser = new DOMParser();
-  for (const params of ndlOpenSearchParamSets(book, author).slice(0, 4)) {
-    const res = await fetchBookApi('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString());
-    if (!res.ok) continue;
-    const xmlText = await res.text();
-    const xml = parser.parseFromString(xmlText, 'application/xml');
-    if (xml.getElementsByTagName('parsererror').length) continue;
-    Array.from(xml.getElementsByTagName('item')).forEach(function(item) {
-      const title = firstDirectChildText(item, ['title']) || firstDirectChildText(item, ['dc:title']);
-      const creators = directChildTextsByLocalName(item, ['creator', 'author']).filter(v => v !== title);
-      const identifiers = directChildTextsByLocalName(item, ['identifier']);
-      const isbn = extractIsbn(identifiers.join(' '));
-      const info = normalizeFetchedBookInfo({
-        title,
-        authors: creators,
-        publisher: firstDirectChildText(item, ['publisher']),
-        publishedDate: firstDirectChildText(item, ['date', 'issued']),
-        description: stripHtml(firstDirectChildText(item, ['abstract'])),
-        coverUrl: '',
-        isbn10: isbn && isbn.length === 10 ? isbn : '',
-        isbn13: isbn && isbn.length === 13 ? isbn : '',
-        pageCount: firstDirectChildText(item, ['extent']),
-        categories: directChildTextsByLocalName(item, ['subject']).slice(0, 5),
-        source: 'NDL Search',
-        infoUrl: firstDirectChildText(item, ['link'])
+  const paramSets = ndlOpenSearchParamSets(book, author).slice(0, 4);
+  const results = await Promise.allSettled(paramSets.map(function(params) {
+    return fetchBookApi('https://ndlsearch.ndl.go.jp/api/opensearch?' + params.toString(), 9000);
+  }));
+  for (const result of results) {
+    try {
+      if (result.status !== 'fulfilled') continue;
+      const res = result.value;
+      if (!res.ok) continue;
+      const xmlText = await res.text();
+      const xml = parser.parseFromString(xmlText, 'application/xml');
+      if (xml.getElementsByTagName('parsererror').length) continue;
+      Array.from(xml.getElementsByTagName('item')).forEach(function(item) {
+        const title = firstDirectChildText(item, ['title']) || firstDirectChildText(item, ['dc:title']);
+        const creators = directChildTextsByLocalName(item, ['creator', 'author']).filter(v => v !== title);
+        const identifiers = directChildTextsByLocalName(item, ['identifier']);
+        const isbn = extractIsbn(identifiers.join(' '));
+        const info = normalizeFetchedBookInfo({
+          title,
+          authors: creators,
+          publisher: firstDirectChildText(item, ['publisher']),
+          publishedDate: firstDirectChildText(item, ['date', 'issued']),
+          description: stripHtml(firstDirectChildText(item, ['abstract'])),
+          coverUrl: '',
+          isbn10: isbn && isbn.length === 10 ? isbn : '',
+          isbn13: isbn && isbn.length === 13 ? isbn : '',
+          pageCount: firstDirectChildText(item, ['extent']),
+          categories: directChildTextsByLocalName(item, ['subject']).slice(0, 5),
+          source: 'NDL Search',
+          infoUrl: firstDirectChildText(item, ['link'])
+        });
+        const score = scoreBookCandidate(info.title, info.authors, book, author) + (pickIsbn(info) ? 8 : 0) + (info.publisher ? 3 : 0);
+        addBookInfoCandidate(list, info, score);
       });
-      const score = scoreBookCandidate(info.title, info.authors, book, author) + (pickIsbn(info) ? 8 : 0) + (info.publisher ? 3 : 0);
-      addBookInfoCandidate(list, info, score);
-    });
-    if (list.length >= 8) break;
+    } catch (e) {
+      console.warn('[本情報検索] NDL Search 1件失敗（他は継続）:', e);
+    }
   }
   return sortBookInfoCandidates(list, book, author);
 }
@@ -6638,7 +6646,7 @@ function render() {
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
     observeLazyImages();
-    // verifyBookCoverImages(); // temporarily disabled for perf diagnosis
+    verifyBookCoverImages();
     setupBookActionVisibilityObserver();
     scheduleRecordAddButtonVisibility();
     return;
@@ -6672,7 +6680,7 @@ function render() {
 </div>`;
   }).join('')}</div>`;
   observeLazyImages();
-  // verifyBookCoverImages(); // temporarily disabled for perf diagnosis
+  verifyBookCoverImages();
   setupBookActionVisibilityObserver();
   scheduleRecordAddButtonVisibility();
 }

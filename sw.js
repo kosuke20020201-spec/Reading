@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260719-perf-diagnosis-v173';
+const CACHE_NAME = 'reading-note-pwa-20260719-ndl-resilient-parallel-v174';
 const APP_SHELL = [
   './',
   './index.html',
