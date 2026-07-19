@@ -1185,6 +1185,7 @@ let chapterKnowledgeLinkCache = new Map();
 let chapterSubChaptersCache = new Map();
 let expandedChapterKnowledgeIds = readExpandedChapterKnowledgeIds();
 let lazyImageObserver = null;
+let coverCheckObserver = null;
 let viewerEntryId = null, viewerMediaIndex = null, viewerScale = 1, viewerOffsetX = 0, viewerOffsetY = 0;
 let viewerPointers = new Map(), viewerDragStart = null, viewerPinchStart = null;
 let searchRenderTimer = null;
@@ -7010,41 +7011,66 @@ function markCoverUrlBroken(src) {
   });
 }
 
+function checkOneCoverImage(el) {
+  const src = el.dataset.coverSrc;
+  if (!src) return;
+  if (brokenCoverUrls.has(src)) {
+    el.classList.remove('has-cover');
+    return;
+  }
+  if (verifiedGoodCoverUrls.has(src) || pendingCoverChecks.has(src)) return;
+  pendingCoverChecks.add(src);
+  const img = new Image();
+  let settled = false;
+  const timer = setTimeout(function() {
+    if (settled) return;
+    settled = true;
+    pendingCoverChecks.delete(src);
+    markCoverUrlBroken(src);
+    img.src = '';
+  }, 6000);
+  img.onload = function() {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    pendingCoverChecks.delete(src);
+    verifiedGoodCoverUrls.add(src);
+  };
+  img.onerror = function() {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    pendingCoverChecks.delete(src);
+    markCoverUrlBroken(src);
+  };
+  img.src = src;
+}
+
 function verifyBookCoverImages() {
   const els = [...document.querySelectorAll('[data-cover-src]')];
+  if (!els.length) return;
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(checkOneCoverImage);
+    return;
+  }
+  if (!coverCheckObserver) {
+    coverCheckObserver = new IntersectionObserver(function(items) {
+      items.forEach(function(item) {
+        if (item.isIntersecting) {
+          checkOneCoverImage(item.target);
+          coverCheckObserver.unobserve(item.target);
+        }
+      });
+    }, {rootMargin: '400px 400px'});
+  }
   els.forEach(function(el) {
     const src = el.dataset.coverSrc;
-    if (!src) return;
-    if (brokenCoverUrls.has(src)) {
+    if (src && brokenCoverUrls.has(src)) {
       el.classList.remove('has-cover');
       return;
     }
-    if (verifiedGoodCoverUrls.has(src) || pendingCoverChecks.has(src)) return;
-    pendingCoverChecks.add(src);
-    const img = new Image();
-    let settled = false;
-    const timer = setTimeout(function() {
-      if (settled) return;
-      settled = true;
-      pendingCoverChecks.delete(src);
-      markCoverUrlBroken(src);
-      img.src = '';
-    }, 6000);
-    img.onload = function() {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      pendingCoverChecks.delete(src);
-      verifiedGoodCoverUrls.add(src);
-    };
-    img.onerror = function() {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      pendingCoverChecks.delete(src);
-      markCoverUrlBroken(src);
-    };
-    img.src = src;
+    if (src && verifiedGoodCoverUrls.has(src)) return;
+    coverCheckObserver.observe(el);
   });
 }
 

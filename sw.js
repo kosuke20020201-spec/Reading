@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260719-cover-check-timeout-dedup-v171';
+const CACHE_NAME = 'reading-note-pwa-20260719-lazy-cover-check-v172';
 const APP_SHELL = [
   './',
   './index.html',
