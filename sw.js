@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260716-startup-pending-retry-v165';
+const CACHE_NAME = 'reading-note-pwa-20260719-wider-isbn-enrichment-v166';
 const APP_SHELL = [
   './',
   './index.html',

@@ -5642,25 +5642,20 @@ async function fetchBookInfoCandidates(book, author) {
     });
   });
   const candidates = sortBookInfoCandidates(list, book, author).slice(0, 12);
-  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, 2);
-  for (const info of isbnCandidates) {
-    try {
-      const extra = await fetchGoogleBookInfo(pickIsbn(info), '');
-      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 35);
-    } catch(e) {}
-    try {
-      const extra = await fetchOpenLibraryBookInfo(pickIsbn(info), '');
-      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 34);
-    } catch(e) {}
-    try {
-      const extra = await fetchRakutenBookInfo(pickIsbn(info), '');
-      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 38);
-    } catch(e) {}
-    try {
-      const extra = await fetchOpenBdBookInfo(pickIsbn(info), '');
-      if (extra) addBookInfoCandidate(list, mergeCandidateInfo(info, extra), 36);
-    } catch(e) {}
-  }
+  const isbnCandidates = candidates.filter(info => pickIsbn(info) && (!info.coverUrl || !info.description)).slice(0, 8);
+  await Promise.all(isbnCandidates.map(async function(info) {
+    const isbn = pickIsbn(info);
+    const [g, ol, rk, obd] = await Promise.allSettled([
+      fetchGoogleBookInfo(isbn, ''),
+      fetchOpenLibraryBookInfo(isbn, ''),
+      fetchRakutenBookInfo(isbn, ''),
+      fetchOpenBdBookInfo(isbn, '')
+    ]);
+    if (g.status === 'fulfilled' && g.value) addBookInfoCandidate(list, mergeCandidateInfo(info, g.value), 35);
+    if (ol.status === 'fulfilled' && ol.value) addBookInfoCandidate(list, mergeCandidateInfo(info, ol.value), 34);
+    if (rk.status === 'fulfilled' && rk.value) addBookInfoCandidate(list, mergeCandidateInfo(info, rk.value), 38);
+    if (obd.status === 'fulfilled' && obd.value) addBookInfoCandidate(list, mergeCandidateInfo(info, obd.value), 36);
+  }));
   return sortBookInfoCandidates(list, book, author).slice(0, 12);
 }
 
