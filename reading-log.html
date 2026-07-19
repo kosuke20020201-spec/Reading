@@ -6996,6 +6996,7 @@ function loadLazyImage(img) {
 }
 
 let brokenCoverUrls = new Set();
+let verifiedGoodCoverUrls = new Set();
 
 function verifyBookCoverImages() {
   const els = [...document.querySelectorAll('[data-cover-src]')];
@@ -7006,7 +7007,11 @@ function verifyBookCoverImages() {
       el.classList.remove('has-cover');
       return;
     }
+    if (verifiedGoodCoverUrls.has(src)) return;
     const img = new Image();
+    img.onload = function() {
+      verifiedGoodCoverUrls.add(src);
+    };
     img.onerror = function() {
       brokenCoverUrls.add(src);
       el.classList.remove('has-cover');
