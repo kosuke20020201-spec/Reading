@@ -6638,7 +6638,7 @@ function render() {
   if (displayMode === 'list') {
     container.innerHTML = recordsListHTML(bookEntries);
     observeLazyImages();
-    verifyBookCoverImages();
+    // verifyBookCoverImages(); // temporarily disabled for perf diagnosis
     setupBookActionVisibilityObserver();
     scheduleRecordAddButtonVisibility();
     return;
@@ -6672,7 +6672,7 @@ function render() {
 </div>`;
   }).join('')}</div>`;
   observeLazyImages();
-  verifyBookCoverImages();
+  // verifyBookCoverImages(); // temporarily disabled for perf diagnosis
   setupBookActionVisibilityObserver();
   scheduleRecordAddButtonVisibility();
 }
@@ -6713,14 +6713,17 @@ function chapterKnowledgeChildrenHTML(chapter) {
   const collapsed = !expandedChapterKnowledgeIds.has(chapterId);
   const countLabel = totalCount ? `この章の関連 ${totalCount}件` : 'この章の関連';
   const stateLabel = collapsed ? '関連を展開' : '関連を折りたたむ';
-  const subChaptersHTML = subChapters.map(function(sub) {
-    return `<div class="chapter-record-group chapter-record-subgroup">${cardHTML(sub, {chapterChild:true})}${chapterKnowledgeChildrenHTML(sub)}</div>`;
-  }).join('');
-  const leafHTML = leafMemos.length
-    ? `<div class="chapter-linked-knowledge-list">${leafMemos.map(entry => cardHTML(entry, {chapterChild:true})).join('')}</div>`
-    : '';
-  const emptyHTML = totalCount ? '' : '<div class="chapter-linked-knowledge-empty">まだ関連メモ・下位の章はありません。この章を補足するメモや、下位の章まとめをここに集められます。</div>';
-  const content = collapsed ? '' : (subChaptersHTML + leafHTML + emptyHTML);
+  let content = '';
+  if (!collapsed) {
+    const subChaptersHTML = subChapters.map(function(sub) {
+      return `<div class="chapter-record-group chapter-record-subgroup">${cardHTML(sub, {chapterChild:true})}${chapterKnowledgeChildrenHTML(sub)}</div>`;
+    }).join('');
+    const leafHTML = leafMemos.length
+      ? `<div class="chapter-linked-knowledge-list">${leafMemos.map(entry => cardHTML(entry, {chapterChild:true})).join('')}</div>`
+      : '';
+    const emptyHTML = totalCount ? '' : '<div class="chapter-linked-knowledge-empty">まだ関連メモ・下位の章はありません。この章を補足するメモや、下位の章まとめをここに集められます。</div>';
+    content = subChaptersHTML + leafHTML + emptyHTML;
+  }
   return `<section class="chapter-linked-knowledge" data-chapter-knowledge="${esc(chapterId)}">
     <div class="chapter-linked-knowledge-head">
       <div class="chapter-linked-knowledge-title">📚 ${esc(countLabel)}</div>

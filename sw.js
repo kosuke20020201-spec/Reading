@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260719-lazy-cover-check-v172';
+const CACHE_NAME = 'reading-note-pwa-20260719-perf-diagnosis-v173';
 const APP_SHELL = [
   './',
   './index.html',
