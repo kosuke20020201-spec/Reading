@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260719-ndl-unrestricted-query-first-v168';
+const CACHE_NAME = 'reading-note-pwa-20260719-nested-chapter-summary-v169';
 const APP_SHELL = [
   './',
   './index.html',
