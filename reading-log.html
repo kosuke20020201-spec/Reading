@@ -5329,11 +5329,13 @@ async function fetchOpenBdBookInfo(book, author) {
 
 function rakutenApiUrl(path, params) {
   const appId = getRakutenAppId();
-  if (!appId) return '';
+  const accessKey = getRakutenAccessKey();
+  if (!appId || !accessKey) return '';
   params = params || new URLSearchParams();
   params.set('format', 'json');
   params.set('applicationId', appId);
-  return 'https://app.rakuten.co.jp/services/api/' + path + '?' + params.toString();
+  params.set('accessKey', accessKey);
+  return 'https://openapi.rakuten.co.jp/services/api/' + path + '?' + params.toString();
 }
 
 function rakutenBookInfoFromItem(item, source) {
@@ -5357,7 +5359,7 @@ function rakutenBookInfoFromItem(item, source) {
 }
 
 async function fetchRakutenEndpoint(path, book, author) {
-  if (!getRakutenAppId()) return [];
+  if (!getRakutenAppId() || !getRakutenAccessKey()) return [];
   const isbn = extractIsbn(book + ' ' + author);
   const searches = [];
   function add(params) {
@@ -5405,7 +5407,7 @@ async function fetchRakutenEndpoint(path, book, author) {
 }
 
 async function fetchRakutenBookCandidates(book, author) {
-  if (!getRakutenAppId()) return [];
+  if (!getRakutenAppId() || !getRakutenAccessKey()) return [];
   const results = await Promise.allSettled([
     fetchRakutenEndpoint('BooksBook/Search/20170404', book, author),
     fetchRakutenEndpoint('BooksForeignBook/Search/20170404', book, author)
