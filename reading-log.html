@@ -2163,30 +2163,36 @@ function autoAssignTagFoldersFromEntries(targetFolders) {
     .filter(name => name && Object.prototype.hasOwnProperty.call(folders, name));
   if (!folderNames.length) return 0;
 
-  const triggerMap = new Map();
+  // For a nested folder like 歴史/日本史/経済, matching only the leaf name
+  // ("経済") lets unrelated tags (that happen to share an entry with some
+  // exact "経済" tag but have nothing to do with 歴史/日本史) leak into the
+  // folder. Require every ancestor segment's name to also be present among
+  // the entry's tags, so only entries actually under the 歴史→日本史 branch
+  // qualify.
+  const triggerList = [];
   folderNames.forEach(function(name) {
-    const key = tagKeyName(folderLeafName(name));
-    if (!key) return;
-    if (!triggerMap.has(key)) triggerMap.set(key, []);
-    triggerMap.get(key).push(name);
+    const parts = folderParts(name);
+    const leafKey = tagKeyName(parts[parts.length - 1] || '');
+    if (!leafKey) return;
+    const ancestorKeys = parts.slice(0, -1).map(tagKeyName).filter(Boolean);
+    triggerList.push({ folderName: name, leafKey, ancestorKeys });
   });
-  if (!triggerMap.size) return 0;
+  if (!triggerList.length) return 0;
 
   let added = 0;
   (Array.isArray(entries) ? entries : []).forEach(function(entry) {
     const tags = entryAllTags(entry);
     if (!tags.length) return;
-    cleanTagList(tags.map(tagKeyName)).forEach(function(key) {
-      const matches = triggerMap.get(key);
-      if (!matches) return;
-      matches.forEach(function(folderName) {
-        const before = cleanTagList(folders[folderName] || []);
-        const after = cleanTagList([...before, ...tags]);
-        if (after.length !== before.length) {
-          added += after.length - before.length;
-          folders[folderName] = after;
-        }
-      });
+    const tagKeySet = new Set(cleanTagList(tags.map(tagKeyName)));
+    triggerList.forEach(function(trigger) {
+      if (!tagKeySet.has(trigger.leafKey)) return;
+      if (!trigger.ancestorKeys.every(key => tagKeySet.has(key))) return;
+      const before = cleanTagList(folders[trigger.folderName] || []);
+      const after = cleanTagList([...before, ...tags]);
+      if (after.length !== before.length) {
+        added += after.length - before.length;
+        folders[trigger.folderName] = after;
+      }
     });
   });
 

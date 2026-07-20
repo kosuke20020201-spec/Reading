@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260720-chapter-child-sort-collapse-v177';
+const CACHE_NAME = 'reading-note-pwa-20260720-tag-folder-autoassign-hierarchy-fix-v178';
 const APP_SHELL = [
   './',
   './index.html',
