@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260720-tag-folder-mobile-width-fix-v179';
+const CACHE_NAME = 'reading-note-pwa-20260720-tag-folder-autoassign-hierarchy-fix-v178';
 const APP_SHELL = [
   './',
   './index.html',
