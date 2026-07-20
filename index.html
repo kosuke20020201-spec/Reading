@@ -99,12 +99,12 @@
   .tag-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag-btn { font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .tag-btn.active { background: var(--stone-800) !important; color: white !important; border-color: var(--stone-800) !important; }
-  .tag-folder-group { display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; padding: 0.16rem 0.28rem; border-radius: 999px; background: #fff7ed; border: 1px solid #fed7aa; }
+  .tag-folder-group { display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; padding: 0.16rem 0.28rem; border-radius: 1.1rem; background: #fff7ed; border: 1px solid #fed7aa; }
   .tag-folder-btn { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.65rem; border-radius: 999px; border: 1px solid #fdba74; background: white; color: #9a3412; cursor: pointer; font-family: inherit; }
   .tag-folder-btn.active { background: #9a3412; border-color: #9a3412; color: white; }
-  .tag-folder-inner-tags { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.28rem; }
-  .tag-folder-child-row { display: flex; flex-wrap: wrap; gap: 0.28rem; margin-left: calc(var(--depth, 0) * 0.9rem); }
-  .tag-folder-child-btn { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.58rem; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); cursor: pointer; font-family: inherit; }
+  .tag-folder-inner-tags { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+  .tag-folder-child-row { display: flex; flex-wrap: wrap; gap: 0.32rem; margin-left: calc(var(--depth, 0) * 0.9rem); padding-left: calc(var(--depth, 0) * 0.55rem); border-left: calc(var(--depth, 0) * 2px) solid #fed7aa; }
+  .tag-folder-child-btn { font-size: 0.7rem; font-weight: 700; padding: 0.22rem 0.6rem; line-height: 1.3; border-radius: 999px; border: 1px solid var(--stone-200); background: white; color: var(--stone-600); cursor: pointer; font-family: inherit; }
   .tag-folder-child-btn.active { background: var(--stone-800); border-color: var(--stone-800); color: white; }
   .tag-expanded-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: min(24vh, 9.5rem); overflow-y: auto; overscroll-behavior: contain; margin: 0.55rem 0 0; padding: 0.55rem 0.6rem; border: 1px solid var(--stone-200); border-radius: 0.9rem; background: rgba(255,255,255,0.76); box-shadow: inset 0 -12px 18px rgba(120,113,108,0.06); -webkit-overflow-scrolling: touch; touch-action: pan-y; }
   .tag-expanded-tags:empty { display: none; }
@@ -492,7 +492,10 @@
     .btn-add { align-self: flex-end; }
     .field-row { grid-template-columns: 1fr; }
     .tag-filters { row-gap: 0.55rem; padding-block: 0.18rem 0.22rem; }
-    .tag-folder-group { padding: 0.28rem 0.4rem; }
+    .tag-folder-group { width: 100%; box-sizing: border-box; align-items: flex-start; border-radius: 0.9rem; padding: 0.5rem 0.6rem; gap: 0.45rem; }
+    .tag-folder-inner-tags { width: 100%; gap: 0.45rem; }
+    .tag-folder-child-row { row-gap: 0.4rem; }
+    .tag-folder-btn, .tag-folder-child-btn { padding: 0.26rem 0.62rem; font-size: 0.72rem; }
     .tag-expanded-tags { max-height: 7.4rem; min-height: 2.7rem; padding: 0.72rem 0.65rem; }
     .view-mode-toggle { width: 100%; }
     .view-mode-btn { flex: 1; }
@@ -5062,6 +5065,13 @@ function bookSearchQueries(book, author) {
   ]);
 }
 
+// intitle:/inauthor: is Google Books-only field-search syntax. Other providers
+// (Rakuten, NDL, OpenLibrary, ...) don't understand it and will treat it as
+// literal text, so it must be filtered out before being sent to them.
+function isGoogleOnlyQuery(q) {
+  return /(^|\s)(intitle|inauthor):/i.test(String(q || ''));
+}
+
 function scoreBookCandidate(title, authors, book, author) {
   const wantedTitle = bookKey(book);
   const wantedAuthor = bookKey(author);
@@ -5117,7 +5127,7 @@ function ndlOpenSearchParamSets(book, author) {
     add(p);
   }
   bookSearchQueries(book, author).forEach(function(q) {
-    if (!q) return;
+    if (!q || isGoogleOnlyQuery(q)) return;
     const p = new URLSearchParams();
     p.set('cnt', '10');
     p.set('any', q);
@@ -5250,6 +5260,7 @@ async function fetchOpenLibraryBookInfo(book, author) {
   fieldParams.set('limit', '10');
   searches.push(fieldParams);
   bookSearchQueries(book, author).forEach(function(q) {
+    if (!q || isGoogleOnlyQuery(q)) return;
     const params = new URLSearchParams();
     params.set('q', q);
     params.set('limit', '10');
@@ -5380,7 +5391,7 @@ async function fetchRakutenEndpoint(path, book, author) {
     add(params);
   }
   bookSearchQueries(book, author).slice(0, 2).forEach(function(q) {
-    if (!q || /^isbn:/i.test(q)) return;
+    if (!q || /^isbn:/i.test(q) || isGoogleOnlyQuery(q)) return;
     const params = new URLSearchParams();
     params.set('title', q);
     params.set('hits', '10');
@@ -5617,6 +5628,7 @@ async function fetchOpenLibraryBookCandidates(book, author) {
   fieldParams.set('limit', '10');
   searches.push(fieldParams);
   bookSearchQueries(book, author).forEach(function(q) {
+    if (!q || isGoogleOnlyQuery(q)) return;
     const params = new URLSearchParams();
     params.set('q', q);
     params.set('limit', '10');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260720-rakuten-api-migration-fix-v175';
+const CACHE_NAME = 'reading-note-pwa-20260720-rakuten-query-syntax-fix-v176';
 const APP_SHELL = [
   './',
   './index.html',
