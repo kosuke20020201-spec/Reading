@@ -4008,10 +4008,10 @@ function rebuildChapterKnowledgeLinkCache() {
     byChapter.get(chapterId).push(entry);
   });
   byChapter.forEach(function(list, chapterId) {
-    byChapter.set(chapterId, sortExpandedRecords(list));
+    byChapter.set(chapterId, sortExpandedRecords(list, 'old'));
   });
   subChaptersByParent.forEach(function(list, chapterId) {
-    subChaptersByParent.set(chapterId, sortExpandedRecords(list));
+    subChaptersByParent.set(chapterId, sortExpandedRecords(list, 'old'));
   });
   chapterKnowledgeLinkCache = byChapter;
   chapterSubChaptersCache = subChaptersByParent;
@@ -4592,6 +4592,7 @@ function toggleShelfReorderMode() {
   shelfReorderMode = !shelfReorderMode;
   shelfReorderSelectedKey = '';
   bookOrderSelectedKey = '';
+  if (openBookKey) collapseChapterKnowledgeForKey(openBookKey);
   openBookKey = null;
   bookOverviewClosedKey = '';
   render();
@@ -4857,7 +4858,8 @@ function entryPageRange(entry) {
   return { start: Math.min(...pages), end: Math.max(...pages) };
 }
 
-function sortExpandedRecords(list) {
+function sortExpandedRecords(list, order) {
+  const dir = order || expandedRecordSort;
   return list.slice().sort(function(a,b) {
     const pageA = entryPageRange(a);
     const pageB = entryPageRange(b);
@@ -4865,12 +4867,12 @@ function sortExpandedRecords(list) {
     if (pageA && !pageB) return -1;
     if (pageA && pageB) {
       const startDiff = pageA.start - pageB.start;
-      if (startDiff !== 0) return expandedRecordSort === 'old' ? startDiff : -startDiff;
+      if (startDiff !== 0) return dir === 'old' ? startDiff : -startDiff;
       const endDiff = pageA.end - pageB.end;
-      if (endDiff !== 0) return expandedRecordSort === 'old' ? endDiff : -endDiff;
+      if (endDiff !== 0) return dir === 'old' ? endDiff : -endDiff;
     }
     const createdDiff = entryCreatedOrderValue(a) - entryCreatedOrderValue(b);
-    return expandedRecordSort === 'old' ? createdDiff : -createdDiff;
+    return dir === 'old' ? createdDiff : -createdDiff;
   });
 }
 
@@ -6822,6 +6824,7 @@ function setDisplayMode(mode) {
   if (displayMode === 'list') {
     shelfReorderMode = false;
     shelfReorderSelectedKey = '';
+    if (openBookKey) collapseChapterKnowledgeForKey(openBookKey);
     openBookKey = null;
     bookOverviewClosedKey = '';
   }
@@ -6900,6 +6903,23 @@ function spineDisplayTitle(title) {
   return chars.length > 24 ? chars.slice(0, 23).join('') + '…' : compact;
 }
 
+function collapseChapterKnowledgeForBook(book) {
+  if (!book) return;
+  const ids = chapterSummariesForBook(book).map(function(e) { return String(e.id); });
+  if (!ids.length) return;
+  let changed = false;
+  ids.forEach(function(id) {
+    if (expandedChapterKnowledgeIds.delete(id)) changed = true;
+  });
+  if (changed) saveExpandedChapterKnowledgeIds();
+}
+
+function collapseChapterKnowledgeForKey(key) {
+  if (!key) return;
+  const group = [...bookGroups().entries()].find(function(pair) { return pair[0] === key; });
+  if (group) collapseChapterKnowledgeForBook(group[1].book || '');
+}
+
 function toggleBookGroup(index) {
   if (bookOrderJustDragged) return;
   const group = document.getElementById(`grp-${index}`);
@@ -6911,6 +6931,7 @@ function toggleBookGroup(index) {
   openBookKey = nextOpenKey;
   openBookOverviewKey = shouldOpen ? (nextOpenKey || '') : '';
   bookOverviewClosedKey = '';
+  if (!shouldOpen) collapseChapterKnowledgeForBook(selectedBook);
   render();
   if (shouldOpen) {
     autoFetchBookInfoForOpenedBook(selectedBook, selectedAuthor);
