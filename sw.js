@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260726-fix-card-scroll-jump-v181';
+const CACHE_NAME = 'reading-note-pwa-20260726-remove-card-content-visibility-v182';
 const APP_SHELL = [
   './',
   './index.html',
