@@ -217,8 +217,8 @@
   .records-list-main { display: flex; flex-direction: column; gap: 1rem; padding-bottom: 2rem; }
   .record-book-section { display: grid; grid-template-columns: minmax(4.9rem, 7rem) minmax(0,1fr); align-items: stretch; border: 1px solid var(--stone-200); border-radius: 1rem; background: rgba(255,255,255,0.82); box-shadow: 0 1px 6px #0000000a; overflow: hidden; }
   .record-book-header { display: flex; flex-direction: column; align-items: center; gap: 0.55rem; padding: 0.75rem 0.55rem; background: linear-gradient(180deg, rgba(255,251,235,0.92), rgba(255,255,255,0.82)); border-right: 1px solid var(--stone-200); min-width: 0; }
-  .record-book-marker { position: relative; width: 2.4rem; height: 3.2rem; border-radius: 0.35rem 0.25rem 0.18rem 0.18rem; border: 1px solid var(--spine-edge, #4b2e21); background: linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 55%, var(--spine-bottom, #2f1f18)); color: var(--spine-ink, #fff4d6); box-shadow: inset 3px 0 5px rgba(255,255,255,0.18), inset -6px 0 9px rgba(0,0,0,0.3), 0 3px 8px #0000001a; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 900; writing-mode: vertical-rl; overflow: hidden; flex-shrink: 0; }
-  .record-book-marker.has-cover { width: 2.65rem; height: 3.75rem; border-radius: 0.28rem; border-color: rgba(41,37,36,0.18); background: var(--book-cover) center / cover no-repeat, linear-gradient(180deg, var(--stone-100), var(--stone-200)); color: transparent; writing-mode: horizontal-tb; box-shadow: 0 4px 10px rgba(41,37,36,0.18), inset 0 0 0 1px rgba(255,255,255,0.35); }
+  .record-book-marker { position: relative; width: 2.65rem; height: 3.75rem; border-radius: 0.35rem 0.25rem 0.18rem 0.18rem; border: 1px solid var(--spine-edge, #4b2e21); background: linear-gradient(180deg, var(--spine-top, #79513a), var(--spine-base, #5b3927) 55%, var(--spine-bottom, #2f1f18)); color: var(--spine-ink, #fff4d6); box-shadow: inset 3px 0 5px rgba(255,255,255,0.18), inset -6px 0 9px rgba(0,0,0,0.3), 0 3px 8px #0000001a; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 900; writing-mode: vertical-rl; overflow: hidden; flex-shrink: 0; }
+  .record-book-marker.has-cover { border-radius: 0.28rem; border-color: rgba(41,37,36,0.18); background: var(--book-cover) center / cover no-repeat, linear-gradient(180deg, var(--stone-100), var(--stone-200)); color: transparent; writing-mode: horizontal-tb; box-shadow: 0 4px 10px rgba(41,37,36,0.18), inset 0 0 0 1px rgba(255,255,255,0.35); }
   .record-book-marker.has-cover::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(255,255,255,0.28), transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.12), rgba(0,0,0,0.1)); pointer-events: none; }
   .record-book-heading { display: flex; flex-direction: column; align-items: center; gap: 0.28rem; min-width: 0; }
   .record-book-title { max-height: 12rem; font-size: 0.86rem; font-weight: 900; color: var(--stone-800); line-height: 1.22; overflow-wrap: anywhere; writing-mode: vertical-rl; text-orientation: mixed; overflow: hidden; }
@@ -520,8 +520,7 @@
     .record-floating-actions { width: calc(100vw - 2rem); }
     .record-book-section { grid-template-columns: minmax(3.9rem, 4.7rem) minmax(0,1fr); border-radius: 0.85rem; }
     .record-book-header { padding: 0.62rem 0.42rem; gap: 0.45rem; }
-    .record-book-marker { width: 2.05rem; height: 2.9rem; }
-    .record-book-marker.has-cover { width: 2.2rem; height: 3.25rem; }
+    .record-book-marker { width: 2.2rem; height: 3.25rem; }
     .record-book-title { max-height: 9.5rem; font-size: 0.76rem; }
     .record-book-meta { max-width: 4rem; font-size: 0.58rem; }
     .record-book-count { padding-inline: 0.42rem; font-size: 0.64rem; }
