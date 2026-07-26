@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260720-fix-cover-marker-layout-shift-v180';
+const CACHE_NAME = 'reading-note-pwa-20260726-fix-card-scroll-jump-v181';
 const APP_SHELL = [
   './',
   './index.html',

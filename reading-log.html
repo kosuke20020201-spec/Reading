@@ -229,7 +229,7 @@
   .record-book-lane { min-width: 0; overflow: hidden; }
   .record-book-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.65rem 0.85rem 0; }
   .record-book-cards { display: flex; flex-direction: row; gap: 0.75rem; padding: 0.75rem 0.85rem 0.9rem; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: thin; }
-  .record-book-cards .card { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; content-visibility: auto; contain-intrinsic-size: 34rem; }
+  .record-book-cards .card { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; content-visibility: auto; contain-intrinsic-size: auto 34rem; }
   .record-book-cards .chapter-record-group { flex: 0 0 clamp(17rem, 38vw, 25rem); max-width: 25rem; scroll-snap-align: start; }
   .record-book-cards .chapter-record-group .card { flex: 0 0 auto; max-width: none; scroll-snap-align: none; }
   .record-view-controls { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; padding: 0.5rem 0; }
@@ -266,7 +266,7 @@
   .book-info-choice-desc { margin-top: 0.35rem; font-size: 0.7rem; line-height: 1.55; color: var(--stone-400); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
-  .card { position: relative; min-width: 0; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; content-visibility: auto; contain-intrinsic-size: 34rem; }
+  .card { position: relative; min-width: 0; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; content-visibility: auto; contain-intrinsic-size: auto 34rem; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
