@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260726-remove-card-content-visibility-v182';
+const CACHE_NAME = 'reading-note-pwa-20260730-widen-desktop-container-v183';
 const APP_SHELL = [
   './',
   './index.html',
