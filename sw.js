@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260730-widen-desktop-container-v183';
+const CACHE_NAME = 'reading-note-pwa-20260730-chapter-review-checklist-v184';
 const APP_SHELL = [
   './',
   './index.html',

@@ -288,6 +288,22 @@
   .chapter-link-field[hidden] { display: none !important; }
   .chapter-link-status { min-height: 2.12rem; display: flex; align-items: center; padding: 0.48rem 0.62rem; border: 1px solid #bbf7d0; border-radius: 0.55rem; background: #f0fdf4; color: #047857; font-size: 0.74rem; font-weight: 800; line-height: 1.45; }
   .chapter-link-hint { margin: 0.35rem 0 0; color: var(--stone-400); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
+  .review-checklist-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .review-checklist-row { display: grid; grid-template-columns: auto 1fr 3.6rem auto; align-items: center; gap: 0.4rem; }
+  .review-checklist-row input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex-shrink: 0; accent-color: var(--amber-500, #f59e0b); }
+  .review-checklist-text { min-width: 0; border: 1px solid var(--stone-200); border-radius: 0.5rem; padding: 0.42rem 0.55rem; font-size: 0.85rem; font-family: inherit; }
+  .review-checklist-page { width: 3.6rem; min-width: 0; border: 1px solid var(--stone-200); border-radius: 0.5rem; padding: 0.42rem 0.4rem; font-size: 0.85rem; text-align: center; font-family: inherit; }
+  .review-checklist-remove { border: none; background: transparent; color: var(--stone-400); font-size: 1.1rem; line-height: 1; padding: 0.2rem 0.35rem; cursor: pointer; border-radius: 0.4rem; }
+  .review-checklist-remove:hover { background: var(--stone-100); color: #b91c1c; }
+  .review-checklist-add-btn { align-self: flex-start; margin-top: 0.5rem; border: 1px dashed var(--stone-300); background: var(--stone-50); color: var(--stone-500); font-weight: 700; font-size: 0.78rem; padding: 0.42rem 0.85rem; border-radius: 0.6rem; cursor: pointer; }
+  .review-checklist-add-btn:hover { background: var(--stone-100); }
+  .review-checklist-hint { margin: 0.45rem 0 0; color: var(--stone-400); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
+  .review-checklist-view-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.32rem; }
+  .review-checklist-view-item { display: flex; align-items: baseline; gap: 0.42rem; font-size: 0.86rem; line-height: 1.5; }
+  .review-checklist-view-item.done .review-checklist-view-text { text-decoration: line-through; color: var(--stone-400); }
+  .review-checklist-view-mark { flex-shrink: 0; }
+  .review-checklist-view-text { flex: 1; min-width: 0; word-break: break-word; }
+  .review-checklist-view-page { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; color: var(--amber-600, #b45309); background: var(--amber-50, #fffbeb); border-radius: 0.4rem; padding: 0.08rem 0.4rem; }
   .page-mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 0.38rem; }
   .page-mode-btn { min-height: 1.82rem; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-500); font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; }
   .page-mode-btn.active { border-color: var(--amber); background: var(--amber-light); color: #92400e; }
@@ -852,6 +868,12 @@
         <div class="chapter-link-status" id="chapterLinkStatus"></div>
         <p class="chapter-link-hint" id="chapterLinkHint"></p>
       </div>
+      <div class="field entry-only-field review-checklist-field" id="reviewChecklistField" hidden>
+        <label>📝 あとで見返すポイント</label>
+        <div class="review-checklist-list" id="reviewChecklistList"></div>
+        <button type="button" class="review-checklist-add-btn" onclick="addReviewChecklistRow()">＋ 項目を追加</button>
+        <p class="review-checklist-hint">細かく確認し直したい内容を箇条書きで。該当ページも書いておけます。</p>
+      </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
       <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
@@ -1099,7 +1121,7 @@ const NOTE_FIELD_CHAPTER_PROFILE = {
   showLessonWhenEmpty: false
 };
 const SHEET_CELL_ERROR_VALUES = new Set(['#ERROR!','#VALUE!','#REF!','#DIV/0!','#N/A','#NAME?','#NUM!','#NULL!']);
-const CLOUD_TEXT_FIELDS = ['book','author','page','title','content','lesson','supplement','aiSummary','chapterSummaryId'];
+const CLOUD_TEXT_FIELDS = ['book','author','page','title','content','lesson','supplement','aiSummary','chapterSummaryId','reviewChecklist'];
 const CLOUD_TEXT_ARRAY_FIELDS = ['tags','fixedTags'];
 const SPINE_THEMES = {
   classic: [
@@ -1891,6 +1913,80 @@ function getSelectedChapterSummaryId() {
   return normalizeChapterSummaryId(select && select.value);
 }
 
+function parseReviewChecklist(value) {
+  if (Array.isArray(value)) return value.filter(item => item && (item.text || item.page));
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter(item => item && (item.text || item.page)) : [];
+    } catch (e) { return []; }
+  }
+  return [];
+}
+
+function reviewChecklistRowHTML(item) {
+  item = item || {};
+  return `<div class="review-checklist-row" data-checklist-row>
+    <input type="checkbox" class="review-checklist-check"${item.done ? ' checked' : ''} onchange="queueEntryDraftSave()">
+    <input type="text" class="review-checklist-text" placeholder="見返す内容…" value="${esc(item.text || '')}" oninput="queueEntryDraftSave()">
+    <input type="text" inputmode="numeric" class="review-checklist-page" placeholder="p." value="${esc(item.page || '')}" oninput="queueEntryDraftSave()">
+    <button type="button" class="review-checklist-remove" onclick="removeReviewChecklistRow(this)" aria-label="この項目を削除">×</button>
+  </div>`;
+}
+
+function addReviewChecklistRow(item) {
+  const list = document.getElementById('reviewChecklistList');
+  if (!list) return;
+  list.insertAdjacentHTML('beforeend', reviewChecklistRowHTML(item || {}));
+  if (!item) {
+    const rows = list.querySelectorAll('[data-checklist-row]');
+    const lastRow = rows[rows.length - 1];
+    const textInput = lastRow && lastRow.querySelector('.review-checklist-text');
+    if (textInput) textInput.focus();
+  }
+  queueEntryDraftSave();
+}
+
+function removeReviewChecklistRow(btn) {
+  const row = btn && btn.closest('[data-checklist-row]');
+  if (row) row.remove();
+  queueEntryDraftSave();
+}
+
+function collectReviewChecklistFromForm() {
+  const rows = [...document.querySelectorAll('#reviewChecklistList [data-checklist-row]')];
+  return rows.map(function(row) {
+    const text = row.querySelector('.review-checklist-text')?.value.trim() || '';
+    const page = row.querySelector('.review-checklist-page')?.value.trim() || '';
+    const done = !!row.querySelector('.review-checklist-check')?.checked;
+    return { text, page, done };
+  }).filter(item => item.text || item.page);
+}
+
+function setReviewChecklistInput(value) {
+  const list = document.getElementById('reviewChecklistList');
+  if (!list) return;
+  const items = parseReviewChecklist(value);
+  list.innerHTML = items.map(reviewChecklistRowHTML).join('');
+}
+
+function reviewChecklistDisplayHTML(e) {
+  const items = parseReviewChecklist(e && e.reviewChecklist);
+  if (!items.length) return '';
+  const rows = items.map(function(item) {
+    const pageLabel = item.page ? `<span class="review-checklist-view-page">p.${esc(item.page)}</span>` : '';
+    return `<li class="review-checklist-view-item${item.done ? ' done' : ''}">
+      <span class="review-checklist-view-mark">${item.done ? '✅' : '⬜'}</span>
+      <span class="review-checklist-view-text">${esc(item.text)}</span>
+      ${pageLabel}
+    </li>`;
+  }).join('');
+  return `<div class="section-block review-checklist-view-block">
+    <div class="section-label">📝 あとで見返すポイント</div>
+    <ul class="review-checklist-view-list">${rows}</ul>
+  </div>`;
+}
+
 function updateChapterLinkChoices() {
   const field = document.getElementById('chapterLinkField');
   const select = document.getElementById('fChapterSummaryId');
@@ -1958,6 +2054,8 @@ function updateNoteFieldProfile() {
   if (lessonField && lesson) {
     lessonField.style.display = profile.showLessonWhenEmpty || lesson.value.trim() ? '' : 'none';
   }
+  const reviewChecklistField = document.getElementById('reviewChecklistField');
+  if (reviewChecklistField) reviewChecklistField.hidden = !isChapterSummaryTypes(getSelectedNoteTypes());
   updateChapterLinkChoices();
 }
 
@@ -7032,6 +7130,7 @@ function cardHTML(e, options) {
     ${pills?`<div class="card-tags">${pills}</div>`:''}
     <div class="card-sections">
       ${sec('content-bg','📖',fieldProfile.contentCardLabel,e.content)}
+      ${reviewChecklistDisplayHTML(e)}
       ${sec('lesson-bg','💡',fieldProfile.lessonCardLabel,e.lesson)}
       ${sec('supplement-bg','🔍',fieldProfile.supplementCardLabel,e.supplement)}
       ${sketchHTML}
@@ -8095,6 +8194,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   setPageFormValue('');
   setNoteTypeInputs(NOTE_TYPE_DEFAULTS);
   setChapterSummaryInput('');
+  setReviewChecklistInput('');
   currentFixedTags = [];
   currentDrawings  = [];
   currentImages    = [];
@@ -8110,6 +8210,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
       document.getElementById('fTitle').value      = e.title||'';
       setNoteTypeInputs(entryNoteTypes(e));
       setChapterSummaryInput(e.chapterSummaryId);
+      setReviewChecklistInput(e.reviewChecklist);
       document.getElementById('fContent').value    = e.content||'';
       document.getElementById('fLesson').value     = e.lesson||'';
       document.getElementById('fSupplement').value = e.supplement||'';
@@ -8263,6 +8364,7 @@ async function saveEntry() {
     content:    document.getElementById('fContent').value,
     lesson:     document.getElementById('fLesson').value,
     supplement: document.getElementById('fSupplement').value,
+    reviewChecklist: JSON.stringify(collectReviewChecklistFromForm()),
     tags,
     drawings:   currentDrawings,
     images:     [],
@@ -8527,6 +8629,7 @@ function collectEntryDraftData() {
   data.pageMode = currentPageInputMode;
   data.fPage = currentPageFormValue();
   data.chapterSummaryId = getSelectedChapterSummaryId();
+  data.reviewChecklist = collectReviewChecklistFromForm();
   return data;
 }
 
@@ -8547,6 +8650,7 @@ function applyEntryDraftData(data) {
   }
   setNoteTypeInputs(data.noteTypes || data.fNoteType || NOTE_TYPE_DEFAULTS);
   setChapterSummaryInput(data.chapterSummaryId || data.fChapterSummaryId || '');
+  setReviewChecklistInput(data.reviewChecklist || []);
   currentFixedTags = getBookFixedTags(document.getElementById('fBook').value || '');
   renderFixedTagChips();
   updateNoteFieldProfile();
