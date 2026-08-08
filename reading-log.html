@@ -3254,7 +3254,7 @@ function splitSupplementIntoChecklistItems(text) {
   const raw = String(text == null ? '' : text);
   if (!raw.trim()) return [];
   const hasNewline = /\r\n|\r|\n/.test(raw.trim());
-  const parts = hasNewline ? raw.split(/\r\n|\r|\n/) : raw.split('。');
+  const parts = hasNewline ? raw.split(/\r\n|\r|\n/) : raw.split('、');
   return parts.map(s => s.trim()).filter(Boolean).map(t => ({ text: t, page: '', done: false }));
 }
 

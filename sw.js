@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260730-supplement-checklist-migration-v186';
+const CACHE_NAME = 'reading-note-pwa-20260730-touten-split-fix-v187';
 const APP_SHELL = [
   './',
   './index.html',
