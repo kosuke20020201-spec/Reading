@@ -868,16 +868,16 @@
         <div class="chapter-link-status" id="chapterLinkStatus"></div>
         <p class="chapter-link-hint" id="chapterLinkHint"></p>
       </div>
+      <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
+      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field" id="supplementField"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field entry-only-field review-checklist-field" id="reviewChecklistField" hidden>
         <label>📝 あとで見返すポイント</label>
         <div class="review-checklist-list" id="reviewChecklistList"></div>
         <button type="button" class="review-checklist-add-btn" onclick="addReviewChecklistRow()">＋ 項目を追加</button>
         <p class="review-checklist-hint">細かく確認し直したい内容を箇条書きで。該当ページも書いておけます。</p>
       </div>
-      <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
-      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field">
         <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
         <div class="fixed-tag-chips" id="fixedTagChips"></div>
@@ -2055,7 +2055,10 @@ function updateNoteFieldProfile() {
     lessonField.style.display = profile.showLessonWhenEmpty || lesson.value.trim() ? '' : 'none';
   }
   const reviewChecklistField = document.getElementById('reviewChecklistField');
-  if (reviewChecklistField) reviewChecklistField.hidden = !isChapterSummaryTypes(getSelectedNoteTypes());
+  const supplementField = document.getElementById('supplementField');
+  const isChapterType = isChapterSummaryTypes(getSelectedNoteTypes());
+  if (reviewChecklistField) reviewChecklistField.hidden = !isChapterType;
+  if (supplementField) supplementField.style.display = isChapterType ? 'none' : '';
   updateChapterLinkChoices();
 }
 
@@ -3247,6 +3250,30 @@ function syncEntryFixedTags() {
 }
 
 // 旧形式（e.fixedTags）→ BOOK_META_KEY へ自動マイグレーション
+function splitSupplementIntoChecklistItems(text) {
+  const raw = String(text == null ? '' : text);
+  if (!raw.trim()) return [];
+  const hasNewline = /\r\n|\r|\n/.test(raw.trim());
+  const parts = hasNewline ? raw.split(/\r\n|\r|\n/) : raw.split('。');
+  return parts.map(s => s.trim()).filter(Boolean).map(t => ({ text: t, page: '', done: false }));
+}
+
+function migrateChapterSupplementToChecklist() {
+  let changed = false;
+  entries = entries.map(function(e) {
+    if (!e || !isChapterSummaryTypes(entryStoredNoteTypes(e))) return e;
+    const supplementText = (e.supplement || '').trim();
+    if (!supplementText) return e;
+    if (parseReviewChecklist(e.reviewChecklist).length) return e;
+    const items = splitSupplementIntoChecklistItems(supplementText);
+    if (!items.length) return e;
+    changed = true;
+    return { ...e, reviewChecklist: JSON.stringify(items), supplement: '', updatedAt: new Date().toISOString() };
+  });
+  if (changed) persist();
+  return changed;
+}
+
 function migrateOldFixedTags() {
   bookFixedTagsCache.clear();
   const meta = getBookMeta();
@@ -9841,7 +9868,7 @@ document.getElementById('tagExpandedTags')?.addEventListener('click', e => {
 });
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
-load(); migrateOldFixedTags(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud(); if (hasPendingSync()) scheduleCloudSync(0);
+load(); migrateOldFixedTags(); migrateChapterSupplementToChecklist(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud(); if (hasPendingSync()) scheduleCloudSync(0);
 </script>
 </body>
 </html>
