@@ -326,6 +326,10 @@
   .chapter-linked-knowledge-empty { margin: 0.5rem 0 0; color: var(--stone-500); font-size: 0.72rem; font-weight: 700; line-height: 1.6; }
   .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
+  .card-book-jump { display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.35rem; padding: 0.22rem 0.65rem; border-radius: 999px; background: var(--amber-light); border: 1px solid var(--amber-border); color: #92400e; font-size: 0.72rem; font-weight: 700; text-decoration: none; width: fit-content; transition: background 0.12s, border-color 0.12s; }
+  .card-book-jump:hover { background: #fde68a; border-color: #fbbf24; }
+  .chapter-linked-knowledge-item-jump { display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.4rem; font-size: 0.68rem; font-weight: 800; color: #92400e; text-decoration: none; }
+  .chapter-linked-knowledge-item-jump:hover { text-decoration: underline; }
   .card-date { font-size: 0.7rem; color: var(--stone-300); margin-top: 0.1rem; }
   .card-actions { display: flex; gap: 0.2rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
   .card:hover .card-actions, .card-actions:focus-within { opacity: 1; }
@@ -2419,6 +2423,49 @@ function mergeBookMetaValues(primary, fallback) {
     infoUrl: left.infoUrl || right.infoUrl,
     fetchedAt: left.fetchedAt || right.fetchedAt
   });
+}
+
+function firstEntryPageNumber(pageValue) {
+  const parsed = parseStoredPageValue(pageValue);
+  return parsed.numbers && parsed.numbers[0] ? parsed.numbers[0] : '';
+}
+
+// 記録（book, page）から、可能な範囲で「元の本の該当ページ」に飛べるURLを作る。
+// 保存済みの書誌情報(infoUrl)があればそれを使い、Google Booksのリンクであれば
+// pg=PA<ページ数> を付与してプレビューの該当ページへ直接ジャンプさせる。
+// 書誌情報が無い場合は、書名・著者・ページ数でのGoogle Books検索にフォールバックする。
+function bookJumpUrlForEntry(e) {
+  const book = e && e.book;
+  if (!book) return '';
+  const meta = getBookMetaInfo(book);
+  const pageNum = firstEntryPageNumber(e && e.page);
+  const infoUrl = String(meta.infoUrl || '').trim();
+  if (infoUrl) {
+    if (pageNum) {
+      try {
+        const u = new URL(infoUrl);
+        if (/(^|\.)books\.google\./.test(u.hostname)) {
+          u.searchParams.set('pg', 'PA' + pageNum);
+          return u.toString();
+        }
+      } catch (err) { /* URLとして不正な場合はそのままinfoUrlを使う */ }
+    }
+    return infoUrl;
+  }
+  const author = (meta.authors && meta.authors[0]) || e.author || '';
+  const q = [book, author].filter(Boolean).join(' ');
+  if (!q) return '';
+  const query = pageNum ? (q + ' ' + pageNum + 'ページ') : q;
+  return 'https://www.google.com/search?tbm=bks&q=' + encodeURIComponent(query);
+}
+
+function bookJumpLinkHTML(e, options) {
+  options = options || {};
+  const url = bookJumpUrlForEntry(e);
+  if (!url) return '';
+  const cls = options.compact ? 'chapter-linked-knowledge-item-jump' : 'card-book-jump';
+  const label = options.compact ? '📖 該当箇所' : '📖 本の該当箇所を開く';
+  return `<a class="${cls}" href="${esc(url)}" target="_blank" rel="noopener">${label}</a>`;
 }
 
 function getBookMetaInfo(book) {
@@ -7227,6 +7274,7 @@ function chapterKnowledgeMemosHTML(chapter) {
           <div class="chapter-linked-knowledge-item-head">
             <div class="chapter-linked-knowledge-item-title">${esc(entry.title || '無題の知識メモ')}</div>
             ${entry.page ? `<div class="chapter-linked-knowledge-item-page">${esc(entry.page)}</div>` : ''}
+            ${bookJumpLinkHTML(entry, {compact:true})}
           </div>
           ${chapterKnowledgeMemoSectionsHTML(entry)}
         </article>`;
@@ -7269,6 +7317,7 @@ function cardHTML(e, options) {
         <div class="card-note-meta">${noteTypeBadgesHTML(e)}${chapterKnowledgeLinkBadgeHTML(e)}</div>
         ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
         ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
+        ${bookJumpLinkHTML(e)}
         ${e.createdAt?`<div class="card-date">${esc(e.createdAt)}</div>`:''}
         ${entrySyncBadge(e)}
       </div>
