@@ -498,6 +498,21 @@
   .tag-folder-chip button { border:0; background:none; cursor:pointer; color:var(--stone-400); font:inherit; line-height:1; padding:0; }
   .tag-folder-chip-remove { width:1.1rem; height:1.1rem; border-radius:999px !important; color:var(--stone-400) !important; font-weight:900 !important; cursor:pointer !important; }
   .tag-folder-empty { font-size:0.78rem; color:var(--stone-400); padding:0.8rem; border:1px dashed var(--stone-200); border-radius:0.75rem; }
+  .today-pick-panel { margin: 0.9rem 0 1.1rem; border: 1px solid var(--amber-border); border-radius: 1rem; background: linear-gradient(135deg,#fffbeb,#fff7ed); padding: 0.9rem 1rem; }
+  .today-pick-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem; }
+  .today-pick-title { font-size:0.9rem; font-weight:800; color:#9a3412; display:flex; align-items:center; gap:0.4rem; white-space:nowrap; }
+  .today-pick-controls { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; }
+  .today-pick-select { padding:0.35rem 0.6rem; border-radius:0.6rem; border:1px solid #fdba74; background:white; font:inherit; font-size:0.74rem; color:#9a3412; max-width:11rem; }
+  .today-pick-shuffle { padding:0.35rem 0.75rem; border-radius:999px; border:1px solid #fdba74; background:white; color:#9a3412; font-weight:700; font-size:0.74rem; cursor:pointer; font-family:inherit; }
+  .today-pick-shuffle:hover:not(:disabled) { background:#fed7aa; }
+  .today-pick-shuffle:disabled { opacity:0.4; cursor:default; }
+  .today-pick-empty { font-size:0.8rem; color:var(--stone-400); padding:0.6rem 0.2rem; }
+  .today-pick-body .card { box-shadow:none; }
+  @media (max-width: 640px) {
+    .today-pick-panel { padding: 0.7rem 0.75rem; }
+    .today-pick-title { font-size: 0.82rem; }
+    .today-pick-select { max-width: 8.5rem; }
+  }
 
   .tc-0{background:#fef3c7;color:#92400e} .tc-1{background:#e0f2fe;color:#0c4a6e}
   .tc-2{background:#d1fae5;color:#065f46} .tc-3{background:#ffe4e6;color:#9f1239}
@@ -817,6 +832,8 @@
   <div class="note-type-filter-row" id="noteTypeFilter" aria-label="ノート種別フィルター"></div>
   </div>
 
+  <div class="today-pick-panel" id="todayPickPanel"></div>
+
   <p class="results-count" id="resultsCount" style="display:none"></p>
   <div class="book-move-status" id="bookMoveStatus"></div>
   <div id="cardsContainer"></div>
@@ -1036,7 +1053,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'tag-auto-folder v162';
+const APP_VERSION   = 'today-pick-widget v163';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1076,6 +1093,8 @@ const BOOK_INFO_FETCH_TIMEOUT_MS = 6500;
 const TAG_FOLDERS_KEY = 'reading_log_tag_folders';
 const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
 const TAG_FOLDER_DELETED_KEY = 'reading_log_tag_folder_deleted';
+const TODAY_PICK_FOLDER_KEY = 'reading_log_today_pick_folder';
+const TODAY_PICK_STATE_KEY = 'reading_log_today_pick_state_v1';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
@@ -1148,6 +1167,8 @@ const SPINE_THEMES = {
 };
 
 let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', activeNoteTypes = [], editingId = null, pendingAiId = null;
+let todayPickFolder = localStorage.getItem(TODAY_PICK_FOLDER_KEY) || '';
+let todayPickRenderedKey = '';
 let currentDrawings = [], currentImages = [], currentMediaKinds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentPageInputMode = 'range';
 let currentFixedTags = [];
@@ -6693,6 +6714,107 @@ function expandedRecordsForGroup(group) {
 }
 
 // ── Render ─────────────────────────────────────────
+function localDateStr(d) {
+  d = d || new Date();
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+}
+
+function seededPickIndex(seedStr, length) {
+  if (!length) return -1;
+  let h = 0;
+  for (let i = 0; i < seedStr.length; i++) { h = (h * 31 + seedStr.charCodeAt(i)) >>> 0; }
+  return h % length;
+}
+
+function todayPickFolderOptions() {
+  const tagSet = allTagSet();
+  return topFolderPaths().filter(name => folderTagsForPath(name).some(tag => tagSet.has(tag)));
+}
+
+function candidateEntriesForTodayPick(folderPath) {
+  if (!folderPath) return entries.slice();
+  const tags = folderFilterTagsForPath(folderPath, allTagSet());
+  if (!tags.length) return [];
+  return entries.filter(e => tags.some(tag => entryHasTag(e, tag)));
+}
+
+function readTodayPickState() {
+  try { return JSON.parse(localStorage.getItem(TODAY_PICK_STATE_KEY) || 'null'); }
+  catch(e) { return null; }
+}
+
+function resolveTodayPick(folderPath, forceReroll) {
+  const dateStr = localDateStr();
+  const candidates = candidateEntriesForTodayPick(folderPath);
+  if (!candidates.length) return null;
+  const state = readTodayPickState();
+  const sameContext = !!(state && state.date === dateStr && state.folder === folderPath);
+  if (!forceReroll && sameContext) {
+    const found = candidates.find(e => String(e.id) === String(state.entryId));
+    if (found) return found;
+  }
+  let idx;
+  if (forceReroll) {
+    idx = Math.floor(Math.random() * candidates.length);
+    if (candidates.length > 1 && sameContext) {
+      let guard = 0;
+      while (String(candidates[idx].id) === String(state.entryId) && guard < 20) {
+        idx = Math.floor(Math.random() * candidates.length);
+        guard++;
+      }
+    }
+  } else {
+    idx = seededPickIndex(dateStr + '|' + folderPath, candidates.length);
+  }
+  const picked = candidates[idx];
+  localStorage.setItem(TODAY_PICK_STATE_KEY, JSON.stringify({date: dateStr, folder: folderPath, entryId: picked.id}));
+  return picked;
+}
+
+function setTodayPickFolder(folderPath) {
+  todayPickFolder = folderPath || '';
+  localStorage.setItem(TODAY_PICK_FOLDER_KEY, todayPickFolder);
+  todayPickRenderedKey = '';
+  renderTodayPick();
+}
+
+function shuffleTodayPick() {
+  resolveTodayPick(todayPickFolder, true);
+  todayPickRenderedKey = '';
+  renderTodayPick();
+}
+
+function renderTodayPick() {
+  const panel = document.getElementById('todayPickPanel');
+  if (!panel) return;
+  const folderOpts = todayPickFolderOptions();
+  if (todayPickFolder && !folderOpts.includes(todayPickFolder)) todayPickFolder = '';
+  const picked = entries.length ? resolveTodayPick(todayPickFolder, false) : null;
+  const renderKey = todayPickFolder + '|' + (picked ? picked.id : '') + '|' + entries.length;
+  if (renderKey === todayPickRenderedKey) return;
+  todayPickRenderedKey = renderKey;
+  const selectHTML = `<select class="today-pick-select" id="todayPickFolderSelect" onchange="setTodayPickFolder(this.value)">
+    <option value=""${todayPickFolder === '' ? ' selected' : ''}>すべてのジャンル</option>
+    ${folderOpts.map(name => `<option value="${esc(name)}"${todayPickFolder === name ? ' selected' : ''}>${esc(folderDisplayName(name))}</option>`).join('')}
+  </select>`;
+  const bodyHTML = picked
+    ? cardHTML(picked)
+    : `<div class="today-pick-empty">${entries.length ? 'このジャンルにはまだ記録がありません。' : 'まだ記録がありません。まずは1件追加してみましょう。'}</div>`;
+  panel.innerHTML = `
+    <div class="today-pick-head">
+      <div class="today-pick-title">🔀 今日のふりかえりメモ</div>
+      <div class="today-pick-controls">
+        ${selectHTML}
+        <button type="button" class="today-pick-shuffle" onclick="shuffleTodayPick()"${picked ? '' : ' disabled'}>🎲 別の1件</button>
+      </div>
+    </div>
+    <div class="today-pick-body">${bodyHTML}</div>
+  `;
+  observeLazyImages();
+  verifyBookCoverImages();
+}
+
 function render() {
   resetRenderCaches();
   const tags=allTags(),groups=bookGroups();
@@ -6715,6 +6837,7 @@ function render() {
   }
   const folderCount = tagFolderNames().length;
   document.getElementById('headerMeta').textContent=`${entries.length}件の記録 · ${groups.size}冊 · ${tags.length}個のタグ${folderCount ? ` · ${folderCount}フォルダ` : ''}`;
+  renderTodayPick();
   const shelfModeBtn = document.getElementById('viewModeShelfBtn');
   const listModeBtn = document.getElementById('viewModeListBtn');
   if (shelfModeBtn) shelfModeBtn.classList.toggle('active', displayMode === 'shelf');

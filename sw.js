@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260730-touten-split-fix-v187';
+const CACHE_NAME = 'reading-note-pwa-20260821-today-pick-v188';
 const APP_SHELL = [
   './',
   './index.html',
