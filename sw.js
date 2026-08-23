@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260823-furigana-fix-v194';
+const CACHE_NAME = 'reading-note-pwa-20260823-bigger-text-v195';
 const APP_SHELL = [
   './',
   './index.html',
