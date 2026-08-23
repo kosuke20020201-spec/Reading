@@ -515,6 +515,12 @@
   .today-pick-shuffle { padding:0.35rem 0.75rem; border-radius:999px; border:1px solid #fdba74; background:white; color:#9a3412; font-weight:700; font-size:0.74rem; cursor:pointer; font-family:inherit; }
   .today-pick-shuffle:hover:not(:disabled) { background:#fed7aa; }
   .today-pick-shuffle:disabled { opacity:0.4; cursor:default; }
+  .today-pick-hide-btn { width:1.9rem; height:1.9rem; border-radius:999px; border:1px solid #fdba74; background:white; color:#9a3412; font-size:0.78rem; font-weight:800; cursor:pointer; font-family:inherit; line-height:1; }
+  .today-pick-hide-btn:hover { background:#fed7aa; }
+  .today-pick-head-collapsed { margin-bottom:0; }
+  .today-pick-title-muted { color:#b45309; opacity:0.75; }
+  .today-pick-show-btn { padding:0.35rem 0.75rem; border-radius:999px; border:1px solid #fdba74; background:white; color:#9a3412; font-weight:700; font-size:0.74rem; cursor:pointer; font-family:inherit; }
+  .today-pick-show-btn:hover { background:#fed7aa; }
   .today-pick-empty { font-size:0.8rem; color:var(--stone-400); padding:0.6rem 0.2rem; }
   .today-pick-body .card { box-shadow:none; }
   @media (max-width: 640px) {
@@ -1104,6 +1110,7 @@ const TAG_FOLDER_ORDER_KEY = 'reading_log_tag_folder_order';
 const TAG_FOLDER_DELETED_KEY = 'reading_log_tag_folder_deleted';
 const TODAY_PICK_FOLDER_KEY = 'reading_log_today_pick_folder';
 const TODAY_PICK_STATE_KEY = 'reading_log_today_pick_state_v1';
+const TODAY_PICK_HIDDEN_KEY = 'reading_log_today_pick_hidden';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
@@ -1177,6 +1184,7 @@ const SPINE_THEMES = {
 
 let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', activeNoteTypes = [], editingId = null, pendingAiId = null;
 let todayPickFolder = localStorage.getItem(TODAY_PICK_FOLDER_KEY) || '';
+let todayPickHidden = localStorage.getItem(TODAY_PICK_HIDDEN_KEY) === '1';
 let todayPickRenderedKey = '';
 let currentDrawings = [], currentImages = [], currentMediaKinds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentPageInputMode = 'range';
@@ -6794,9 +6802,27 @@ function shuffleTodayPick() {
   renderTodayPick();
 }
 
+function toggleTodayPickVisibility() {
+  todayPickHidden = !todayPickHidden;
+  localStorage.setItem(TODAY_PICK_HIDDEN_KEY, todayPickHidden ? '1' : '0');
+  todayPickRenderedKey = '';
+  renderTodayPick();
+}
+
 function renderTodayPick() {
   const panel = document.getElementById('todayPickPanel');
   if (!panel) return;
+  if (todayPickHidden) {
+    const renderKey = 'hidden';
+    if (renderKey === todayPickRenderedKey) return;
+    todayPickRenderedKey = renderKey;
+    panel.innerHTML = `
+    <div class="today-pick-head today-pick-head-collapsed">
+      <div class="today-pick-title today-pick-title-muted">🔀 今日のふりかえりメモ</div>
+      <button type="button" class="today-pick-show-btn" onclick="toggleTodayPickVisibility()">表示する</button>
+    </div>`;
+    return;
+  }
   const folderOpts = todayPickFolderOptions();
   if (todayPickFolder && !folderOpts.includes(todayPickFolder)) todayPickFolder = '';
   const picked = entries.length ? resolveTodayPick(todayPickFolder, false) : null;
@@ -6816,6 +6842,7 @@ function renderTodayPick() {
       <div class="today-pick-controls">
         ${selectHTML}
         <button type="button" class="today-pick-shuffle" onclick="shuffleTodayPick()"${picked ? '' : ' disabled'}>🎲 別の1件</button>
+        <button type="button" class="today-pick-hide-btn" onclick="toggleTodayPickVisibility()" title="非表示にする" aria-label="今日のふりかえりメモを非表示にする">✕</button>
       </div>
     </div>
     <div class="today-pick-body">${bodyHTML}</div>
