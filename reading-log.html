@@ -347,6 +347,8 @@
   .section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.2rem; }
   .section-text { font-size: 0.82rem; line-height: 1.65; white-space: normal; overflow-wrap: anywhere; }
   .record-line { display: block; min-height: 1.65em; padding-left: calc(var(--indent, 0) * 1em); white-space: pre-wrap; }
+  .record-line ruby { ruby-position: over; }
+  .record-line rt { font-size: 0.55em; font-weight: 600; color: var(--stone-400); letter-spacing: 0; }
   .section-text strong { font-weight: 900; color: var(--stone-800); }
   .section-text mark { background: linear-gradient(transparent 42%, #fde68a 42%); color: inherit; padding: 0 0.08em; border-radius: 0.12rem; }
   .content-bg { background: var(--stone-50); } .content-bg .section-text { color: var(--stone-600); }
@@ -399,6 +401,7 @@
   .text-format-btn-indent { color: #0f766e; }
   .text-format-btn-marker { color: #92400e; background: linear-gradient(transparent 48%, #fde68a 48%); }
   .text-format-btn-underline { text-decoration: underline; text-underline-offset: 0.15em; }
+  .text-format-btn-ruby { color: #7c3aed; font-family: 'Noto Serif JP', serif; }
   .field .note-type-choice input { width: 1.05rem; height: 1.05rem; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .book-wide-edit-note { display: none; margin: -0.2rem 0 0; padding: 0.65rem 0.75rem; border: 1px solid var(--amber-border); border-radius: 0.75rem; background: #fffbeb; color: #92400e; font-size: 0.74rem; line-height: 1.65; font-weight: 700; }
   .modal-overlay.book-wide-edit .book-wide-edit-note { display: block; }
@@ -901,9 +904,9 @@
         <p class="chapter-link-hint" id="chapterLinkHint"></p>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
-      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field" id="supplementField"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field" id="supplementField"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
       <div class="field entry-only-field review-checklist-field" id="reviewChecklistField" hidden>
         <label>📝 あとで見返すポイント</label>
         <div class="review-checklist-list" id="reviewChecklistList"></div>
@@ -8773,6 +8776,10 @@ function recordLineIndent(line) {
 
 function formatRecordInlineText(text) {
   let html = esc(text);
+  // ふりがな記法（漢字[かんじ]）は他の装飾（**太字**など）でタグが入る前、
+  // まだプレーンテキストの段階で変換しないと、挿入済みのHTMLタグを巻き込んで誤変換してしまう。
+  // 読みがな側はひらがな/カタカナのみに限定し、配列表記の a[0] のような文字列と衝突しないようにする。
+  html = html.replace(/([^\s\[\]*_=]{1,20})\[([\u3040-\u309F\u30A0-\u30FFー]{1,20})\]/g, '<ruby>$1<rt>$2</rt></ruby>');
   html = html.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__([\s\S]+?)__/g, '<u>$1</u>');
   html = html.replace(/==([\s\S]+?)==/g, '<mark>$1</mark>');
@@ -8819,10 +8826,46 @@ function applyTextareaFormat(targetId, action) {
   queueEntryDraftSave();
 }
 
+function applyTextareaRuby(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el || typeof el.selectionStart !== 'number') return;
+  const value = el.value || '';
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const selected = value.slice(start, end);
+  if (!selected) {
+    showToast('ふりがなを振りたい文字を選択してください');
+    el.focus();
+    return;
+  }
+  const existing = selected.match(/^([^\s\[\]]+)\[([\u3040-\u309F\u30A0-\u30FFー]*)\]$/);
+  let nextValue, nextStart, nextEnd;
+  if (existing) {
+    // すでにふりがなが付いている選択範囲を選び直した場合は解除する
+    const base = existing[1];
+    nextValue = value.slice(0, start) + base + value.slice(end);
+    nextStart = start;
+    nextEnd = start + base.length;
+  } else {
+    const reading = prompt('「' + selected + '」の読みがなを入力してください', '');
+    if (reading === null) { el.focus(); return; }
+    const trimmed = reading.trim();
+    if (!trimmed) { el.focus(); return; }
+    const wrapped = selected + '[' + trimmed + ']';
+    nextValue = value.slice(0, start) + wrapped + value.slice(end);
+    nextStart = start;
+    nextEnd = start + wrapped.length;
+  }
+  el.value = nextValue;
+  focusAndSelect(el, nextStart, nextEnd);
+  queueEntryDraftSave();
+}
+
 function selectedTextAsTag(text) {
   return String(text || '')
     .replace(/\*\*/g, '')
     .replace(/__/g, '')
+    .replace(/([^\s\[\]]+)\[([^\s\[\]]+)\]/g, '$1')
     .replace(/==/g, '')
     .replace(/[,\uFF0C]/g, '、')
     .replace(/\s+/g, ' ')
@@ -9984,6 +10027,7 @@ document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
     if (action === 'tag') addSelectionToTags(targetId);
     else if (action === 'indent' || action === 'outdent') applyTextareaIndent(targetId, action === 'indent');
     else if (action === 'bold' || action === 'mark' || action === 'underline') applyTextareaFormat(targetId, action);
+    else if (action === 'ruby') applyTextareaRuby(targetId);
   });
 });
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);

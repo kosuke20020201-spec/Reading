@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260823-today-pick-hide-v192';
+const CACHE_NAME = 'reading-note-pwa-20260823-furigana-v193';
 const APP_SHELL = [
   './',
   './index.html',
