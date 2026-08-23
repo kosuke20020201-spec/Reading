@@ -326,6 +326,7 @@
   .chapter-linked-knowledge-empty { margin: 0.5rem 0 0; color: var(--stone-500); font-size: 0.72rem; font-weight: 700; line-height: 1.6; }
   .card-title-note { font-size: 0.88rem; font-weight: 700; color: var(--stone-700); margin-bottom: 0.1rem; }
   .card-page { font-size: 0.78rem; font-weight: 600; color: var(--stone-500); }
+  .card-book-label { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.65rem; border-radius: 999px; background: var(--stone-800); color: white; font-size: 0.7rem; font-weight: 800; margin-bottom: 0.5rem; width: fit-content; }
   .card-jump-btn { display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.35rem; padding: 0.22rem 0.65rem; border-radius: 999px; background: var(--amber-light); border: 1px solid var(--amber-border); color: #92400e; font-size: 0.72rem; font-weight: 700; cursor: pointer; font-family: inherit; width: fit-content; transition: background 0.12s, border-color 0.12s; }
   .card-jump-btn:hover { background: #fde68a; border-color: #fbbf24; }
   .card.jump-highlight { animation: cardJumpHighlight 1.6s ease-out; }
@@ -6807,7 +6808,7 @@ function renderTodayPick() {
     ${folderOpts.map(name => `<option value="${esc(name)}"${todayPickFolder === name ? ' selected' : ''}>${esc(folderDisplayName(name))}</option>`).join('')}
   </select>`;
   const bodyHTML = picked
-    ? cardHTML(picked, {jumpButton:true})
+    ? cardHTML(picked, {jumpButton:true, bookLabel:true})
     : `<div class="today-pick-empty">${entries.length ? 'このジャンルにはまだ記録がありません。' : 'まだ記録がありません。まずは1件追加してみましょう。'}</div>`;
   panel.innerHTML = `
     <div class="today-pick-head">
@@ -7324,6 +7325,7 @@ function cardHTML(e, options) {
   <div class="card-body">
     <div class="card-header">
       <div>
+        ${options.bookLabel && e.book ? `<div class="card-book-label">📚 ${esc(e.book)}</div>` : ''}
         <div class="card-note-meta">${noteTypeBadgesHTML(e)}${chapterKnowledgeLinkBadgeHTML(e)}</div>
         ${e.title?`<div class="card-title-note">${esc(e.title)}</div>`:''}
         ${e.page?`<div class="card-page">${esc(e.page)}</div>`:''}
