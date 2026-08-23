@@ -8779,7 +8779,7 @@ function formatRecordInlineText(text) {
   // ふりがな記法（漢字[かんじ]）は他の装飾（**太字**など）でタグが入る前、
   // まだプレーンテキストの段階で変換しないと、挿入済みのHTMLタグを巻き込んで誤変換してしまう。
   // 読みがな側はひらがな/カタカナのみに限定し、配列表記の a[0] のような文字列と衝突しないようにする。
-  html = html.replace(/([^\s\[\]*_=]{1,20})\[([\u3040-\u309F\u30A0-\u30FFー]{1,20})\]/g, '<ruby>$1<rt>$2</rt></ruby>');
+  html = html.replace(/\[([^\[\]|]{1,40})\|([\u3040-\u309F\u30A0-\u30FFー]{1,20})\]/g, '<ruby>$1<rt>$2</rt></ruby>');
   html = html.replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/__([\s\S]+?)__/g, '<u>$1</u>');
   html = html.replace(/==([\s\S]+?)==/g, '<mark>$1</mark>');
@@ -8838,10 +8838,12 @@ function applyTextareaRuby(targetId) {
     el.focus();
     return;
   }
-  const existing = selected.match(/^([^\s\[\]]+)\[([\u3040-\u309F\u30A0-\u30FFー]*)\]$/);
+  // [語句|よみ] の形で選択範囲全体を囲む。開始位置を "[" で明示することで、
+  // 直前の文章を巻き込んでふりがながずれる問題を防いでいる。
+  const existing = selected.match(/^\[([^\[\]|]+)\|([\u3040-\u309F\u30A0-\u30FFー]*)\]$/);
   let nextValue, nextStart, nextEnd;
   if (existing) {
-    // すでにふりがなが付いている選択範囲を選び直した場合は解除する
+    // すでにふりがなが付いている範囲（[語句|よみ]ごと）を選び直した場合は解除する
     const base = existing[1];
     nextValue = value.slice(0, start) + base + value.slice(end);
     nextStart = start;
@@ -8851,7 +8853,7 @@ function applyTextareaRuby(targetId) {
     if (reading === null) { el.focus(); return; }
     const trimmed = reading.trim();
     if (!trimmed) { el.focus(); return; }
-    const wrapped = selected + '[' + trimmed + ']';
+    const wrapped = '[' + selected + '|' + trimmed + ']';
     nextValue = value.slice(0, start) + wrapped + value.slice(end);
     nextStart = start;
     nextEnd = start + wrapped.length;
@@ -8865,7 +8867,7 @@ function selectedTextAsTag(text) {
   return String(text || '')
     .replace(/\*\*/g, '')
     .replace(/__/g, '')
-    .replace(/([^\s\[\]]+)\[([^\s\[\]]+)\]/g, '$1')
+    .replace(/\[([^\[\]|]+)\|([^\[\]]*)\]/g, '$1')
     .replace(/==/g, '')
     .replace(/[,\uFF0C]/g, '、')
     .replace(/\s+/g, ' ')
