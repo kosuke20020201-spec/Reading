@@ -1080,7 +1080,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'favorite-badge-position v164';
+const APP_VERSION   = 'book-status-cloud-sync v165';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -2514,6 +2514,8 @@ function toggleBookFavorite(book) {
   setBookStatus(book, {favorite: !status.favorite});
   showToast(status.favorite ? 'お気に入りを解除しました' : 'お気に入りに登録しました');
   render();
+  markSyncPending(true);
+  scheduleCloudSync(0);
 }
 
 function toggleBookFinished(book) {
@@ -2521,6 +2523,8 @@ function toggleBookFinished(book) {
   setBookStatus(book, {finishedAt: status.finishedAt ? '' : localDateStr()});
   showToast(status.finishedAt ? '読了印を外しました' : '読了印を押しました');
   render();
+  markSyncPending(true);
+  scheduleCloudSync(0);
 }
 
 function bookStatusBadgesHTML(book) {
@@ -2824,11 +2828,12 @@ const BOOK_META_SYNC_ID = '__book_meta__';
 const TAG_FOLDER_SYNC_ID = '__tag_folders__';
 const NOTE_TYPES_SYNC_ID = '__note_types__';
 const CHAPTER_LINKS_SYNC_ID = '__chapter_links__';
+const BOOK_STATUS_SYNC_ID = '__book_status__';
 const BOOK_COVER_SYNC_PREFIX = '__book_cover__:';
 
 function isSyncMetaEntry(entry) {
   const id = String(entry && entry.id || '');
-  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id === CHAPTER_LINKS_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
+  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id === CHAPTER_LINKS_SYNC_ID || id === BOOK_STATUS_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
 }
 
 function buildBookMetaSyncEntry() {
@@ -2873,6 +2878,21 @@ function buildChapterLinksSyncEntry() {
     createdAt: '1970-01-01',
     updatedAt: new Date().toISOString(),
     isChapterLinksMeta: true
+  };
+}
+
+function buildBookStatusSyncEntry() {
+  return {
+    id: BOOK_STATUS_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getBookStatusMap()),
+    tags: [],
+    drawings: [],
+    images: [],
+    createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
+    isBookStatusMeta: true
   };
 }
 
@@ -3285,6 +3305,32 @@ function mergeBookMetaFromCloud(cloudMetaEntry, preferLocal) {
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(merged));
 }
 
+// クラウドから取得したお気に入り・読了印をローカルのBOOK_STATUS_KEYへ統合する
+// （鍵ごとにpreferLocalに応じてどちらの端末の値を優先するか決める。片方にしかないキーは保持する）
+function mergeBookStatusFromCloud(cloudStatusEntry, preferLocal) {
+  if (!cloudStatusEntry) return;
+  let cloudMap;
+  try {
+    cloudMap = JSON.parse(cloudStatusEntry.content || '{}');
+  } catch(e) { return; }
+  if (!cloudMap || typeof cloudMap !== 'object' || Array.isArray(cloudMap)) return;
+
+  const localMap = getBookStatusMap();
+  const merged = {};
+  const keys = new Set([...Object.keys(cloudMap), ...Object.keys(localMap)]);
+  keys.forEach(function(key) {
+    const inCloud = Object.prototype.hasOwnProperty.call(cloudMap, key);
+    const inLocal = Object.prototype.hasOwnProperty.call(localMap, key);
+    let chosen;
+    if (inCloud && inLocal) chosen = preferLocal ? localMap[key] : cloudMap[key];
+    else chosen = inLocal ? localMap[key] : cloudMap[key];
+    if (chosen && (chosen.favorite || chosen.finishedAt)) {
+      merged[key] = {favorite: !!chosen.favorite, finishedAt: String(chosen.finishedAt || '')};
+    }
+  });
+  localStorage.setItem(BOOK_STATUS_KEY, JSON.stringify(merged));
+}
+
 function getBookFixedTags(book) {
   const key = bookKey(book);
   if (!key) return [];
@@ -3651,7 +3697,7 @@ function buildCloudPayloadBody() {
     .filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e))
     .map(prepareEntryForCloud);
   const tombstones = getSyncTombstones().map(prepareEntryForCloud);
-  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), buildChapterLinksSyncEntry(), ...buildBookCoverSyncEntries()]);
+  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), buildChapterLinksSyncEntry(), buildBookStatusSyncEntry(), ...buildBookCoverSyncEntries()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -4134,9 +4180,11 @@ async function loadFromCloud(options) {
     const cloudTagFolderEntry = cloudRaw.find(e => e && String(e.id) === TAG_FOLDER_SYNC_ID);
     const cloudNoteTypesEntry = cloudRaw.find(e => e && String(e.id) === NOTE_TYPES_SYNC_ID);
     const cloudChapterLinksEntry = cloudRaw.find(e => e && String(e.id) === CHAPTER_LINKS_SYNC_ID);
+    const cloudBookStatusEntry = cloudRaw.find(e => e && String(e.id) === BOOK_STATUS_SYNC_ID);
     const cloudNoteTypeMap = mergeNoteTypesSyncMapFromCloud(parseNoteTypesSyncPayload(cloudNoteTypesEntry), preferLocal);
     const cloudChapterLinkMap = mergeChapterLinksSyncMapFromCloud(parseChapterLinksSyncPayload(cloudChapterLinksEntry), preferLocal);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
+    mergeBookStatusFromCloud(cloudBookStatusEntry, preferLocal);
     mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
     mergeBookCoversFromCloud(cloudRaw, preferLocal);
     const cloud = cloudRaw.filter(e => e && !isSyncMetaEntry(e));
