@@ -258,7 +258,8 @@
   .book-overview-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .book-overview-action-btn.is-favorite-active { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
   .book-overview-action-btn.is-finished-active { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
-  .book-status-badges { position: absolute; top: 0.4rem; right: 0.4rem; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; pointer-events: none; }
+  .book-status-badges { position: absolute; top: 0.4rem; left: 0.4rem; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; pointer-events: none; }
+  .book-group.open .book-status-badges { left: auto; right: 0.4rem; align-items: flex-end; }
   .book-favorite-badge { display: inline-flex; align-items: center; justify-content: center; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: #f59e0b; color: white; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.35); }
   .book-finished-badge { display: inline-flex; align-items: center; justify-content: center; width: 2.05rem; height: 2.05rem; border-radius: 50%; border: 2px solid #dc2626; color: #dc2626; background: rgba(255,255,255,0.88); font-size: 0.6rem; font-weight: 900; letter-spacing: 0.02em; transform: rotate(-14deg); box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
   .record-book-header .book-status-badges { display: inline-flex; position: static; flex-direction: row; align-items: center; pointer-events: auto; margin-left: 0.4rem; vertical-align: middle; }
@@ -1079,7 +1080,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'today-pick-widget v163';
+const APP_VERSION   = 'favorite-badge-position v164';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
