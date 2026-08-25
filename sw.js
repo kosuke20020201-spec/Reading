@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260826-book-status-cloud-sync-v198';
+const CACHE_NAME = 'reading-note-pwa-20260826-badge-reserved-space-v199';
 const APP_SHELL = [
   './',
   './index.html',
