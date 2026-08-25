@@ -256,6 +256,14 @@
   .book-overview-desc { margin-top:0.65rem; font-size:0.78rem; line-height:1.75; color:var(--stone-600); white-space:pre-wrap; overflow-wrap:anywhere; }
   .book-overview-empty { font-size:0.76rem; color:var(--stone-400); line-height:1.6; }
   .book-overview-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .book-overview-action-btn.is-favorite-active { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+  .book-overview-action-btn.is-finished-active { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+  .book-status-badges { position: absolute; top: 0.4rem; right: 0.4rem; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; pointer-events: none; }
+  .book-favorite-badge { display: inline-flex; align-items: center; justify-content: center; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: #f59e0b; color: white; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.35); }
+  .book-finished-badge { display: inline-flex; align-items: center; justify-content: center; width: 2.05rem; height: 2.05rem; border-radius: 50%; border: 2px solid #dc2626; color: #dc2626; background: rgba(255,255,255,0.88); font-size: 0.6rem; font-weight: 900; letter-spacing: 0.02em; transform: rotate(-14deg); box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+  .record-book-header .book-status-badges { display: inline-flex; position: static; flex-direction: row; align-items: center; pointer-events: auto; margin-left: 0.4rem; vertical-align: middle; }
+  .record-book-header .book-finished-badge { width: 1.7rem; height: 1.7rem; font-size: 0.5rem; }
+  .record-book-header .book-favorite-badge { width: 1.35rem; height: 1.35rem; font-size: 0.72rem; }
   .book-overview-action-btn { border: 1px solid var(--amber-border); background: #fffbeb; color: #92400e; border-radius: 999px; padding: 0.32rem 0.75rem; font: inherit; font-size: 0.72rem; font-weight: 900; cursor: pointer; }
   .book-overview-action-btn:hover { border-color: var(--amber); background: #fef3c7; }
   .book-cover-input { display: none; }
@@ -1115,6 +1123,7 @@ const TODAY_PICK_FOLDER_KEY = 'reading_log_today_pick_folder';
 const TODAY_PICK_STATE_KEY = 'reading_log_today_pick_state_v1';
 const TODAY_PICK_HIDDEN_KEY = 'reading_log_today_pick_hidden';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
+const BOOK_STATUS_KEY = 'reading_log_book_status';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
 const ORIENTATION_FALLBACK_KEY = 'reading_log_manual_landscape_fallback';
@@ -2467,6 +2476,59 @@ function setBookMetaInfo(book, patch) {
   const legacyKey = (book || '').trim();
   if (legacyKey && legacyKey !== key) delete meta[legacyKey];
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(meta));
+}
+
+// お気に入り登録・読了印は本の書誌情報（BOOK_META_KEY、APIキャッシュとマージされる）とは別に、
+// 端末内だけのユーザー操作フラグとして BOOK_STATUS_KEY に保存する。
+function getBookStatusMap() {
+  try {
+    const stored = localStorage.getItem(BOOK_STATUS_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch(e) { return {}; }
+}
+
+function getBookStatus(book) {
+  const key = bookKey(book);
+  if (!key) return {favorite:false, finishedAt:''};
+  const raw = getBookStatusMap()[key] || {};
+  return {favorite: !!raw.favorite, finishedAt: String(raw.finishedAt || '')};
+}
+
+function setBookStatus(book, patch) {
+  const key = bookKey(book);
+  if (!key) return;
+  const map = getBookStatusMap();
+  const current = map[key] || {favorite:false, finishedAt:''};
+  const next = {...current, ...patch};
+  if (!next.favorite && !next.finishedAt) delete map[key];
+  else map[key] = next;
+  localStorage.setItem(BOOK_STATUS_KEY, JSON.stringify(map));
+}
+
+function toggleBookFavorite(book) {
+  const status = getBookStatus(book);
+  setBookStatus(book, {favorite: !status.favorite});
+  showToast(status.favorite ? 'お気に入りを解除しました' : 'お気に入りに登録しました');
+  render();
+}
+
+function toggleBookFinished(book) {
+  const status = getBookStatus(book);
+  setBookStatus(book, {finishedAt: status.finishedAt ? '' : localDateStr()});
+  showToast(status.finishedAt ? '読了印を外しました' : '読了印を押しました');
+  render();
+}
+
+function bookStatusBadgesHTML(book) {
+  const status = getBookStatus(book);
+  if (!status.favorite && !status.finishedAt) return '';
+  return `<div class="book-status-badges">
+    ${status.favorite ? `<span class="book-favorite-badge" title="お気に入り">★</span>` : ''}
+    ${status.finishedAt ? `<span class="book-finished-badge" title="読了（${esc(status.finishedAt)}）">読了</span>` : ''}
+  </div>`;
 }
 
 function setBookMetaCover(book, coverUrl) {
@@ -4936,6 +4998,22 @@ function handleShelfClick(event) {
     return true;
   }
 
+  const favoriteBtn = event.target.closest && event.target.closest('[data-book-favorite-toggle]');
+  if (favoriteBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleBookFavorite(favoriteBtn.dataset.bookFavoriteToggle || '');
+    return true;
+  }
+
+  const finishedBtn = event.target.closest && event.target.closest('[data-book-finished-toggle]');
+  if (finishedBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleBookFinished(finishedBtn.dataset.bookFinishedToggle || '');
+    return true;
+  }
+
   const infoBtn = event.target.closest && event.target.closest('[data-book-info-book]');
   if (infoBtn) {
     event.preventDefault();
@@ -6691,6 +6769,7 @@ function bookOverviewHTML(group) {
     pickIsbn(info) ? 'ISBN ' + pickIsbn(info) : '',
     cleanSource && cleanSource !== 'Original entry' ? 'Source: ' + cleanSource : ''
   ].filter(Boolean).join(' / ');
+  const status = getBookStatus(group.book);
   const cover = safeBookImageUrl(info.coverUrl);
   const showCover = cover && !brokenCoverUrls.has(cover);
   const body = descriptionIsSuspicious ? '概要生成の形式が崩れていたため表示していません。「概要を作り直す」を押してください。' : (info.description || (meta ? '取得できた本情報を表示しています。概要文は見つかった場合だけ表示されます。' : (navigator.onLine === false ? 'オンライン時に本情報を取得できます。' : '本情報はまだ取得されていません。本を開くと自動取得します。')));
@@ -6704,6 +6783,8 @@ function bookOverviewHTML(group) {
     </div>
     <div class="${info.description && !descriptionIsSuspicious ? 'book-overview-desc' : 'book-overview-empty'}">${esc(body)}</div>
     <div class="book-overview-actions">
+      <button type="button" class="book-overview-action-btn${status.favorite?' is-favorite-active':''}" data-book-favorite-toggle="${esc(group.book)}">${status.favorite ? '★ お気に入り解除' : '☆ お気に入り登録'}</button>
+      <button type="button" class="book-overview-action-btn${status.finishedAt?' is-finished-active':''}" data-book-finished-toggle="${esc(group.book)}">${status.finishedAt ? `読了済み（${esc(status.finishedAt)}）解除` : '📖 読了印を押す'}</button>
       <button type="button" class="book-overview-action-btn" data-book-wide-edit-book="${esc(group.book)}" data-book-wide-edit-author="${esc(group.author || authors)}">本全体を編集</button>
       <button type="button" class="book-overview-action-btn" data-book-refresh-key="${esc(key)}" data-book-refresh-book="${esc(group.book)}" data-book-refresh-author="${esc(group.author || authors)}">候補を選び直す</button>
       <button type="button" class="book-overview-action-btn" data-book-summary-key="${esc(key)}" data-book-summary-book="${esc(group.book)}" data-book-summary-author="${esc(group.author || authors)}">概要を作り直す</button>
@@ -7027,6 +7108,7 @@ function render() {
   <div class="book-shell" style="${spineVars}">
     <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''}
       data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
+      ${bookStatusBadgesHTML(g.book)}
       <span class="book-spine-title">${formatSpineText(metaInfo.title||g.book||'タイトル未入力')}</span>
       ${bookAuthorLabel(g) && bookAuthorLabel(g) !== '著者未入力' ? `<span class="book-spine-author">${formatSpineText(bookAuthorLabel(g).split('、')[0])}</span>` : ''}
       <span class="book-spine-meta">
@@ -7149,7 +7231,7 @@ function recordsListHTML(bookEntries) {
       <header class="record-book-header">
         <div class="record-book-marker${coverVar ? ' has-cover' : ''}" style="${markerStyle}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''} aria-label="${esc(g.book || metaInfo.title || '')}">${esc(compactBookTitle(g.book))}</div>
         <div class="record-book-heading">
-          <div class="record-book-title">${esc(g.book || 'タイトル未入力')}</div>
+          <div class="record-book-title">${esc(g.book || 'タイトル未入力')}${bookStatusBadgesHTML(g.book)}</div>
           <div class="record-book-meta">${esc(bookAuthorLabel(g))}${latestLabel ? ' ・ ' + esc(latestLabel) : ''}</div>
         </div>
         <span class="record-book-count">${records.length}件</span>
