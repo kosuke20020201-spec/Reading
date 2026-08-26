@@ -258,7 +258,9 @@
   .book-overview-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .book-overview-action-btn.is-favorite-active { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
   .book-overview-action-btn.is-finished-active { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
-  .book-status-badges { position: absolute; top: 0.4rem; right: 0.4rem; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; pointer-events: none; }
+  .book-status-badges { position: absolute; top: 0.4rem; left: 0.4rem; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; pointer-events: none; }
+  .book-group.open .book-status-badges { left: auto; right: 0.4rem; align-items: flex-end; }
+  .book-spine.has-status-badge { padding-top: 2.35rem; height: 16.9rem; }
   .book-favorite-badge { display: inline-flex; align-items: center; justify-content: center; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: #f59e0b; color: white; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.35); }
   .book-finished-badge { display: inline-flex; align-items: center; justify-content: center; width: 2.05rem; height: 2.05rem; border-radius: 50%; border: 2px solid #dc2626; color: #dc2626; background: rgba(255,255,255,0.88); font-size: 0.6rem; font-weight: 900; letter-spacing: 0.02em; transform: rotate(-14deg); box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
   .record-book-header .book-status-badges { display: inline-flex; position: static; flex-direction: row; align-items: center; pointer-events: auto; margin-left: 0.4rem; vertical-align: middle; }
@@ -278,6 +280,8 @@
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
   .card { position: relative; min-width: 0; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
+  .card.pinned { border-color: var(--amber-border); box-shadow: 0 1px 6px rgba(245,158,11,0.18); }
+  .card.pinned .card-accent { background: linear-gradient(to bottom, #f59e0b, #b45309); width: 5px; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
@@ -348,6 +352,8 @@
   .card-action-btn { padding: 0.3rem; border-radius: 0.4rem; border: none; background: none; cursor: pointer; font-size: 0.85rem; color: var(--stone-400); transition: all 0.1s; }
   .card-action-btn:hover { background: var(--stone-100); color: var(--stone-600); }
   .card-action-btn.delete:hover { background: #fff1f2; color: #f43f5e; }
+  .card-action-btn.pin.active { color: #f59e0b; }
+  .card-action-btn.pin.active:hover { background: var(--amber-light); }
   .card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
   .tag-pill { font-size: 0.68rem; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 999px; }
   .card-sections { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -571,6 +577,7 @@
     .book-shell::before { height: 14.1rem; }
     .book-shell::after { left: -0.42rem; right: -0.42rem; height: 0.68rem; }
     .book-spine { width: var(--spine-width-mobile, var(--spine-width, 4.2rem)); height: 14rem; padding-inline: 0.35rem; }
+    .book-spine.has-status-badge { height: 15.4rem; }
     .book-group.open .book-spine { height: auto; min-height: 3.45rem; padding: 0.62rem 0.72rem; border-radius: 0.82rem; }
     .book-spine-title { font-size: var(--title-size, 0.78rem); height: 10rem; width: var(--title-width-mobile, var(--title-width, 2.4rem)); }
     .book-spine-author { font-size: 0.58rem; height: 2.2rem; width: min(var(--title-width-mobile, var(--title-width, 2.4rem)), 2.4rem); }
@@ -645,6 +652,7 @@
     .book-shell { min-height: 14.25rem; padding-bottom: 0.72rem; }
     .book-shell::before { height: 12.72rem; }
     .book-spine { height: 12.7rem; width: var(--spine-width-mobile, var(--spine-width, 4.05rem)); padding: 0.62rem 0.34rem 0.55rem; }
+    .book-spine.has-status-badge { height: 14.1rem; }
     .book-spine-title { height: 8.75rem; font-size: var(--title-size, 0.74rem); }
     .book-spine-author { height: 1.95rem; font-size: 0.55rem; }
     .book-spine-tag, .book-spine-date, .book-spine-count { font-size: 0.54rem; }
@@ -748,6 +756,7 @@
     body.manual-landscape .book-shell { min-height: 14.25rem; padding-bottom: 0.72rem; }
     body.manual-landscape .book-shell::before { height: 12.72rem; }
     body.manual-landscape .book-spine { height: 12.7rem; width: var(--spine-width-mobile, var(--spine-width, 4.05rem)); padding: 0.62rem 0.34rem 0.55rem; }
+    body.manual-landscape .book-spine.has-status-badge { height: 14.1rem; }
     body.manual-landscape .book-spine-title { height: 8.75rem; font-size: var(--title-size, 0.74rem); }
     body.manual-landscape .book-spine-author { height: 1.95rem; font-size: 0.55rem; }
     body.manual-landscape .book-spine-tag,
@@ -1079,7 +1088,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'today-pick-widget v163';
+const APP_VERSION   = 'entry-bookmark v167';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1123,6 +1132,7 @@ const TODAY_PICK_FOLDER_KEY = 'reading_log_today_pick_folder';
 const TODAY_PICK_STATE_KEY = 'reading_log_today_pick_state_v1';
 const TODAY_PICK_HIDDEN_KEY = 'reading_log_today_pick_hidden';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
+const ENTRY_PINS_KEY = 'reading_log_entry_pins';
 const BOOK_STATUS_KEY = 'reading_log_book_status';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
@@ -2513,6 +2523,8 @@ function toggleBookFavorite(book) {
   setBookStatus(book, {favorite: !status.favorite});
   showToast(status.favorite ? 'お気に入りを解除しました' : 'お気に入りに登録しました');
   render();
+  markSyncPending(true);
+  scheduleCloudSync(0);
 }
 
 function toggleBookFinished(book) {
@@ -2520,6 +2532,42 @@ function toggleBookFinished(book) {
   setBookStatus(book, {finishedAt: status.finishedAt ? '' : localDateStr()});
   showToast(status.finishedAt ? '読了印を外しました' : '読了印を押しました');
   render();
+  markSyncPending(true);
+  scheduleCloudSync(0);
+}
+
+// 記録（個別のノート）ごとのブックマーク。本単位のお気に入りとは別に、
+// 端末内 + クラウド同期用の ENTRY_PINS_KEY に entryId -> true のマップとして保存する。
+function getEntryPinMap() {
+  try {
+    const stored = localStorage.getItem(ENTRY_PINS_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch(e) { return {}; }
+}
+
+function isEntryPinned(id) {
+  if (id == null) return false;
+  return !!getEntryPinMap()[String(id)];
+}
+
+function setEntryPinned(id, pinned) {
+  if (id == null) return;
+  const map = getEntryPinMap();
+  if (pinned) map[String(id)] = true;
+  else delete map[String(id)];
+  localStorage.setItem(ENTRY_PINS_KEY, JSON.stringify(map));
+}
+
+function toggleEntryPin(id) {
+  const next = !isEntryPinned(id);
+  setEntryPinned(id, next);
+  showToast(next ? 'この記録をブックマークしました' : 'ブックマークを解除しました');
+  render();
+  markSyncPending(true);
+  scheduleCloudSync(0);
 }
 
 function bookStatusBadgesHTML(book) {
@@ -2823,11 +2871,13 @@ const BOOK_META_SYNC_ID = '__book_meta__';
 const TAG_FOLDER_SYNC_ID = '__tag_folders__';
 const NOTE_TYPES_SYNC_ID = '__note_types__';
 const CHAPTER_LINKS_SYNC_ID = '__chapter_links__';
+const BOOK_STATUS_SYNC_ID = '__book_status__';
+const ENTRY_PINS_SYNC_ID = '__entry_pins__';
 const BOOK_COVER_SYNC_PREFIX = '__book_cover__:';
 
 function isSyncMetaEntry(entry) {
   const id = String(entry && entry.id || '');
-  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id === CHAPTER_LINKS_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
+  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id === CHAPTER_LINKS_SYNC_ID || id === BOOK_STATUS_SYNC_ID || id === ENTRY_PINS_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
 }
 
 function buildBookMetaSyncEntry() {
@@ -2872,6 +2922,36 @@ function buildChapterLinksSyncEntry() {
     createdAt: '1970-01-01',
     updatedAt: new Date().toISOString(),
     isChapterLinksMeta: true
+  };
+}
+
+function buildBookStatusSyncEntry() {
+  return {
+    id: BOOK_STATUS_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getBookStatusMap()),
+    tags: [],
+    drawings: [],
+    images: [],
+    createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
+    isBookStatusMeta: true
+  };
+}
+
+function buildEntryPinsSyncEntry() {
+  return {
+    id: ENTRY_PINS_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getEntryPinMap()),
+    tags: [],
+    drawings: [],
+    images: [],
+    createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
+    isEntryPinsMeta: true
   };
 }
 
@@ -3284,6 +3364,54 @@ function mergeBookMetaFromCloud(cloudMetaEntry, preferLocal) {
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(merged));
 }
 
+// クラウドから取得したお気に入り・読了印をローカルのBOOK_STATUS_KEYへ統合する
+// （鍵ごとにpreferLocalに応じてどちらの端末の値を優先するか決める。片方にしかないキーは保持する）
+function mergeBookStatusFromCloud(cloudStatusEntry, preferLocal) {
+  if (!cloudStatusEntry) return;
+  let cloudMap;
+  try {
+    cloudMap = JSON.parse(cloudStatusEntry.content || '{}');
+  } catch(e) { return; }
+  if (!cloudMap || typeof cloudMap !== 'object' || Array.isArray(cloudMap)) return;
+
+  const localMap = getBookStatusMap();
+  const merged = {};
+  const keys = new Set([...Object.keys(cloudMap), ...Object.keys(localMap)]);
+  keys.forEach(function(key) {
+    const inCloud = Object.prototype.hasOwnProperty.call(cloudMap, key);
+    const inLocal = Object.prototype.hasOwnProperty.call(localMap, key);
+    let chosen;
+    if (inCloud && inLocal) chosen = preferLocal ? localMap[key] : cloudMap[key];
+    else chosen = inLocal ? localMap[key] : cloudMap[key];
+    if (chosen && (chosen.favorite || chosen.finishedAt)) {
+      merged[key] = {favorite: !!chosen.favorite, finishedAt: String(chosen.finishedAt || '')};
+    }
+  });
+  localStorage.setItem(BOOK_STATUS_KEY, JSON.stringify(merged));
+}
+
+// クラウドから取得した記録ブックマークをローカルのENTRY_PINS_KEYへ統合する
+// （鍵ごとにpreferLocalに応じてどちらの端末の値を優先するか決める。片方にしかないキーは保持する）
+function mergeEntryPinsFromCloud(cloudPinsEntry, preferLocal) {
+  if (!cloudPinsEntry) return;
+  let cloudMap;
+  try {
+    cloudMap = JSON.parse(cloudPinsEntry.content || '{}');
+  } catch(e) { return; }
+  if (!cloudMap || typeof cloudMap !== 'object' || Array.isArray(cloudMap)) return;
+
+  const localMap = getEntryPinMap();
+  const merged = {};
+  const keys = new Set([...Object.keys(cloudMap), ...Object.keys(localMap)]);
+  keys.forEach(function(key) {
+    const inCloud = Object.prototype.hasOwnProperty.call(cloudMap, key) && !!cloudMap[key];
+    const inLocal = Object.prototype.hasOwnProperty.call(localMap, key) && !!localMap[key];
+    const chosen = inCloud && inLocal ? (preferLocal ? localMap[key] : cloudMap[key]) : (inLocal ? localMap[key] : cloudMap[key]);
+    if (chosen) merged[key] = true;
+  });
+  localStorage.setItem(ENTRY_PINS_KEY, JSON.stringify(merged));
+}
+
 function getBookFixedTags(book) {
   const key = bookKey(book);
   if (!key) return [];
@@ -3650,7 +3778,7 @@ function buildCloudPayloadBody() {
     .filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e))
     .map(prepareEntryForCloud);
   const tombstones = getSyncTombstones().map(prepareEntryForCloud);
-  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), buildChapterLinksSyncEntry(), ...buildBookCoverSyncEntries()]);
+  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), buildChapterLinksSyncEntry(), buildBookStatusSyncEntry(), buildEntryPinsSyncEntry(), ...buildBookCoverSyncEntries()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -4133,9 +4261,13 @@ async function loadFromCloud(options) {
     const cloudTagFolderEntry = cloudRaw.find(e => e && String(e.id) === TAG_FOLDER_SYNC_ID);
     const cloudNoteTypesEntry = cloudRaw.find(e => e && String(e.id) === NOTE_TYPES_SYNC_ID);
     const cloudChapterLinksEntry = cloudRaw.find(e => e && String(e.id) === CHAPTER_LINKS_SYNC_ID);
+    const cloudBookStatusEntry = cloudRaw.find(e => e && String(e.id) === BOOK_STATUS_SYNC_ID);
+    const cloudEntryPinsEntry = cloudRaw.find(e => e && String(e.id) === ENTRY_PINS_SYNC_ID);
     const cloudNoteTypeMap = mergeNoteTypesSyncMapFromCloud(parseNoteTypesSyncPayload(cloudNoteTypesEntry), preferLocal);
     const cloudChapterLinkMap = mergeChapterLinksSyncMapFromCloud(parseChapterLinksSyncPayload(cloudChapterLinksEntry), preferLocal);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
+    mergeBookStatusFromCloud(cloudBookStatusEntry, preferLocal);
+    mergeEntryPinsFromCloud(cloudEntryPinsEntry, preferLocal);
     mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
     mergeBookCoversFromCloud(cloudRaw, preferLocal);
     const cloud = cloudRaw.filter(e => e && !isSyncMetaEntry(e));
@@ -7103,10 +7235,11 @@ function render() {
     const latestLabel = bookLatestLabel(g);
     const spineTitle = spineDisplayTitle(g.book || metaInfo.title || 'タイトル未入力');
     metaInfo.title = spineTitle;
+    const spineHasBadge = !!(getBookStatus(g.book).favorite || getBookStatus(g.book).finishedAt);
     return `
 <div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" style="${spineVars}" data-book-key="${esc(k)}" data-book-name="${esc(g.book || '')}" data-book-author="${esc(g.author || '')}">
   <div class="book-shell" style="${spineVars}">
-    <button type="button" class="book-spine${coverVar?' has-cover':''}" style="${spineStyleText}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''}
+    <button type="button" class="book-spine${coverVar?' has-cover':''}${spineHasBadge?' has-status-badge':''}" style="${spineStyleText}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''}
       data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
       ${bookStatusBadgesHTML(g.book)}
       <span class="book-spine-title">${formatSpineText(metaInfo.title||g.book||'タイトル未入力')}</span>
@@ -7432,7 +7565,7 @@ function cardHTML(e, options) {
       <div class="sketch-grid">${media.map((d,i)=>`<img src="${LAZY_IMAGE_PLACEHOLDER}" data-lazy-src="${esc(d)}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="openMediaViewer(${esc(JSON.stringify(e.id))},${i})">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
-  return `<div class="card${options.chapterChild ? ' chapter-linked-child' : ''}" id="card-${e.id}">
+  return `<div class="card${options.chapterChild ? ' chapter-linked-child' : ''}${isEntryPinned(e.id) ? ' pinned' : ''}" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
     <div class="card-header">
@@ -7446,6 +7579,7 @@ function cardHTML(e, options) {
         ${entrySyncBadge(e)}
       </div>
       <div class="card-actions">
+        <button class="card-action-btn pin${isEntryPinned(e.id)?' active':''}" title="${isEntryPinned(e.id)?'ブックマーク解除':'この記録をブックマーク'}" onclick="toggleEntryPin(${esc(JSON.stringify(e.id))})">${isEntryPinned(e.id)?'📌':'📍'}</button>
         <button class="card-action-btn" onclick="editEntry(${esc(JSON.stringify(e.id))})">✏️</button>
         <button class="card-action-btn delete" onclick="deleteEntry(${esc(JSON.stringify(e.id))})">🗑</button>
       </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260826-badge-reserved-space-v199';
+const CACHE_NAME = 'reading-note-pwa-20260826-entry-bookmark-v200';
 const APP_SHELL = [
   './',
   './index.html',

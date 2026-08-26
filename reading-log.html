@@ -280,6 +280,8 @@
   .record-empty { font-size: 0.78rem; color: var(--stone-400); padding: 0.8rem; border: 1px dashed var(--stone-200); border-radius: 0.75rem; background: white; }
 
   .card { position: relative; min-width: 0; background: white; border-radius: 1rem; border: 1px solid var(--stone-200); box-shadow: 0 1px 4px #00000008; overflow: hidden; transition: box-shadow 0.2s; }
+  .card.pinned { border-color: var(--amber-border); box-shadow: 0 1px 6px rgba(245,158,11,0.18); }
+  .card.pinned .card-accent { background: linear-gradient(to bottom, #f59e0b, #b45309); width: 5px; }
   .card:hover { box-shadow: 0 4px 16px #00000012; }
   .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(to bottom, var(--amber), var(--orange)); }
   .card-body { padding: 1rem 1rem 0.875rem 1.25rem; }
@@ -350,6 +352,8 @@
   .card-action-btn { padding: 0.3rem; border-radius: 0.4rem; border: none; background: none; cursor: pointer; font-size: 0.85rem; color: var(--stone-400); transition: all 0.1s; }
   .card-action-btn:hover { background: var(--stone-100); color: var(--stone-600); }
   .card-action-btn.delete:hover { background: #fff1f2; color: #f43f5e; }
+  .card-action-btn.pin.active { color: #f59e0b; }
+  .card-action-btn.pin.active:hover { background: var(--amber-light); }
   .card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
   .tag-pill { font-size: 0.68rem; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 999px; }
   .card-sections { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -1084,7 +1088,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'badge-reserved-space v166';
+const APP_VERSION   = 'entry-bookmark v167';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1128,6 +1132,7 @@ const TODAY_PICK_FOLDER_KEY = 'reading_log_today_pick_folder';
 const TODAY_PICK_STATE_KEY = 'reading_log_today_pick_state_v1';
 const TODAY_PICK_HIDDEN_KEY = 'reading_log_today_pick_hidden';
 const BOOK_ORDER_KEY = 'reading_log_book_order';
+const ENTRY_PINS_KEY = 'reading_log_entry_pins';
 const BOOK_STATUS_KEY = 'reading_log_book_status';
 const VIEW_MODE_KEY = 'reading_log_view_mode';
 const GOOGLE_BOOKS_COOLDOWN_KEY = 'reading_log_google_books_cooldown_until';
@@ -2531,6 +2536,40 @@ function toggleBookFinished(book) {
   scheduleCloudSync(0);
 }
 
+// 記録（個別のノート）ごとのブックマーク。本単位のお気に入りとは別に、
+// 端末内 + クラウド同期用の ENTRY_PINS_KEY に entryId -> true のマップとして保存する。
+function getEntryPinMap() {
+  try {
+    const stored = localStorage.getItem(ENTRY_PINS_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed;
+  } catch(e) { return {}; }
+}
+
+function isEntryPinned(id) {
+  if (id == null) return false;
+  return !!getEntryPinMap()[String(id)];
+}
+
+function setEntryPinned(id, pinned) {
+  if (id == null) return;
+  const map = getEntryPinMap();
+  if (pinned) map[String(id)] = true;
+  else delete map[String(id)];
+  localStorage.setItem(ENTRY_PINS_KEY, JSON.stringify(map));
+}
+
+function toggleEntryPin(id) {
+  const next = !isEntryPinned(id);
+  setEntryPinned(id, next);
+  showToast(next ? 'この記録をブックマークしました' : 'ブックマークを解除しました');
+  render();
+  markSyncPending(true);
+  scheduleCloudSync(0);
+}
+
 function bookStatusBadgesHTML(book) {
   const status = getBookStatus(book);
   if (!status.favorite && !status.finishedAt) return '';
@@ -2833,11 +2872,12 @@ const TAG_FOLDER_SYNC_ID = '__tag_folders__';
 const NOTE_TYPES_SYNC_ID = '__note_types__';
 const CHAPTER_LINKS_SYNC_ID = '__chapter_links__';
 const BOOK_STATUS_SYNC_ID = '__book_status__';
+const ENTRY_PINS_SYNC_ID = '__entry_pins__';
 const BOOK_COVER_SYNC_PREFIX = '__book_cover__:';
 
 function isSyncMetaEntry(entry) {
   const id = String(entry && entry.id || '');
-  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id === CHAPTER_LINKS_SYNC_ID || id === BOOK_STATUS_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
+  return id === BOOK_META_SYNC_ID || id === TAG_FOLDER_SYNC_ID || id === NOTE_TYPES_SYNC_ID || id === CHAPTER_LINKS_SYNC_ID || id === BOOK_STATUS_SYNC_ID || id === ENTRY_PINS_SYNC_ID || id.startsWith(BOOK_COVER_SYNC_PREFIX);
 }
 
 function buildBookMetaSyncEntry() {
@@ -2897,6 +2937,21 @@ function buildBookStatusSyncEntry() {
     createdAt: '1970-01-01',
     updatedAt: new Date().toISOString(),
     isBookStatusMeta: true
+  };
+}
+
+function buildEntryPinsSyncEntry() {
+  return {
+    id: ENTRY_PINS_SYNC_ID,
+    book: '',
+    title: '',
+    content: JSON.stringify(getEntryPinMap()),
+    tags: [],
+    drawings: [],
+    images: [],
+    createdAt: '1970-01-01',
+    updatedAt: new Date().toISOString(),
+    isEntryPinsMeta: true
   };
 }
 
@@ -3335,6 +3390,28 @@ function mergeBookStatusFromCloud(cloudStatusEntry, preferLocal) {
   localStorage.setItem(BOOK_STATUS_KEY, JSON.stringify(merged));
 }
 
+// クラウドから取得した記録ブックマークをローカルのENTRY_PINS_KEYへ統合する
+// （鍵ごとにpreferLocalに応じてどちらの端末の値を優先するか決める。片方にしかないキーは保持する）
+function mergeEntryPinsFromCloud(cloudPinsEntry, preferLocal) {
+  if (!cloudPinsEntry) return;
+  let cloudMap;
+  try {
+    cloudMap = JSON.parse(cloudPinsEntry.content || '{}');
+  } catch(e) { return; }
+  if (!cloudMap || typeof cloudMap !== 'object' || Array.isArray(cloudMap)) return;
+
+  const localMap = getEntryPinMap();
+  const merged = {};
+  const keys = new Set([...Object.keys(cloudMap), ...Object.keys(localMap)]);
+  keys.forEach(function(key) {
+    const inCloud = Object.prototype.hasOwnProperty.call(cloudMap, key) && !!cloudMap[key];
+    const inLocal = Object.prototype.hasOwnProperty.call(localMap, key) && !!localMap[key];
+    const chosen = inCloud && inLocal ? (preferLocal ? localMap[key] : cloudMap[key]) : (inLocal ? localMap[key] : cloudMap[key]);
+    if (chosen) merged[key] = true;
+  });
+  localStorage.setItem(ENTRY_PINS_KEY, JSON.stringify(merged));
+}
+
 function getBookFixedTags(book) {
   const key = bookKey(book);
   if (!key) return [];
@@ -3701,7 +3778,7 @@ function buildCloudPayloadBody() {
     .filter(e => e && !isSyncMetaEntry(e) && !deletedIds.has(String(e.id)) && !isDeletedEntry(e))
     .map(prepareEntryForCloud);
   const tombstones = getSyncTombstones().map(prepareEntryForCloud);
-  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), buildChapterLinksSyncEntry(), buildBookStatusSyncEntry(), ...buildBookCoverSyncEntries()]);
+  return JSON.stringify([...activeEntries, ...tombstones, buildBookMetaSyncEntry(), buildTagFolderSyncEntry(), buildNoteTypesSyncEntry(), buildChapterLinksSyncEntry(), buildBookStatusSyncEntry(), buildEntryPinsSyncEntry(), ...buildBookCoverSyncEntries()]);
 }
 
 function scheduleCloudSync(delay) {
@@ -4185,10 +4262,12 @@ async function loadFromCloud(options) {
     const cloudNoteTypesEntry = cloudRaw.find(e => e && String(e.id) === NOTE_TYPES_SYNC_ID);
     const cloudChapterLinksEntry = cloudRaw.find(e => e && String(e.id) === CHAPTER_LINKS_SYNC_ID);
     const cloudBookStatusEntry = cloudRaw.find(e => e && String(e.id) === BOOK_STATUS_SYNC_ID);
+    const cloudEntryPinsEntry = cloudRaw.find(e => e && String(e.id) === ENTRY_PINS_SYNC_ID);
     const cloudNoteTypeMap = mergeNoteTypesSyncMapFromCloud(parseNoteTypesSyncPayload(cloudNoteTypesEntry), preferLocal);
     const cloudChapterLinkMap = mergeChapterLinksSyncMapFromCloud(parseChapterLinksSyncPayload(cloudChapterLinksEntry), preferLocal);
     mergeBookMetaFromCloud(cloudMetaEntry, preferLocal);
     mergeBookStatusFromCloud(cloudBookStatusEntry, preferLocal);
+    mergeEntryPinsFromCloud(cloudEntryPinsEntry, preferLocal);
     mergeTagFoldersFromCloud(cloudTagFolderEntry, preferLocal);
     mergeBookCoversFromCloud(cloudRaw, preferLocal);
     const cloud = cloudRaw.filter(e => e && !isSyncMetaEntry(e));
@@ -7486,7 +7565,7 @@ function cardHTML(e, options) {
       <div class="sketch-grid">${media.map((d,i)=>`<img src="${LAZY_IMAGE_PLACEHOLDER}" data-lazy-src="${esc(d)}" alt="スケッチ・画像${i+1}" loading="lazy" decoding="async" onclick="openMediaViewer(${esc(JSON.stringify(e.id))},${i})">`).join('')}</div>
     </div>`:'';
   const aiHTML=e.aiSummary?`<div class="ai-result">${esc(e.aiSummary)}</div>`:'';
-  return `<div class="card${options.chapterChild ? ' chapter-linked-child' : ''}" id="card-${e.id}">
+  return `<div class="card${options.chapterChild ? ' chapter-linked-child' : ''}${isEntryPinned(e.id) ? ' pinned' : ''}" id="card-${e.id}">
   <div class="card-accent"></div>
   <div class="card-body">
     <div class="card-header">
@@ -7500,6 +7579,7 @@ function cardHTML(e, options) {
         ${entrySyncBadge(e)}
       </div>
       <div class="card-actions">
+        <button class="card-action-btn pin${isEntryPinned(e.id)?' active':''}" title="${isEntryPinned(e.id)?'ブックマーク解除':'この記録をブックマーク'}" onclick="toggleEntryPin(${esc(JSON.stringify(e.id))})">${isEntryPinned(e.id)?'📌':'📍'}</button>
         <button class="card-action-btn" onclick="editEntry(${esc(JSON.stringify(e.id))})">✏️</button>
         <button class="card-action-btn delete" onclick="deleteEntry(${esc(JSON.stringify(e.id))})">🗑</button>
       </div>
