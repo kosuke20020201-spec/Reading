@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260826-pin-visual-boost-v201';
+const CACHE_NAME = 'reading-note-pwa-20260826-pin-terracotta-v202';
 const APP_SHELL = [
   './',
   './index.html',
