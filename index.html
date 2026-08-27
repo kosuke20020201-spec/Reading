@@ -448,6 +448,15 @@
 
   /* 描画モーダル */
   #drawingOverlay .modal { max-height: calc(100vh - 1rem); }
+  .book-recommend-loading { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; padding: 2.2rem 1rem; text-align: center; color: var(--stone-500); font-size: 0.85rem; }
+  .book-recommend-spinner { width: 2.1rem; height: 2.1rem; border-radius: 50%; border: 3px solid var(--amber-light); border-top-color: #f59e0b; animation: bookRecommendSpin 0.8s linear infinite; }
+  @keyframes bookRecommendSpin { to { transform: rotate(360deg); } }
+  .book-recommend-error { padding: 1.5rem 1rem; text-align: center; color: #b91c1c; font-size: 0.85rem; line-height: 1.7; }
+  .book-recommend-list { display: flex; flex-direction: column; gap: 0.7rem; }
+  .book-recommend-card { border: 1px solid var(--stone-200); border-radius: 0.85rem; padding: 0.75rem 0.9rem; background: linear-gradient(160deg, #fffaf0, #ffffff 65%); }
+  .book-recommend-card-title { font-weight: 700; font-size: 0.9rem; color: #292524; margin-bottom: 0.15rem; }
+  .book-recommend-card-author { font-size: 0.72rem; color: var(--stone-500); margin-bottom: 0.45rem; }
+  .book-recommend-card-reason { font-size: 0.78rem; color: var(--stone-600); line-height: 1.65; }
   #drawingOverlay .modal-body { padding-top: 0; }
   .drawing-tools { position: sticky; top: 0; z-index: 10; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0 -1.5rem 0.75rem; padding: 0.75rem 1.5rem 0.65rem; background: rgba(255,255,255,0.96); border-bottom: 1px solid var(--stone-100); box-shadow: 0 4px 12px rgba(41,37,36,0.06); }
   .drawing-tool-btn { padding: 0.4rem 0.8rem; border-radius: 0.6rem; border: 1px solid var(--stone-200); background: white; cursor: pointer; font-size: 0.72rem; font-family: inherit; transition: all 0.1s; }
@@ -832,6 +841,7 @@
       <button class="btn-add" onclick="openModal()">＋ 記録を追加</button>
       <div class="header-btns-row">
         <button class="btn-sub" onclick="openBookshelf()">📚 本棚</button>
+        <button class="btn-sub" onclick="openBookRecommendModal()" type="button">✨ おすすめ</button>
         <button class="btn-sub" onclick="openApiSettings()" type="button">⚙ API設定</button>
       </div>
       <div class="sync-strip">
@@ -1038,6 +1048,27 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="bookRecommendOverlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h2 class="modal-title">✨ おすすめの本</h2>
+      <button class="modal-close" onclick="closeBookRecommendModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="bookRecommendBody">
+        <div class="book-recommend-loading">
+          <div class="book-recommend-spinner"></div>
+          <p>これまでの読書記録から、次の一冊を考えています…</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeBookRecommendModal()">閉じる</button>
+      <button class="btn-save" onclick="requestBookRecommendations(true)">🔄 もう一度</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="drawingOverlay">
   <div class="modal" style="max-width:540px">
     <div class="modal-header">
@@ -1088,7 +1119,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'pin-terracotta v169';
+const APP_VERSION   = 'book-recommend v170';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -9869,7 +9900,94 @@ function confirmApiKey() {
   showToast('\u8a2d\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f');
   if(pendingAiId!==null && k){const btn=document.querySelector(`#card-${pendingAiId} .btn-ai`);runAI(pendingAiId,btn,k);}
   if(pendingBook && k) applyGeminiBookOverview(pendingBook.book, pendingBook.author, pendingBook.info, {force: !!pendingBook.force});
+  if(pendingBookRecommendRequest && k) { pendingBookRecommendRequest = false; requestBookRecommendations(false); }
   pendingAiId=null;
+}
+
+let pendingBookRecommendRequest = false;
+
+function buildBookRecommendationPrompt() {
+  const groups = bookGroups();
+  const lines = groups.map(function(g) {
+    const status = getBookStatus(g.book);
+    const tags = Array.from(new Set(getBookFixedTags(g.book).concat((g.entries[0] && g.entries[0].tags) || []))).slice(0, 6);
+    const flags = [];
+    if (status.favorite) flags.push('お気に入り');
+    if (status.finishedAt) flags.push('読了');
+    return '・' + (g.book || '(無題)') + (g.author ? '／' + g.author : '') +
+      (tags.length ? '［' + tags.join(' ') + '］' : '') +
+      (flags.length ? '(' + flags.join('・') + ')' : '') +
+      ' メモ' + g.entries.length + '件';
+  });
+  return '以下はある人の読書記録一覧です（本のタイトル／著者［タグ］(お気に入り・読了状況) メモ件数）。\n\n' +
+    lines.join('\n') +
+    '\n\n上記の傾向から、この人が次に読むと良さそうな本を5冊、まだ記録にない本から提案してください。' +
+    '記録にある本は提案しないでください。' +
+    '出力は必ず次のJSON配列のみとし、前置きや説明文、マークダウンのコードフェンスは一切付けないでください。\n' +
+    '[{"title":"書名","author":"著者名","reason":"40〜80字程度の推薦理由（日本語）"}, ...]';
+}
+
+function parseBookRecommendations(text) {
+  if (!text) return null;
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  const start = cleaned.indexOf('[');
+  const end = cleaned.lastIndexOf(']');
+  if (start === -1 || end === -1 || end < start) return null;
+  try {
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter(function(item) { return item && item.title; }).map(function(item) {
+      return { title: String(item.title || ''), author: String(item.author || ''), reason: String(item.reason || '') };
+    });
+  } catch(e) { return null; }
+}
+
+function bookRecommendResultsHTML(list) {
+  if (!list || !list.length) {
+    return '<div class="book-recommend-error">おすすめを取得できませんでした。もう一度お試しください。</div>';
+  }
+  return '<div class="book-recommend-list">' + list.map(function(item) {
+    return '<div class="book-recommend-card">' +
+      '<div class="book-recommend-card-title">' + esc(item.title) + '</div>' +
+      (item.author ? '<div class="book-recommend-card-author">' + esc(item.author) + '</div>' : '') +
+      (item.reason ? '<div class="book-recommend-card-reason">' + esc(item.reason) + '</div>' : '') +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+function openBookRecommendModal() {
+  const key = getApiKey();
+  document.getElementById('bookRecommendOverlay').classList.add('open');
+  if (!key) {
+    pendingBookRecommendRequest = true;
+    document.getElementById('bookRecommendBody').innerHTML = '<div class="book-recommend-error">Gemini APIキーが未設定です。<br>「⚙ API設定」から保存してください。</div>';
+    return;
+  }
+  if (!bookGroups().length) {
+    document.getElementById('bookRecommendBody').innerHTML = '<div class="book-recommend-error">まだ読書記録がありません。記録を追加してからお試しください。</div>';
+    return;
+  }
+  requestBookRecommendations(false);
+}
+
+function closeBookRecommendModal() {
+  document.getElementById('bookRecommendOverlay').classList.remove('open');
+}
+
+async function requestBookRecommendations(forceReload) {
+  const key = getApiKey();
+  const body = document.getElementById('bookRecommendBody');
+  if (!key) { openApiSettings(); return; }
+  if (!bookGroups().length) return;
+  body.innerHTML = '<div class="book-recommend-loading"><div class="book-recommend-spinner"></div><p>これまでの読書記録から、次の一冊を考えています…</p></div>';
+  try {
+    const prompt = buildBookRecommendationPrompt();
+    const text = await fetchGeminiText(prompt, key, 900);
+    const list = parseBookRecommendations(text);
+    body.innerHTML = bookRecommendResultsHTML(list);
+  } catch(e) {
+    body.innerHTML = '<div class="book-recommend-error">おすすめの取得に失敗しました。<br>' + esc((e && e.message) || String(e)) + '</div>';
+  }
 }
 async function runAI(id,btn,key) {
   const e=entries.find(e=>e.id===id); if(!e) return;
@@ -10190,6 +10308,7 @@ document.addEventListener('keydown',e=>{
 });
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
+document.getElementById('bookRecommendOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookRecommendModal();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('bookInfoChoiceOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookInfoChoice();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260826-pin-terracotta-v202';
+const CACHE_NAME = 'reading-note-pwa-20260827-book-recommend-v203';
 const APP_SHELL = [
   './',
   './index.html',
