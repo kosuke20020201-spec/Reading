@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-book-recommend-mapfix-v205';
+const CACHE_NAME = 'reading-note-pwa-20260827-book-recommend-dedupe-v206';
 const APP_SHELL = [
   './',
   './index.html',

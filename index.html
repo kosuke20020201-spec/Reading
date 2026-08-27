@@ -1119,7 +1119,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'book-recommend-mapfix v172';
+const APP_VERSION   = 'book-recommend-dedupe v173';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -9921,8 +9921,9 @@ function buildBookRecommendationPrompt() {
   });
   return '以下はある人の読書記録一覧です（本のタイトル／著者［タグ］(お気に入り・読了状況) メモ件数）。\n\n' +
     lines.join('\n') +
-    '\n\n上記の傾向から、この人が次に読むと良さそうな本を5冊、まだ記録にない本から提案してください。' +
-    '記録にある本は提案しないでください。' +
+    '\n\n上記の傾向から、この人が次に読むと良さそうな本を5冊提案してください。' +
+    '上記リストに載っている本（既に読んだ本・記録済みの本）は理由を問わず絶対に提案しないでください。似たテーマだからという理由でも同じ本を再提案するのは禁止です。' +
+    '提案する5冊は必ずすべて異なるタイトルにしてください。同じ本を重複して挙げないでください。' +
     '出力は必ず次のJSON配列のみとし、前置きや説明文、マークダウンのコードフェンスは一切付けないでください。\n' +
     '[{"title":"書名","author":"著者名","reason":"40〜80字程度の推薦理由（日本語）"}, ...]';
 }
@@ -9936,9 +9937,19 @@ function parseBookRecommendations(text) {
   try {
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
     if (!Array.isArray(parsed)) return null;
-    return parsed.filter(function(item) { return item && item.title; }).map(function(item) {
-      return { title: String(item.title || ''), author: String(item.author || ''), reason: String(item.reason || '') };
+    const existingKeys = new Set(Array.from(bookGroups().keys()).map(function(k) { return bookKey(k); }));
+    const seen = new Set();
+    const result = [];
+    parsed.forEach(function(item) {
+      if (!item || !item.title) return;
+      const title = String(item.title || '').trim();
+      if (!title) return;
+      const key = bookKey(title);
+      if (seen.has(key) || existingKeys.has(key)) return;
+      seen.add(key);
+      result.push({ title: title, author: String(item.author || ''), reason: String(item.reason || '') });
     });
+    return result;
   } catch(e) { return null; }
 }
 
