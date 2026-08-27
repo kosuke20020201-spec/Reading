@@ -1119,7 +1119,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'book-recommend v170';
+const APP_VERSION   = 'book-recommend-timing-fix v171';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -9955,13 +9955,17 @@ function bookRecommendResultsHTML(list) {
   }).join('') + '</div>';
 }
 
-function openBookRecommendModal() {
+async function openBookRecommendModal() {
   const key = getApiKey();
   document.getElementById('bookRecommendOverlay').classList.add('open');
   if (!key) {
     pendingBookRecommendRequest = true;
     document.getElementById('bookRecommendBody').innerHTML = '<div class="book-recommend-error">Gemini APIキーが未設定です。<br>「⚙ API設定」から保存してください。</div>';
     return;
+  }
+  if (!bookGroups().length) {
+    document.getElementById('bookRecommendBody').innerHTML = '<div class="book-recommend-loading"><div class="book-recommend-spinner"></div><p>読書記録を確認しています…</p></div>';
+    try { await (window.__initialCloudLoadPromise || Promise.resolve()); } catch(e) {}
   }
   if (!bookGroups().length) {
     document.getElementById('bookRecommendBody').innerHTML = '<div class="book-recommend-error">まだ読書記録がありません。記録を追加してからお試しください。</div>';
@@ -9978,7 +9982,10 @@ async function requestBookRecommendations(forceReload) {
   const key = getApiKey();
   const body = document.getElementById('bookRecommendBody');
   if (!key) { openApiSettings(); return; }
-  if (!bookGroups().length) return;
+  if (!bookGroups().length) {
+    body.innerHTML = '<div class="book-recommend-error">まだ読書記録がありません。記録を追加してからお試しください。</div>';
+    return;
+  }
   body.innerHTML = '<div class="book-recommend-loading"><div class="book-recommend-spinner"></div><p>これまでの読書記録から、次の一冊を考えています…</p></div>';
   try {
     const prompt = buildBookRecommendationPrompt();
@@ -10462,7 +10469,7 @@ document.getElementById('tagExpandedTags')?.addEventListener('click', e => {
 });
 
 document.getElementById('appVersionBadge').textContent = APP_VERSION;
-load(); migrateOldFixedTags(); migrateChapterSupplementToChecklist(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); loadFromCloud(); if (hasPendingSync()) scheduleCloudSync(0);
+load(); migrateOldFixedTags(); migrateChapterSupplementToChecklist(); render(); updateSyncPanel(); updateScrollTopButton(); scheduleRecordAddButtonVisibility(); window.__initialCloudLoadPromise = loadFromCloud(); if (hasPendingSync()) scheduleCloudSync(0);
 </script>
 </body>
 </html>

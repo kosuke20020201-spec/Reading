@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-book-recommend-v203';
+const CACHE_NAME = 'reading-note-pwa-20260827-book-recommend-timing-fix-v204';
 const APP_SHELL = [
   './',
   './index.html',
