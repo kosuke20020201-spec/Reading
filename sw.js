@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-book-recommend-dedupe-v206';
+const CACHE_NAME = 'reading-note-pwa-20260827-empathy-memo-type-v208';
 const APP_SHELL = [
   './',
   './index.html',

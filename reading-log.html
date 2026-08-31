@@ -291,12 +291,14 @@
   .note-type-chapter { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
   .note-type-knowledge { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
   .note-type-quote { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+  .note-type-empathy { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
   .note-type-choice-grid { display: flex; flex-wrap: wrap; gap: 0.5rem 0.46rem; align-items: center; }
   .note-type-choice { display: inline-flex; align-items: center; gap: 0.44rem; min-height: 2.18rem; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-600); padding: 0.34rem 0.82rem 0.34rem 0.64rem; font-size: 0.75rem; font-weight: 900; line-height: 1.2; cursor: pointer; user-select: none; }
   .note-type-choice input { flex: 0 0 auto; width: 1.05rem; height: 1.05rem; margin: 0; accent-color: var(--amber); }
   .note-type-choice:has(input:checked).note-type-chapter { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
   .note-type-choice:has(input:checked).note-type-knowledge { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
   .note-type-choice:has(input:checked).note-type-quote { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+  .note-type-choice:has(input:checked).note-type-empathy { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
   .chapter-link-field[hidden] { display: none !important; }
   .chapter-link-status { min-height: 2.12rem; display: flex; align-items: center; padding: 0.48rem 0.62rem; border: 1px solid #bbf7d0; border-radius: 0.55rem; background: #f0fdf4; color: #047857; font-size: 0.74rem; font-weight: 800; line-height: 1.45; }
   .chapter-link-hint { margin: 0.35rem 0 0; color: var(--stone-400); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
@@ -922,6 +924,7 @@
           <label class="note-type-choice note-type-chapter"><input type="checkbox" name="fNoteTypes" value="chapter_summary">章まとめ</label>
           <label class="note-type-choice note-type-knowledge"><input type="checkbox" name="fNoteTypes" value="knowledge_memo" checked>知識メモ</label>
           <label class="note-type-choice note-type-quote"><input type="checkbox" name="fNoteTypes" value="quote_expression">引用・表現メモ</label>
+          <label class="note-type-choice note-type-empathy"><input type="checkbox" name="fNoteTypes" value="empathy_memo">共感メモ</label>
         </div>
       </div>
       <div class="field entry-only-field chapter-link-field" id="chapterLinkField" hidden>
@@ -1119,7 +1122,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'book-recommend-dedupe v173';
+const APP_VERSION   = 'empathy-memo-type v175';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1180,7 +1183,8 @@ const NOTE_TYPE_DEFAULT = 'knowledge_memo';
 const NOTE_TYPES = [
   { value: 'chapter_summary', label: '章まとめ', className: 'chapter' },
   { value: 'knowledge_memo', label: '知識メモ', className: 'knowledge' },
-  { value: 'quote_expression', label: '引用・表現メモ', className: 'quote' }
+  { value: 'quote_expression', label: '引用・表現メモ', className: 'quote' },
+  { value: 'empathy_memo', label: '共感メモ', className: 'empathy' }
 ];
 const NOTE_TYPE_DEFAULTS = [NOTE_TYPE_DEFAULT];
 const NOTE_TYPE_MAP = new Map(NOTE_TYPES.map(type => [type.value, type]));
@@ -1674,6 +1678,7 @@ function noteTypeKeyFromAny(value) {
   if (compact === '章まとめ' || compact === '章要約' || compact === 'chapter' || compact === 'chaptersummary') return 'chapter_summary';
   if (compact === '知識' || compact === '知識メモ' || compact === 'knowledge' || compact === 'knowledgememo') return 'knowledge_memo';
   if (compact === '引用' || compact === '表現' || compact === '引用表現' || compact === '引用・表現メモ' || compact === 'quote' || compact === 'quoteexpression') return 'quote_expression';
+  if (compact === '共感' || compact === '共感メモ' || compact === '共感ポイント' || compact === 'empathy' || compact === 'empathymemo' || compact === 'sympathy') return 'empathy_memo';
   return raw;
 }
 function noteTypeSourceItems(value) {
