@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-empathy-memo-type-v208';
+const CACHE_NAME = 'reading-note-pwa-20260827-fixedtags-merge-fix-v209';
 const APP_SHELL = [
   './',
   './index.html',

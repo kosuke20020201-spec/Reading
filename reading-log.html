@@ -1122,7 +1122,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'empathy-memo-type v175';
+const APP_VERSION   = 'fixedtags-merge-fix v176';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -3382,19 +3382,17 @@ function mergeBookMetaFromCloud(cloudMetaEntry, preferLocal) {
 
   const localMeta = getBookMeta();
   const merged = {};
-  Object.keys(cloudMeta).forEach(function(key) {
-    merged[key] = normalizeBookMetaValue(cloudMeta[key]);
-  });
-  Object.keys(localMeta).forEach(function(key) {
-    if (preferLocal || !Object.prototype.hasOwnProperty.call(merged, key)) {
-      merged[key] = normalizeBookMetaValue(localMeta[key]);
+  const keys = new Set([...Object.keys(cloudMeta), ...Object.keys(localMeta)]);
+  keys.forEach(function(key) {
+    const hasCloud = Object.prototype.hasOwnProperty.call(cloudMeta, key);
+    const hasLocal = Object.prototype.hasOwnProperty.call(localMeta, key);
+    if (hasCloud && hasLocal) {
+      // fixedTagsは常に和集合。preferLocalはタイトル・表紙など単一値の項目のみで優先度を決める
+      merged[key] = preferLocal
+        ? mergeBookMetaValues(localMeta[key], cloudMeta[key])
+        : mergeBookMetaValues(cloudMeta[key], localMeta[key]);
     } else {
-      const cloudValue = normalizeBookMetaValue(merged[key]);
-      const localValue = normalizeBookMetaValue(localMeta[key]);
-      merged[key] = normalizeBookMetaValue({
-        ...cloudValue,
-        fixedTags: cleanTagList([...(cloudValue.fixedTags || []), ...(localValue.fixedTags || [])])
-      });
+      merged[key] = normalizeBookMetaValue(hasLocal ? localMeta[key] : cloudMeta[key]);
     }
   });
   localStorage.setItem(BOOK_META_KEY, JSON.stringify(merged));
