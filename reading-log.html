@@ -4154,6 +4154,8 @@ async function shrinkOversizedMedia() {
     if (!entry) continue;
     const media = entryMedia(entry);
     const kinds = mediaKindList(entry);
+    // BUGFIX: 本文中の [img:ID] 参照を壊さないよう、圧縮前に安定IDを確保しておく。
+    const ids = entryMediaIds(entry).map(id => id || genMediaId());
     const next = [];
     for (let i=0; i<media.length; i++) {
       const src = media[i];
@@ -4172,7 +4174,10 @@ async function shrinkOversizedMedia() {
     }
     entry.drawings = next;
     entry.images = [];
-    entry.mediaKinds = next.map((_, i)=>normalizeMediaKind(kinds[i]));
+    entry.mediaIds = next.map((_, i)=>ids[i] || genMediaId());
+    // BUGFIX: mediaIds がクラウド側で失われた場合の保険として、
+    // 従来通り mediaKinds にも "kind:ID" の形でIDを埋め込んで二重化する。
+    entry.mediaKinds = next.map((_, i)=>normalizeMediaKind(kinds[i]) + ':' + entry.mediaIds[i]);
   }
   if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   return changed;

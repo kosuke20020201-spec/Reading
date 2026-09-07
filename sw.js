@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260828-mediaid-sync-piggyback-v212';
+const CACHE_NAME = 'reading-note-pwa-20260907-mediaid-shrink-fix-v213';
 const APP_SHELL = [
   './',
   './index.html',
