@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-inline-image-insert-v210';
+const CACHE_NAME = 'reading-note-pwa-20260827-inline-image-existing-pick-v211';
 const APP_SHELL = [
   './',
   './index.html',

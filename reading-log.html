@@ -367,6 +367,11 @@
   .record-line-image img { display: block; max-width: 100%; max-height: 18rem; border-radius: 0.65rem; cursor: zoom-in; box-shadow: 0 1px 6px #00000014; }
   .record-line-image-missing { min-height: 0; white-space: normal; padding-left: 0; display: inline-flex; align-items: center; margin: 0.3rem 0; font-size: 0.76rem; color: var(--stone-400); background: var(--stone-50); border: 1px dashed var(--stone-300); border-radius: 0.5rem; padding: 0.3rem 0.6rem; }
   .text-format-btn-image { color: #0369a1; }
+  .inline-image-picker-hint { font-size: 0.74rem; color: var(--stone-400); margin-bottom: 0.5rem; }
+  .inline-image-picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .inline-image-picker-thumb { padding: 0; border: 1px solid var(--stone-200); border-radius: 0.6rem; overflow: hidden; background: none; cursor: pointer; aspect-ratio: 1; }
+  .inline-image-picker-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .inline-image-picker-thumb:hover { border-color: var(--amber-border); }
   .record-line ruby { ruby-position: over; }
   .record-line rt { font-size: 0.62em; font-weight: 600; color: var(--stone-400); letter-spacing: 0; }
   .section-text strong { font-weight: 900; color: var(--stone-800); }
@@ -969,6 +974,19 @@
       </div>
     </div>
     <input type="file" accept="image/*" id="inlineImageFileInput" style="display:none" onchange="handleInlineImageFileChange(event)">
+    <div class="modal-overlay" id="inlineImagePickerOverlay">
+      <div class="modal" style="max-width:420px">
+        <div class="modal-header">
+          <h2 class="modal-title">🖼 画像を挿入</h2>
+          <button class="modal-close" onclick="closeInlineImagePicker()">✕</button>
+        </div>
+        <div class="modal-body">
+          <button type="button" class="btn-sub" style="width:100%;margin-bottom:0.7rem" onclick="pickNewInlineImage()">📷 新しい画像を追加して挿入</button>
+          <p class="inline-image-picker-hint">この記録に追加済みの画像をタップして挿入</p>
+          <div class="inline-image-picker-grid" id="inlineImagePickerGrid"></div>
+        </div>
+      </div>
+    </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
@@ -1127,7 +1145,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'inline-image-insert v177';
+const APP_VERSION   = 'inline-image-existing-pick v178';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -9166,13 +9184,64 @@ function applyTextareaRuby(targetId) {
 // 記録本文中への画像挿入。挿入した画像は他の🖼画像と同じくスケッチ・画像ギャラリーにも
 // 追加され、本文には [img:安定ID] という目印だけを埋め込む。表示時にこの目印を実際の
 // 画像に置き換える。並び替え・削除があっても位置（添字）ではなくIDで参照するのでズレない。
+// 既にギャラリーに追加済みの画像がある場合は、新規追加だけでなく既存画像からも選べる。
 let inlineImageInsertTargetId = '';
+let inlineImageInsertCursorStart = 0;
+let inlineImageInsertCursorEnd = 0;
 
 function triggerInlineImageInsert(targetId) {
   const el = document.getElementById(targetId);
   if (!el || typeof el.selectionStart !== 'number') return;
   inlineImageInsertTargetId = targetId;
+  inlineImageInsertCursorStart = el.selectionStart;
+  inlineImageInsertCursorEnd = el.selectionEnd;
+  if (!currentDrawings.length) {
+    document.getElementById('inlineImageFileInput').click();
+    return;
+  }
+  openInlineImagePicker();
+}
+
+function openInlineImagePicker() {
+  normalizeCurrentMediaIds();
+  const grid = document.getElementById('inlineImagePickerGrid');
+  grid.innerHTML = currentDrawings.map(function(src, i) {
+    return `<button type="button" class="inline-image-picker-thumb" onclick="insertExistingInlineImage(${i})"><img src="${esc(src)}" alt="画像${i+1}"></button>`;
+  }).join('');
+  document.getElementById('inlineImagePickerOverlay').classList.add('open');
+}
+
+function closeInlineImagePicker() {
+  document.getElementById('inlineImagePickerOverlay').classList.remove('open');
+}
+
+function pickNewInlineImage() {
+  closeInlineImagePicker();
   document.getElementById('inlineImageFileInput').click();
+}
+
+function insertExistingInlineImage(index) {
+  const id = currentMediaIds[index];
+  closeInlineImagePicker();
+  if (id) insertInlineImageToken(id);
+}
+
+function insertInlineImageToken(id) {
+  const el = inlineImageInsertTargetId && document.getElementById(inlineImageInsertTargetId);
+  if (!el || !id) return;
+  const value = el.value || '';
+  const start = Math.min(inlineImageInsertCursorStart, value.length);
+  const end = Math.min(inlineImageInsertCursorEnd, value.length);
+  const before = value.slice(0, start);
+  const after = value.slice(end);
+  const needsLeadingBreak = before && !before.endsWith('\n');
+  const needsTrailingBreak = after && !after.startsWith('\n');
+  const token = (needsLeadingBreak ? '\n' : '') + '[img:' + id + ']' + (needsTrailingBreak ? '\n' : '');
+  const nextValue = before + token + after;
+  const cursor = before.length + token.length;
+  el.value = nextValue;
+  focusAndSelect(el, cursor, cursor);
+  queueEntryDraftSave();
 }
 
 async function handleInlineImageFileChange(ev) {
@@ -9192,20 +9261,7 @@ async function handleInlineImageFileChange(ev) {
     const id = currentMediaIds[currentDrawings.length - 1];
     mediaDirty = true;
     renderDrawingGallery();
-
-    const value = el.value || '';
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const before = value.slice(0, start);
-    const after = value.slice(end);
-    const needsLeadingBreak = before && !before.endsWith('\n');
-    const needsTrailingBreak = after && !after.startsWith('\n');
-    const token = (needsLeadingBreak ? '\n' : '') + '[img:' + id + ']' + (needsTrailingBreak ? '\n' : '');
-    const nextValue = before + token + after;
-    const cursor = before.length + token.length;
-    el.value = nextValue;
-    focusAndSelect(el, cursor, cursor);
-    queueEntryDraftSave();
+    insertInlineImageToken(id);
 
     if (editingId !== null && editingId !== undefined) {
       const synced = await persistEditingMedia();
@@ -10440,6 +10496,7 @@ document.addEventListener('keydown',e=>{
 document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.getElementById('aiKeyOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAiModal();});
 document.getElementById('bookRecommendOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookRecommendModal();});
+document.getElementById('inlineImagePickerOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeInlineImagePicker();});
 document.getElementById('bookshelfOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookshelf();});
 document.getElementById('bookInfoChoiceOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBookInfoChoice();});
 document.getElementById('tagFolderOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTagFolders();});
