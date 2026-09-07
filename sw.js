@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-inline-image-existing-pick-v211';
+const CACHE_NAME = 'reading-note-pwa-20260828-mediaid-sync-piggyback-v212';
 const APP_SHELL = [
   './',
   './index.html',

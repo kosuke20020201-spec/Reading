@@ -1145,7 +1145,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'inline-image-existing-pick v178';
+const APP_VERSION   = 'mediaid-sync-piggyback v179';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -3932,7 +3932,16 @@ function entryMedia(entry) {
 }
 
 function normalizeMediaKind(kind) {
-  return kind === 'image' || kind === 'images' ? 'image' : 'sketch';
+  // mediaKinds には "image:ID" のように安定IDを埋め込むことがあるため、
+  // 種別判定の前にコロン以降を切り離す。
+  const base = String(kind || '').split(':')[0];
+  return base === 'image' || base === 'images' ? 'image' : 'sketch';
+}
+
+function mediaKindIdSuffix(kind) {
+  const raw = String(kind || '');
+  const idx = raw.indexOf(':');
+  return idx >= 0 ? raw.slice(idx + 1) : '';
 }
 
 function mediaKindList(entry) {
@@ -3948,7 +3957,11 @@ function mediaKindList(entry) {
 }
 
 function normalizeCurrentMediaKinds() {
-  currentMediaKinds = currentDrawings.map((_, i)=>normalizeMediaKind(currentMediaKinds[i]));
+  // クラウド同期のスキーマ上、記録に新しい独自フィールド（mediaIds）を足しても
+  // 反映されない場合があるため、既に同期実績のあるmediaKinds文字列に
+  // "kind:ID" の形でIDを埋め込み、確実に同期されるようにする。
+  normalizeCurrentMediaIds();
+  currentMediaKinds = currentDrawings.map((_, i) => normalizeMediaKind(currentMediaKinds[i]) + ':' + currentMediaIds[i]);
   return currentMediaKinds;
 }
 
@@ -3960,12 +3973,17 @@ function genMediaId() {
 
 function entryMediaIds(entry) {
   const media = entryMedia(entry);
-  const raw = Array.isArray(entry && entry.mediaIds) ? entry.mediaIds : [];
-  return media.map(function(id, i) { return raw[i] || null; });
+  const rawIds = Array.isArray(entry && entry.mediaIds) ? entry.mediaIds : [];
+  const rawKinds = Array.isArray(entry && entry.mediaKinds) ? entry.mediaKinds : [];
+  return media.map(function(_, i) {
+    if (rawIds[i]) return rawIds[i];
+    const fromKind = mediaKindIdSuffix(rawKinds[i]);
+    return fromKind || null;
+  });
 }
 
 function normalizeCurrentMediaIds() {
-  currentMediaIds = currentDrawings.map((_, i) => currentMediaIds[i] || genMediaId());
+  currentMediaIds = currentDrawings.map((_, i) => currentMediaIds[i] || mediaKindIdSuffix(currentMediaKinds[i]) || genMediaId());
   return currentMediaIds;
 }
 
@@ -4376,8 +4394,9 @@ async function loadFromCloud(options) {
       const chosen = chooseEntryVersion(c, l, preferLocal);
       if (!chosen) return null;
       const drawings = mergeEntryMedia(c, l);
-      const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
+      const mediaKindsBare = mergeEntryMediaKinds(c, l, drawings);
       const mediaIds = mergeEntryMediaIds(c, l, drawings);
+      const mediaKinds = mediaKindsBare.map(function(kind, i) { return kind + ':' + mediaIds[i]; });
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
       const noteTypes = mergeEntryNoteTypes(c, l, chosen, cloudNoteTypeMap, preferLocal, lastGoodMap);
       const chapterSummaryId = mergeEntryChapterLink(c, l, chosen, cloudChapterLinkMap, preferLocal, lastGoodMap);
@@ -9496,10 +9515,9 @@ function normalizePageField() { syncPageField({saveDraft:true}); }
 function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
   normalizeCurrentMediaKinds();
-  normalizeCurrentMediaIds();
   const drawingHTML=currentDrawings.map((src,i)=>`
     <div class="drawing-thumb" title="クリックで編集">
-      <img src="${src}" alt="スケッチ・画像${i+1}" onclick="openDrawingModal(${i},'${currentMediaKinds[i] === 'image' ? 'images' : 'drawings'}')">
+      <img src="${src}" alt="スケッチ・画像${i+1}" onclick="openDrawingModal(${i},'${normalizeMediaKind(currentMediaKinds[i]) === 'image' ? 'images' : 'drawings'}')">
       <div class="drawing-thumb-edit-badge">編集</div>
       <button class="drawing-thumb-delete" onclick="event.stopPropagation();deleteTempDrawing(${i})">✕</button>
     </div>`).join('');
@@ -9633,7 +9651,7 @@ function annotateEntryMedia(entryId, idx) {
   currentMediaKinds=mediaKindList(entry);
   currentFixedTags=getBookFixedTags(entry.book||'');
   const mediaIndex=parseInt(idx);
-  openDrawingModal(mediaIndex,currentMediaKinds[mediaIndex] === 'image' ? 'images' : 'drawings');
+  openDrawingModal(mediaIndex,normalizeMediaKind(currentMediaKinds[mediaIndex]) === 'image' ? 'images' : 'drawings');
 }
 
 function compressImageFile(file) {
