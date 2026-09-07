@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260827-fixedtags-merge-fix-v209';
+const CACHE_NAME = 'reading-note-pwa-20260827-inline-image-insert-v210';
 const APP_SHELL = [
   './',
   './index.html',

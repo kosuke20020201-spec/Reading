@@ -363,6 +363,10 @@
   .section-label { font-size: 0.65rem; font-weight: 700; color: var(--stone-400); margin-bottom: 0.2rem; }
   .section-text { font-size: 0.92rem; line-height: 1.75; white-space: normal; overflow-wrap: anywhere; }
   .record-line { display: block; min-height: 1.8em; padding-left: calc(var(--indent, 0) * 1em); white-space: pre-wrap; }
+  .record-line-image { min-height: 0; white-space: normal; margin: 0.5rem 0; padding-left: 0; }
+  .record-line-image img { display: block; max-width: 100%; max-height: 18rem; border-radius: 0.65rem; cursor: zoom-in; box-shadow: 0 1px 6px #00000014; }
+  .record-line-image-missing { min-height: 0; white-space: normal; padding-left: 0; display: inline-flex; align-items: center; margin: 0.3rem 0; font-size: 0.76rem; color: var(--stone-400); background: var(--stone-50); border: 1px dashed var(--stone-300); border-radius: 0.5rem; padding: 0.3rem 0.6rem; }
+  .text-format-btn-image { color: #0369a1; }
   .record-line ruby { ruby-position: over; }
   .record-line rt { font-size: 0.62em; font-weight: 600; color: var(--stone-400); letter-spacing: 0; }
   .section-text strong { font-weight: 900; color: var(--stone-800); }
@@ -934,9 +938,9 @@
         <p class="chapter-link-hint" id="chapterLinkHint"></p>
       </div>
       <div class="field entry-only-field"><label>📝 記録タイトル</label><input type="text" id="fTitle" placeholder="例: グライダー型人間について"></div>
-      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
-      <div class="field entry-only-field" id="supplementField"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button></div></div>
+      <div class="field entry-only-field"><label id="fContentLabel">📖 内容</label><textarea id="fContent" rows="3" placeholder="書かれていた内容を記録…"></textarea><div class="text-format-toolbar" data-format-for="fContent"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button><button type="button" class="text-format-btn text-format-btn-image" data-format-action="image" title="画像を挿入" onmousedown="event.preventDefault()">🖼</button></div></div>
+      <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button><button type="button" class="text-format-btn text-format-btn-image" data-format-action="image" title="画像を挿入" onmousedown="event.preventDefault()">🖼</button></div></div>
+      <div class="field entry-only-field" id="supplementField"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button><button type="button" class="text-format-btn text-format-btn-image" data-format-action="image" title="画像を挿入" onmousedown="event.preventDefault()">🖼</button></div></div>
       <div class="field entry-only-field review-checklist-field" id="reviewChecklistField" hidden>
         <label>📝 あとで見返すポイント</label>
         <div class="review-checklist-list" id="reviewChecklistList"></div>
@@ -964,6 +968,7 @@
         </div>
       </div>
     </div>
+    <input type="file" accept="image/*" id="inlineImageFileInput" style="display:none" onchange="handleInlineImageFileChange(event)">
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-save" id="btnSave" onclick="saveEntry()">保存する</button>
@@ -1122,7 +1127,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'fixedtags-merge-fix v176';
+const APP_VERSION   = 'inline-image-insert v177';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1243,7 +1248,7 @@ let entries = [], searchQuery = '', activeTag = '', activeTagFolder = '', active
 let todayPickFolder = localStorage.getItem(TODAY_PICK_FOLDER_KEY) || '';
 let todayPickHidden = localStorage.getItem(TODAY_PICK_HIDDEN_KEY) === '1';
 let todayPickRenderedKey = '';
-let currentDrawings = [], currentImages = [], currentMediaKinds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
+let currentDrawings = [], currentImages = [], currentMediaKinds = [], currentMediaIds = [], editingDrawingIndex = null, editingMediaKind = 'drawings', drawingBaseImageUrl = '', drawingBaseImage = null, mediaDirty = false, mediaProcessingCount = 0;
 let currentPageInputMode = 'range';
 let currentFixedTags = [];
 let fixedTagEditOnly = false;
@@ -3929,6 +3934,37 @@ function normalizeCurrentMediaKinds() {
   return currentMediaKinds;
 }
 
+// 記録本文中に画像を挿入する機能用：各画像に安定したIDを振っておくことで、
+// 画像の並び替え・削除があっても本文中の [img:ID] 参照が壊れないようにする。
+function genMediaId() {
+  return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function entryMediaIds(entry) {
+  const media = entryMedia(entry);
+  const raw = Array.isArray(entry && entry.mediaIds) ? entry.mediaIds : [];
+  return media.map(function(id, i) { return raw[i] || null; });
+}
+
+function normalizeCurrentMediaIds() {
+  currentMediaIds = currentDrawings.map((_, i) => currentMediaIds[i] || genMediaId());
+  return currentMediaIds;
+}
+
+function mergeEntryMediaIds(cloudEntry, localEntry, mergedMedia) {
+  const cloudMedia = entryMedia(cloudEntry);
+  const localMedia = entryMedia(localEntry);
+  const cloudIds = entryMediaIds(cloudEntry);
+  const localIds = entryMediaIds(localEntry);
+  return (mergedMedia || []).map(function(src) {
+    const localIndex = localMedia.indexOf(src);
+    if (localIndex >= 0 && localIds[localIndex]) return localIds[localIndex];
+    const cloudIndex = cloudMedia.indexOf(src);
+    if (cloudIndex >= 0 && cloudIds[cloudIndex]) return cloudIds[cloudIndex];
+    return genMediaId();
+  });
+}
+
 function mediaSummary(list) {
   const summary = {entriesWithMedia:0, mediaItems:0, maxMediaChars:0};
   (Array.isArray(list) ? list : []).forEach(function(entry) {
@@ -4323,12 +4359,13 @@ async function loadFromCloud(options) {
       if (!chosen) return null;
       const drawings = mergeEntryMedia(c, l);
       const mediaKinds = mergeEntryMediaKinds(c, l, drawings);
+      const mediaIds = mergeEntryMediaIds(c, l, drawings);
       const mediaUpdatedAt = mediaTime(c) > mediaTime(l) ? c.mediaUpdatedAt : ((l&&l.mediaUpdatedAt) || (c&&c.mediaUpdatedAt) || '');
       const noteTypes = mergeEntryNoteTypes(c, l, chosen, cloudNoteTypeMap, preferLocal, lastGoodMap);
       const chapterSummaryId = mergeEntryChapterLink(c, l, chosen, cloudChapterLinkMap, preferLocal, lastGoodMap);
       updateLocalNoteTypes(id, noteTypes);
       updateLocalChapterLink(id, chapterSummaryId);
-      return normalizeEntryForApp({...chosen, noteTypes, noteType: noteTypes[0] || NOTE_TYPE_DEFAULT, chapterSummaryId, drawings, images: [], mediaKinds, mediaUpdatedAt});
+      return normalizeEntryForApp({...chosen, noteTypes, noteType: noteTypes[0] || NOTE_TYPE_DEFAULT, chapterSummaryId, drawings, images: [], mediaKinds, mediaIds, mediaUpdatedAt});
     }).filter(Boolean);
     entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     const idRepair = repairMissingIds(entries);
@@ -7551,7 +7588,7 @@ function chapterKnowledgeMemoSectionsHTML(entry) {
     ['補足', entry.supplement]
   ].filter(([, text]) => String(text || '').trim());
   return sections.map(function([label, text]) {
-    return `<div class="chapter-linked-knowledge-item-section"><span class="chapter-linked-knowledge-item-label">${esc(label)}</span>${formatRecordText(text)}</div>`;
+    return `<div class="chapter-linked-knowledge-item-section"><span class="chapter-linked-knowledge-item-label">${esc(label)}</span>${formatRecordText(text, entry)}</div>`;
   }).join('');
 }
 
@@ -7591,7 +7628,7 @@ function cardHTML(e, options) {
   const pills = fixedPills + freePills;
   const fieldProfile = noteFieldProfileForTypes(entryStoredNoteTypes(e));
 
-  const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${formatRecordText(txt)}</div></div>`:'';
+  const sec=(cls,icon,lbl,txt)=>txt?`<div class="section-block ${cls}"><div class="section-label">${icon} ${lbl}</div><div class="section-text">${formatRecordText(txt, e)}</div></div>`:'';
   const media = entryMedia(e);
   const sketchHTML=media.length?`
     <div class="section-block" style="background:var(--stone-50)">
@@ -8690,6 +8727,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
   currentDrawings  = [];
   currentImages    = [];
   currentMediaKinds = [];
+  currentMediaIds  = [];
   mediaDirty = false;
 
   if (id) {
@@ -8710,6 +8748,7 @@ function openModal(id, presetBook, presetAuthor, fixedTagsOnly, options) {
       currentDrawings  = entryMedia(e).slice();
       currentImages    = [];
       currentMediaKinds = mediaKindList(e);
+      currentMediaIds  = entryMediaIds(e).map(function(mid) { return mid || genMediaId(); });
     }
   } else if (presetBook) {
     document.getElementById('fBook').value   = presetBook;
@@ -8860,6 +8899,7 @@ async function saveEntry() {
     drawings:   currentDrawings,
     images:     [],
     mediaKinds: normalizeCurrentMediaKinds(),
+    mediaIds: normalizeCurrentMediaIds(),
     fixedTags:  [...currentFixedTags],
     mediaUpdatedAt: mediaDirty ? nowIso : ((existingEntry&&existingEntry.mediaUpdatedAt)||''),
     updatedAt:  nowIso,
@@ -8996,8 +9036,18 @@ function handleTextareaTab(event) {
   applyTextareaIndent(event.currentTarget, !event.shiftKey);
 }
 
-function formatRecordText(text) {
+function formatRecordText(text, entry) {
+  const media = entry ? entryMedia(entry) : [];
+  const mediaIds = entry ? entryMediaIds(entry) : [];
   return String(text || '').replace(/\r\n?/g, '\n').split('\n').map(function(line) {
+    const inlineImageMatch = line.trim().match(/^\[img:([a-z0-9]+)\]$/i);
+    if (inlineImageMatch) {
+      const idx = mediaIds.indexOf(inlineImageMatch[1]);
+      if (idx >= 0 && entry) {
+        return `<span class="record-line record-line-image"><img src="${esc(media[idx])}" alt="挿入画像" loading="lazy" onclick="openMediaViewer('${esc(String(entry.id))}',${idx})"></span>`;
+      }
+      return `<span class="record-line record-line-image-missing">🖼 画像が見つかりません</span>`;
+    }
     const indent = recordLineIndent(line);
     const body = line.slice(indent.chars);
     const html = formatRecordInlineText(body);
@@ -9111,6 +9161,64 @@ function applyTextareaRuby(targetId) {
   el.value = nextValue;
   focusAndSelect(el, nextStart, nextEnd);
   queueEntryDraftSave();
+}
+
+// 記録本文中への画像挿入。挿入した画像は他の🖼画像と同じくスケッチ・画像ギャラリーにも
+// 追加され、本文には [img:安定ID] という目印だけを埋め込む。表示時にこの目印を実際の
+// 画像に置き換える。並び替え・削除があっても位置（添字）ではなくIDで参照するのでズレない。
+let inlineImageInsertTargetId = '';
+
+function triggerInlineImageInsert(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el || typeof el.selectionStart !== 'number') return;
+  inlineImageInsertTargetId = targetId;
+  document.getElementById('inlineImageFileInput').click();
+}
+
+async function handleInlineImageFileChange(ev) {
+  const input = ev && ev.target;
+  const file = input && input.files && input.files[0];
+  if (input) input.value = '';
+  const targetId = inlineImageInsertTargetId;
+  const el = targetId && document.getElementById(targetId);
+  if (!file || !el) return;
+  showToast('画像を挿入中です...');
+  mediaProcessingCount++;
+  try {
+    const dataUrl = await compressImageFile(file);
+    currentDrawings.push(dataUrl);
+    currentMediaKinds.push('image');
+    normalizeCurrentMediaIds();
+    const id = currentMediaIds[currentDrawings.length - 1];
+    mediaDirty = true;
+    renderDrawingGallery();
+
+    const value = el.value || '';
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const needsLeadingBreak = before && !before.endsWith('\n');
+    const needsTrailingBreak = after && !after.startsWith('\n');
+    const token = (needsLeadingBreak ? '\n' : '') + '[img:' + id + ']' + (needsTrailingBreak ? '\n' : '');
+    const nextValue = before + token + after;
+    const cursor = before.length + token.length;
+    el.value = nextValue;
+    focusAndSelect(el, cursor, cursor);
+    queueEntryDraftSave();
+
+    if (editingId !== null && editingId !== undefined) {
+      const synced = await persistEditingMedia();
+      showToast(synced ? '画像を挿入し、クラウドに保存しました' : '画像を挿入しました。同期待ちです');
+    } else {
+      showToast('画像を本文に挿入しました');
+    }
+  } catch(e) {
+    console.warn('Inline image insert failed:', e);
+    showToast('画像を挿入できませんでした');
+  } finally {
+    mediaProcessingCount = Math.max(0, mediaProcessingCount - 1);
+  }
 }
 
 function selectedTextAsTag(text) {
@@ -9332,6 +9440,7 @@ function normalizePageField() { syncPageField({saveDraft:true}); }
 function renderDrawingGallery() {
   const gallery=document.getElementById('drawingGallery');
   normalizeCurrentMediaKinds();
+  normalizeCurrentMediaIds();
   const drawingHTML=currentDrawings.map((src,i)=>`
     <div class="drawing-thumb" title="クリックで編集">
       <img src="${src}" alt="スケッチ・画像${i+1}" onclick="openDrawingModal(${i},'${currentMediaKinds[i] === 'image' ? 'images' : 'drawings'}')">
@@ -9343,6 +9452,7 @@ function renderDrawingGallery() {
 async function deleteTempDrawing(i) {
   currentDrawings.splice(i,1);
   currentMediaKinds.splice(i,1);
+  currentMediaIds.splice(i,1);
   mediaDirty=true;
   renderDrawingGallery();
   if(editingId!==null&&editingId!==undefined) {
@@ -9358,7 +9468,7 @@ function deleteTempImage(i) { currentImages.splice(i,1); renderDrawingGallery();
 async function persistEditingMedia() {
   if(editingId===null||editingId===undefined) return false;
   const nowIso = new Date().toISOString();
-  entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaKinds:normalizeCurrentMediaKinds(),mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
+  entries=entries.map(e=>String(e.id)===String(editingId)?{...e,drawings:currentDrawings,images:[],mediaKinds:normalizeCurrentMediaKinds(),mediaIds:normalizeCurrentMediaIds(),mediaUpdatedAt:nowIso,updatedAt:nowIso}:e);
   mediaDirty=false;
   persist();
   render();
@@ -10386,6 +10496,7 @@ document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
     else if (action === 'indent' || action === 'outdent') applyTextareaIndent(targetId, action === 'indent');
     else if (action === 'bold' || action === 'mark' || action === 'underline') applyTextareaFormat(targetId, action);
     else if (action === 'ruby') applyTextareaRuby(targetId);
+    else if (action === 'image') triggerInlineImageInsert(targetId);
   });
 });
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
