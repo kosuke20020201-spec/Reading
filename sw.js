@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260913-mediaid-content-hash-v214';
+const CACHE_NAME = 'reading-note-pwa-20260913-cloud-url-fix-v215';
 const APP_SHELL = [
   './',
   './index.html',
