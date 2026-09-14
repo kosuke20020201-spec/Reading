@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260913-cloud-url-fix-v215';
+const CACHE_NAME = 'reading-note-pwa-20260913-book-cover-design-v217';
 const APP_SHELL = [
   './',
   './index.html',
