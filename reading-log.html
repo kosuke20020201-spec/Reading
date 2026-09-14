@@ -1138,7 +1138,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'quote-shortcut-altq v186';
+const APP_VERSION   = 'ndl-thumbnail-fallback v187';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5971,6 +5971,32 @@ async function fetchRakutenBookInfo(book, author) {
   return candidates[0] || null;
 }
 
+// 国立国会図書館サーチの書影API（登録・APIキー不要）。
+// 他のソースで書影が見つからなかった場合の最後の砦として使う。
+// 404の場合は画像読み込みが失敗するので、実際に読み込めるかを確認してから採用する。
+function fetchNdlThumbnailUrl(isbn13) {
+  return new Promise(function(resolve) {
+    if (!/^\d{13}$/.test(String(isbn13 || ''))) { resolve(''); return; }
+    const url = 'https://ndlsearch.ndl.go.jp/thumbnail/' + isbn13 + '.jpg';
+    const img = new Image();
+    const timer = setTimeout(function() { resolve(''); }, BOOK_INFO_FETCH_TIMEOUT_MS || 8000);
+    img.onload = function() { clearTimeout(timer); resolve(url); };
+    img.onerror = function() { clearTimeout(timer); resolve(''); };
+    img.src = url;
+  });
+}
+
+function toIsbn13(isbn) {
+  const digits = String(isbn || '').replace(/[^0-9Xx]/g, '');
+  if (digits.length === 13) return digits;
+  if (digits.length !== 10) return '';
+  const core = '978' + digits.slice(0, 9);
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += (i % 2 === 0 ? 1 : 3) * Number(core[i]);
+  const check = (10 - (sum % 10)) % 10;
+  return core + check;
+}
+
 async function fetchBookInfo(book, author) {
   if (navigator.onLine === false) return null;
   let google = null;
@@ -6018,6 +6044,20 @@ async function fetchBookInfo(book, author) {
     source: mergeSourceText(sources.map(info => info.source)),
     infoUrl: (google && google.infoUrl) || (rakuten && rakuten.infoUrl) || (rakutenByNdlIsbn && rakutenByNdlIsbn.infoUrl) || (openBd && openBd.infoUrl) || (openLibrary && openLibrary.infoUrl) || (ndl && ndl.infoUrl) || (googleByNdlIsbn && googleByNdlIsbn.infoUrl) || ''
   });
+  if (!merged.coverUrl) {
+    // BUGFIX/機能追加: どのソースにも表紙が見つからなかった場合、
+    // 国立国会図書館サーチの書影APIを最後の手段として試す（キー不要）。
+    const isbn13ForThumb = toIsbn13(pickIsbn(merged));
+    if (isbn13ForThumb) {
+      try {
+        const ndlThumb = await fetchNdlThumbnailUrl(isbn13ForThumb);
+        if (ndlThumb) {
+          merged.coverUrl = ndlThumb;
+          merged.source = mergeSourceText([merged.source, 'NDL Thumbnail']);
+        }
+      } catch (e) {}
+    }
+  }
   return merged;
 }
 
@@ -6280,6 +6320,19 @@ async function fetchBookInfoCandidates(book, author, options) {
     if (ol.status === 'fulfilled' && ol.value) addBookInfoCandidate(list, mergeCandidateInfo(info, ol.value), 34);
     if (rk.status === 'fulfilled' && rk.value) addBookInfoCandidate(list, mergeCandidateInfo(info, rk.value), 38);
     if (obd.status === 'fulfilled' && obd.value) addBookInfoCandidate(list, mergeCandidateInfo(info, obd.value), 36);
+  }));
+  // BUGFIX/機能追加: ここまでで表紙が見つからなかった候補は、
+  // 国立国会図書館サーチの書影APIを最後の手段として試す（キー不要）。
+  const stillNoCover = sortBookInfoCandidates(list, book, author).filter(info => !info.coverUrl && pickIsbn(info)).slice(0, wide ? 8 : 4);
+  await Promise.all(stillNoCover.map(async function(info) {
+    const isbn13ForThumb = toIsbn13(pickIsbn(info));
+    if (!isbn13ForThumb) return;
+    try {
+      const ndlThumb = await fetchNdlThumbnailUrl(isbn13ForThumb);
+      if (ndlThumb) {
+        addBookInfoCandidate(list, mergeCandidateInfo(info, {coverUrl: ndlThumb, source: 'NDL Thumbnail'}), 33);
+      }
+    } catch (e) {}
   }));
   return sortBookInfoCandidates(list, book, author).slice(0, 12);
 }
