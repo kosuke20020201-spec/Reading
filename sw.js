@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260913-book-cover-design-v217';
+const CACHE_NAME = 'reading-note-pwa-20260913-quote-shortcut-altq-v219';
 const APP_SHELL = [
   './',
   './index.html',
