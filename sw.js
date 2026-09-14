@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260913-ndl-thumbnail-fallback-v220';
+const CACHE_NAME = 'reading-note-pwa-20260913-pointer-drag-reorder-v221';
 const APP_SHELL = [
   './',
   './index.html',
