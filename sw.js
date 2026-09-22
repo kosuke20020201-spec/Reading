@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260913-pointer-drag-reorder-v221';
+const CACHE_NAME = 'reading-note-pwa-20260913-drag-uniform-height-v223';
 const APP_SHELL = [
   './',
   './index.html',

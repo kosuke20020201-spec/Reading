@@ -149,7 +149,9 @@
   .book-group.open .book-shell { flex-shrink: 0; width: 100%; min-height: auto; padding: 0; align-items: stretch; justify-content: flex-start; }
   .book-group.open .book-shell::before,
   .book-group.open .book-shell::after { display: none; }
-  .bookshelf-main.book-reorder-mode .book-spine { cursor: pointer; }
+  .bookshelf-main.book-reorder-mode .book-spine { cursor: grab; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .bookshelf-main.book-reorder-mode .book-spine:active { cursor: grabbing; }
+  .book-group.dragging .book-cover-face { opacity: 0.45; }
   .book-group.reorder-selected .book-spine { outline: 3px solid var(--amber); outline-offset: 3px; filter: brightness(1.08) saturate(1.05); }
   .book-move-actions { position: relative; z-index: 2; display: none; flex-wrap: wrap; justify-content: center; gap: 0.25rem; max-width: var(--spine-width, 4.6rem); }
   .bookshelf-main.book-reorder-mode .book-move-actions { display: flex; }
@@ -164,8 +166,8 @@
   .book-insert-btn { min-height: 2rem; padding: 0.25rem 0.55rem; border-radius: 999px; border: 1px dashed var(--amber); background: #fffbeb; color: #92400e; font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px #0000000d; }
   .book-insert-btn:hover { background: var(--amber-light); border-style: solid; }
   .book-group.dragging { opacity: 0.45; }
-  .book-group.drop-before .book-spine { box-shadow: -0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
-  .book-group.drop-after .book-spine { box-shadow: 0.5rem 0 0 var(--amber), inset 4px 0 6px rgba(255,255,255,0.18), inset -8px 0 12px rgba(0,0,0,0.34), inset 0 5px 0 rgba(255,255,255,0.12), inset 0 -7px 0 rgba(0,0,0,0.24), 0 8px 16px rgba(41,37,36,0.22); }
+  .book-group.drop-before .book-cover-face { box-shadow: -0.5rem 0 0 var(--amber), inset 0 0 0 1px rgba(255,255,255,0.08), 0 6px 14px rgba(41,37,36,0.22); }
+  .book-group.drop-after .book-cover-face { box-shadow: 0.5rem 0 0 var(--amber), inset 0 0 0 1px rgba(255,255,255,0.08), 0 6px 14px rgba(41,37,36,0.22); }
   .book-order-list { display: flex; flex-direction: column; gap: 0.45rem; }
   .book-order-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 0.75rem; padding: 0.7rem 0.8rem; border: 1px solid var(--stone-200); border-radius: 0.85rem; background: white; cursor: grab; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s; }
   .book-order-row:active { cursor: grabbing; }
@@ -199,8 +201,8 @@
   .book-group.open .book-spine-detail { grid-column: 1 / -1; grid-row: 3; width: 100%; margin-top: 0.2rem; flex-direction: row; justify-content: flex-start; gap: 0.35rem; min-width: 0; }
   .book-group.open .book-spine-tag,
   .book-group.open .book-spine-date { max-width: min(100%, 18rem); }
-  .book-spine-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; width: auto; height: auto; max-height: 2.6em; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.28; color: var(--stone-800, #292524); text-shadow: none; writing-mode: horizontal-tb; word-break: normal; overflow-wrap: anywhere; overflow: hidden; font-feature-settings: "palt"; }
-  .book-spine-author { display: block; width: auto; height: auto; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 500; font-size: 0.7rem; opacity: 1; line-height: 1.2; color: var(--stone-400, #78716c); text-shadow: none; writing-mode: horizontal-tb; word-break: normal; overflow-wrap: normal; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-feature-settings: "palt"; }
+  .book-spine-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; width: auto; height: calc(var(--title-size, 0.84rem) * 1.28 * 2); font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 700; font-size: var(--title-size, 0.84rem); line-height: 1.28; color: var(--stone-800, #292524); text-shadow: none; writing-mode: horizontal-tb; word-break: normal; overflow-wrap: anywhere; overflow: hidden; font-feature-settings: "palt"; }
+  .book-spine-author { display: block; width: auto; min-height: 1.2rem; font-family: 'Noto Sans JP', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif; font-weight: 500; font-size: 0.7rem; opacity: 1; line-height: 1.2; color: var(--stone-400, #78716c); text-shadow: none; writing-mode: horizontal-tb; word-break: normal; overflow-wrap: normal; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-feature-settings: "palt"; }
   .book-spine-year { opacity: 0.75; }
   .spine-word-latin { white-space: nowrap; }
   .book-spine-meta { margin-top: 0.05rem; display: flex; align-items: center; justify-content: space-between; gap: 0.25rem; width: 100%; }
@@ -1138,7 +1140,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'pointer-drag-reorder v188';
+const APP_VERSION   = 'drag-quote-fix-uniform-height v190';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5035,10 +5037,11 @@ function finishShelfPointerDrag() {
 }
 
 function onShelfBookPointerDown(event, key) {
-  if (shelfReorderMode) return;
+  if (!shelfReorderMode) return;
   if (event.button !== undefined && event.button !== 0) return;
   const source = event.currentTarget.closest('.book-group');
   if (!source) return;
+  event.preventDefault();
   shelfPointerDrag = {
     active: true,
     dragging: false,
@@ -5341,6 +5344,7 @@ function handleShelfClick(event) {
   if (!spine) return false;
   event.preventDefault();
   event.stopPropagation();
+  if (bookOrderJustDragged) return true;
   const key = spine.dataset.bookKey || '';
   const index = Number(spine.dataset.bookIndex || 0);
   if (shelfReorderMode) {
@@ -7451,11 +7455,12 @@ function render() {
 <div class="book-group${isOpen?' open':''}${shelfReorderSelectedKey===k?' reorder-selected':''}" id="grp-${gi}" style="${spineVars}" data-book-key="${esc(k)}" data-book-name="${esc(g.book || '')}" data-book-author="${esc(g.author || '')}">
   <div class="book-shell" style="${spineVars}">
     <button type="button" class="book-spine${coverVar?' has-cover':''}${spineHasBadge?' has-status-badge':''}" style="${spineStyleText}" ${coverVar ? `data-cover-src="${esc(safeBookImageUrl(metaInfo.coverUrl))}"` : ''}
-      data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}">
+      data-book-index="${gi}" data-book-key="${esc(k)}" data-book-title="${esc(metaInfo.title||g.book||'タイトル未入力')}" aria-expanded="${isOpen?'true':'false'}" aria-controls="grp-${gi}-cards" aria-label="${esc(metaInfo.title||g.book||'タイトル未入力')}の記録を${isOpen?'閉じる':'開く'}"
+      onpointerdown='onShelfBookPointerDown(event,${jsArg(k)})' onpointermove='onShelfBookPointerMove(event)' onpointerup='onShelfBookPointerUp(event)' onpointercancel='onShelfBookPointerCancel(event)'>
       <span class="book-cover-face"><span class="book-cover-fallback-letter">${coverFallbackLetter}</span></span>
       ${bookStatusBadgesHTML(g.book)}
       <span class="book-spine-title">${formatSpineText(metaInfo.title||g.book||'タイトル未入力')}</span>
-      ${bookAuthorLabel(g) && bookAuthorLabel(g) !== '著者未入力' ? `<span class="book-spine-author">${formatSpineText(bookAuthorLabel(g).split('、')[0])}${publishedYear ? `<span class="book-spine-year">（${publishedYear[0]}）</span>` : ''}</span>` : (publishedYear ? `<span class="book-spine-author book-spine-year-only">${publishedYear[0]}年</span>` : '')}
+      ${bookAuthorLabel(g) && bookAuthorLabel(g) !== '著者未入力' ? `<span class="book-spine-author">${formatSpineText(bookAuthorLabel(g).split('、')[0])}${publishedYear ? `<span class="book-spine-year">（${publishedYear[0]}）</span>` : ''}</span>` : (publishedYear ? `<span class="book-spine-author book-spine-year-only">${publishedYear[0]}年</span>` : '<span class="book-spine-author"></span>')}
       <span class="book-spine-meta">
         <span class="book-group-count">${g.entries.length}件</span>
         <span class="book-group-toggle">▶</span>
