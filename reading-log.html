@@ -1140,7 +1140,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'shelf-drag-longpress v191';
+const APP_VERSION   = 'shelf-drag-autoscroll v192';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -1295,6 +1295,7 @@ let bookOrderPointerDrag = null;
 let bookOrderSelectedKey = '';
 let bookOrderJustDragged = false;
 let shelfPointerDrag = null;
+let shelfAutoScrollRaf = null;
 let shelfReorderMode = false;
 let shelfReorderSelectedKey = '';
 let tagFolderSearchQuery = '';
@@ -5030,14 +5031,62 @@ function shelfGroupFromPoint(x, y) {
 
 const SHELF_DRAG_LONG_PRESS_MS = 1000;
 const SHELF_DRAG_ARM_MOVE_TOLERANCE = 8;
+const SHELF_DRAG_EDGE_ZONE = 90;
+const SHELF_DRAG_MAX_SCROLL_SPEED = 18;
 
 function finishShelfPointerDrag() {
   if (shelfPointerDrag && shelfPointerDrag.longPressTimer) clearTimeout(shelfPointerDrag.longPressTimer);
+  stopShelfAutoScroll();
   if (shelfPointerDrag && shelfPointerDrag.source) shelfPointerDrag.source.classList.remove('dragging');
   shelfPointerDrag = null;
   bookOrderDragKey = '';
   clearShelfBookDropState();
   setTimeout(function(){ bookOrderJustDragged = false; }, 100);
+}
+
+// BUGFIX/機能追加: ドラッグ中に指・マウスを画面の上端/下端に近づけると、
+// ページが自動でスクロールし、画面外の位置にも本を移動できるようにする。
+function stopShelfAutoScroll() {
+  if (shelfAutoScrollRaf) { cancelAnimationFrame(shelfAutoScrollRaf); shelfAutoScrollRaf = null; }
+}
+
+function shelfAutoScrollTick() {
+  if (!shelfPointerDrag || !shelfPointerDrag.dragging || !shelfPointerDrag.autoScrollDir) { shelfAutoScrollRaf = null; return; }
+  window.scrollBy(0, shelfPointerDrag.autoScrollDir * shelfPointerDrag.autoScrollSpeed);
+  updateShelfDropTarget(shelfPointerDrag.lastClientX, shelfPointerDrag.lastClientY);
+  shelfAutoScrollRaf = requestAnimationFrame(shelfAutoScrollTick);
+}
+
+function updateShelfAutoScroll(clientY) {
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  let dir = 0, speed = 0;
+  if (clientY < SHELF_DRAG_EDGE_ZONE) {
+    dir = -1;
+    speed = SHELF_DRAG_MAX_SCROLL_SPEED * (1 - Math.max(0, clientY) / SHELF_DRAG_EDGE_ZONE);
+  } else if (clientY > vh - SHELF_DRAG_EDGE_ZONE) {
+    dir = 1;
+    speed = SHELF_DRAG_MAX_SCROLL_SPEED * (1 - Math.max(0, vh - clientY) / SHELF_DRAG_EDGE_ZONE);
+  }
+  shelfPointerDrag.autoScrollDir = dir;
+  shelfPointerDrag.autoScrollSpeed = Math.max(2, speed);
+  if (dir && !shelfAutoScrollRaf) shelfAutoScrollRaf = requestAnimationFrame(shelfAutoScrollTick);
+  if (!dir) stopShelfAutoScroll();
+}
+
+function updateShelfDropTarget(clientX, clientY) {
+  const target = shelfGroupFromPoint(clientX, clientY);
+  if (!target || target === shelfPointerDrag.source) {
+    shelfPointerDrag.targetKey = '';
+    clearShelfBookDropState();
+    return;
+  }
+  const rect = target.getBoundingClientRect();
+  const position = clientX > rect.left + rect.width / 2 ? 'after' : 'before';
+  clearShelfBookDropState();
+  target.dataset.dropPosition = position;
+  target.classList.add(position === 'after' ? 'drop-after' : 'drop-before');
+  shelfPointerDrag.targetKey = target.dataset.bookKey || '';
+  shelfPointerDrag.position = position;
 }
 
 function onShelfBookPointerDown(event, key) {
@@ -5062,6 +5111,10 @@ function onShelfBookPointerDown(event, key) {
     position: 'before',
     startX: event.clientX,
     startY: event.clientY,
+    lastClientX: event.clientX,
+    lastClientY: event.clientY,
+    autoScrollDir: 0,
+    autoScrollSpeed: 0,
     longPressTimer: null
   };
   if (isTouch) {
@@ -5094,19 +5147,10 @@ function onShelfBookPointerMove(event) {
     shelfPointerDrag.source.classList.add('dragging');
   }
   event.preventDefault();
-  const target = shelfGroupFromPoint(event.clientX, event.clientY);
-  if (!target || target === shelfPointerDrag.source) {
-    shelfPointerDrag.targetKey = '';
-    clearShelfBookDropState();
-    return;
-  }
-  const rect = target.getBoundingClientRect();
-  const position = event.clientX > rect.left + rect.width / 2 ? 'after' : 'before';
-  clearShelfBookDropState();
-  target.dataset.dropPosition = position;
-  target.classList.add(position === 'after' ? 'drop-after' : 'drop-before');
-  shelfPointerDrag.targetKey = target.dataset.bookKey || '';
-  shelfPointerDrag.position = position;
+  shelfPointerDrag.lastClientX = event.clientX;
+  shelfPointerDrag.lastClientY = event.clientY;
+  updateShelfAutoScroll(event.clientY);
+  updateShelfDropTarget(event.clientX, event.clientY);
 }
 
 function onShelfBookPointerUp(event) {

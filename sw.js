@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260913-shelf-drag-longpress-v224';
+const CACHE_NAME = 'reading-note-pwa-20260913-shelf-drag-autoscroll-v225';
 const APP_SHELL = [
   './',
   './index.html',
