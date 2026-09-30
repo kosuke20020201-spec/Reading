@@ -2260,7 +2260,13 @@ function rememberLastGoodEntries(source) {
     .filter(e => e && !isSyncMetaEntry(e) && !isDeletedEntry(e) && !entryHasSheetCellError(e))
     .map(normalizeEntryForApp);
   if (active.length || (Array.isArray(source) && !source.length)) {
-    localStorage.setItem(LAST_GOOD_ENTRIES_KEY, JSON.stringify(active));
+    // NOTE: これは復旧用の予備バックアップ。容量オーバーで書き込みに失敗しても
+    // アプリ本体の起動・保存は止めない（ここで投げると load() 全体が落ちて白画面になる）。
+    try {
+      localStorage.setItem(LAST_GOOD_ENTRIES_KEY, JSON.stringify(active));
+    } catch (err) {
+      console.warn('rememberLastGoodEntries: quota exceeded, skipping backup snapshot', err);
+    }
   }
 }
 
@@ -3660,7 +3666,19 @@ function persist() {
   migrateImagesIntoDrawings();
   syncEntryFixedTags();
   autoAssignTagFoldersFromEntries();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  const json = JSON.stringify(entries);
+  try {
+    localStorage.setItem(STORAGE_KEY, json);
+  } catch (err) {
+    // 容量オーバー: 予備バックアップ（重複データ）を消して空き容量を確保し、もう一度だけ試す
+    try { localStorage.removeItem(LAST_GOOD_ENTRIES_KEY); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, json);
+    } catch (err2) {
+      console.error('persist: quota exceeded even after freeing backup', err2);
+      alert('保存容量がいっぱいで記録を保存できません。画像や手書きの多い古い記録を削除するか、バックアップを取ってから空き容量を確保してください。');
+    }
+  }
   rememberLastGoodEntries(entries);
   markSyncPending(true);
   scheduleCloudSync(0);
