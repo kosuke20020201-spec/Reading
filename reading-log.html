@@ -2258,7 +2258,13 @@ function repairEntriesWithLastGood(list) {
 function rememberLastGoodEntries(source) {
   const active = (Array.isArray(source) ? source : entries)
     .filter(e => e && !isSyncMetaEntry(e) && !isDeletedEntry(e) && !entryHasSheetCellError(e))
-    .map(normalizeEntryForApp);
+    .map(normalizeEntryForApp)
+    .map(function(e) {
+      // 画像・手書き(base64)は容量の大半を占めるため、この復旧用バックアップからは除外する。
+      // テキスト系フィールド（タイトル・本文・タグ等）のシート破損リペアにのみ使う想定。
+      const { drawings, images, ...rest } = e;
+      return rest;
+    });
   if (active.length || (Array.isArray(source) && !source.length)) {
     // NOTE: これは復旧用の予備バックアップ。容量オーバーで書き込みに失敗しても
     // アプリ本体の起動・保存は止めない（ここで投げると load() 全体が落ちて白画面になる）。

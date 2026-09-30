@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260914-quota-crash-fix-v227';
+const CACHE_NAME = 'reading-note-pwa-20260914-lightweight-backup-v228';
 const APP_SHELL = [
   './',
   './index.html',
