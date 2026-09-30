@@ -149,7 +149,7 @@
   .book-group.open .book-shell { flex-shrink: 0; width: 100%; min-height: auto; padding: 0; align-items: stretch; justify-content: flex-start; }
   .book-group.open .book-shell::before,
   .book-group.open .book-shell::after { display: none; }
-  .bookshelf-main.book-reorder-mode .book-spine { cursor: grab; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .bookshelf-main.book-reorder-mode .book-spine { cursor: grab; touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .bookshelf-main.book-reorder-mode .book-spine:active { cursor: grabbing; }
   .book-group.dragging .book-cover-face { opacity: 0.45; }
   .book-group.reorder-selected .book-spine { outline: 3px solid var(--amber); outline-offset: 3px; filter: brightness(1.08) saturate(1.05); }
@@ -1140,7 +1140,7 @@
 
 <script>
 const STORAGE_KEY   = 'reading_log_v1';
-const APP_VERSION   = 'drag-quote-fix-uniform-height v190';
+const APP_VERSION   = 'shelf-drag-longpress v191';
 const DELETED_KEY   = 'reading_log_deleted';
 const DELETED_SYNC_HASH_KEY = 'reading_log_deleted_sync_hash';
 const TOMBSTONES_KEY = 'reading_log_deleted_tombstones';
@@ -5028,7 +5028,11 @@ function shelfGroupFromPoint(x, y) {
   return el && el.closest ? el.closest('.book-group') : null;
 }
 
+const SHELF_DRAG_LONG_PRESS_MS = 1000;
+const SHELF_DRAG_ARM_MOVE_TOLERANCE = 8;
+
 function finishShelfPointerDrag() {
+  if (shelfPointerDrag && shelfPointerDrag.longPressTimer) clearTimeout(shelfPointerDrag.longPressTimer);
   if (shelfPointerDrag && shelfPointerDrag.source) shelfPointerDrag.source.classList.remove('dragging');
   shelfPointerDrag = null;
   bookOrderDragKey = '';
@@ -5041,25 +5045,47 @@ function onShelfBookPointerDown(event, key) {
   if (event.button !== undefined && event.button !== 0) return;
   const source = event.currentTarget.closest('.book-group');
   if (!source) return;
-  event.preventDefault();
+  // BUGFIX/機能追加: スマホでは指を置いた瞬間にドラッグが始まってしまい、
+  // タップやページスクロールと衝突していた。マウス（ブラウザ版）は今まで通り即座に、
+  // タッチ操作の場合だけ約1秒の長押しでドラッグを「有効化」してから動かせるようにする。
+  const isTouch = event.pointerType === 'touch' || event.pointerType === 'pen';
   shelfPointerDrag = {
     active: true,
     dragging: false,
+    armed: !isTouch,
+    isTouch,
+    el: event.currentTarget,
     key: String(key || ''),
     pointerId: event.pointerId,
     source,
     targetKey: '',
     position: 'before',
     startX: event.clientX,
-    startY: event.clientY
+    startY: event.clientY,
+    longPressTimer: null
   };
-  try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+  if (isTouch) {
+    const pid = event.pointerId;
+    shelfPointerDrag.longPressTimer = setTimeout(function() {
+      if (!shelfPointerDrag || shelfPointerDrag.pointerId !== pid) return;
+      shelfPointerDrag.armed = true;
+      try { shelfPointerDrag.el.setPointerCapture(pid); } catch (e) {}
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+    }, SHELF_DRAG_LONG_PRESS_MS);
+  } else {
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch (e) {}
+  }
 }
 
 function onShelfBookPointerMove(event) {
   if (!shelfPointerDrag || !shelfPointerDrag.active || shelfPointerDrag.pointerId !== event.pointerId) return;
   const dx = event.clientX - shelfPointerDrag.startX;
   const dy = event.clientY - shelfPointerDrag.startY;
+  if (!shelfPointerDrag.armed) {
+    // 長押しが確定する前に指が動いた＝スクロールなどの意図とみなし、ドラッグは諦める
+    if (Math.hypot(dx, dy) > SHELF_DRAG_ARM_MOVE_TOLERANCE) finishShelfPointerDrag();
+    return;
+  }
   if (!shelfPointerDrag.dragging && Math.hypot(dx, dy) < 10) return;
   if (!shelfPointerDrag.dragging) {
     shelfPointerDrag.dragging = true;
