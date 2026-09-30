@@ -9009,7 +9009,7 @@ function closeModal(force) {
 }
 function editEntry(id) { openModal(id); }
 
-function deleteEntry(id) {
+async function deleteEntry(id) {
   if(!confirm('この記録を削除しますか？'))return;
   const target = entries.find(e=>e.id===id || String(e.id)===String(id));
   const deletedId = String(id);
@@ -9027,10 +9027,10 @@ function deleteEntry(id) {
       return {...entry, chapterSummaryId:'', updatedAt:unlinkedAt};
     });
   setLocalChapterLinksMap(chapterLinks);
-  persist();
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));
-  render();
   showToast('削除しました');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  persist();
+  render();
 }
 
 function saveBookWideEdit() {
@@ -9125,7 +9125,9 @@ async function saveEntry() {
   if(isEditingEntry){ entries=entries.map(e=>String(e.id)===String(entryId)?{...e,...data}:e); }
   else { entries.unshift({...data,createdAt:new Date().toISOString().slice(0,10)}); }
 
-  persist(); clearEntryDraft(); closeModal(true); render(); showToast('保存しました');
+  clearEntryDraft(); closeModal(true); showToast('保存しました');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  persist(); render();
   if(shouldVerifyMedia) {
     const synced = await syncMediaNow();
     showToast(synced ? 'Saved to cloud' : 'Saved on this device. Sync pending.');
