@@ -57,6 +57,7 @@
   .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
   @media (min-width: 900px) and (pointer: fine) {
     .container { max-width: min(94vw, 1600px); padding: 2.25rem 2.5rem 4rem; }
+    .modal { max-width: min(70vw, 1080px); }
   }
 
   header { margin-bottom: 2rem; display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
@@ -312,7 +313,6 @@
   .review-checklist-hint { margin: 0.45rem 0 0; color: var(--stone-400); font-size: 0.68rem; font-weight: 700; line-height: 1.5; }
   .review-checklist-view-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.32rem; }
   .review-checklist-view-item { display: flex; align-items: baseline; gap: 0.42rem; font-size: 0.86rem; line-height: 1.5; }
-  .review-checklist-view-item.done .review-checklist-view-text { text-decoration: line-through; color: var(--stone-400); }
   .review-checklist-view-mark { flex-shrink: 0; }
   .review-checklist-view-text { flex: 1; min-width: 0; word-break: break-word; }
   .review-checklist-view-page { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; color: var(--amber-600, #b45309); background: var(--amber-50, #fffbeb); border-radius: 0.4rem; padding: 0.08rem 0.4rem; }
@@ -942,10 +942,10 @@
       <div class="field entry-only-field" id="lessonField"><label id="fLessonLabel">💡 教訓</label><textarea id="fLesson" class="lesson-field" rows="3" placeholder="そこから得た学びや行動指針…"></textarea><div class="text-format-toolbar" data-format-for="fLesson"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-strike" data-format-action="strike" title="取り消し線" onmousedown="event.preventDefault()">—</button><button type="button" class="text-format-btn text-format-btn-quote" data-format-action="quote" title="引用（Alt+Shift+Q）" onmousedown="event.preventDefault()">”</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button><button type="button" class="text-format-btn text-format-btn-image" data-format-action="image" title="画像を挿入" onmousedown="event.preventDefault()">🖼</button></div></div>
       <div class="field entry-only-field" id="supplementField"><label id="fSupplementLabel">🔍 補足情報</label><textarea id="fSupplement" rows="2" placeholder="関連知識・参考資料・文脈など…"></textarea><div class="text-format-toolbar" data-format-for="fSupplement"><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="indent" title="&#23383;&#19979;&#12370;" onmousedown="event.preventDefault()">&#8594;</button><button type="button" class="text-format-btn text-format-btn-indent" data-format-action="outdent" title="&#23383;&#19979;&#12370;&#12434;&#25147;&#12377;" onmousedown="event.preventDefault()">&#8592;</button><button type="button" class="text-format-btn" data-format-action="bold" title="太字" onmousedown="event.preventDefault()">B</button><button type="button" class="text-format-btn text-format-btn-marker" data-format-action="mark" title="マーカー" onmousedown="event.preventDefault()">▰</button><button type="button" class="text-format-btn text-format-btn-underline" data-format-action="underline" title="下線" onmousedown="event.preventDefault()">U</button><button type="button" class="text-format-btn text-format-btn-strike" data-format-action="strike" title="取り消し線" onmousedown="event.preventDefault()">—</button><button type="button" class="text-format-btn text-format-btn-quote" data-format-action="quote" title="引用（Alt+Shift+Q）" onmousedown="event.preventDefault()">”</button><button type="button" class="text-format-btn text-format-btn-ruby" data-format-action="ruby" title="ふりがな" onmousedown="event.preventDefault()">振</button><button type="button" class="text-format-btn" data-format-action="tag" title="タグに追加" onmousedown="event.preventDefault()">🏷</button><button type="button" class="text-format-btn text-format-btn-image" data-format-action="image" title="画像を挿入" onmousedown="event.preventDefault()">🖼</button></div></div>
       <div class="field entry-only-field review-checklist-field" id="reviewChecklistField" hidden>
-        <label>📝 あとで見返すポイント</label>
+        <label>📝 この章のポイント</label>
         <div class="review-checklist-list" id="reviewChecklistList"></div>
         <button type="button" class="review-checklist-add-btn" onclick="addReviewChecklistRow()">＋ 項目を追加</button>
-        <p class="review-checklist-hint">細かく確認し直したい内容を箇条書きで。該当ページも書いておけます。</p>
+        <p class="review-checklist-hint">知識メモを書く前から、この章で押さえたいポイントを書いておけます。同じタイトルの知識メモを作ると自動でチェックが付きます。</p>
       </div>
       <div class="field">
         <label>📚 本の固定タグ <span style="font-weight:400;color:var(--stone-400)">（この本を選ぶたびに自動でつく）</span></label>
@@ -1312,7 +1312,7 @@ let orientationTransitionInFlight = false;
 let entryPortraitLockActive = false;
 let drawMode = 'draw', drawHistory = [], isDrawing = false, lastX = 0, lastY = 0, drawingDirty = false, drawingDraftTimer = null;
 let dCanvas = null, dCtx = null, dpiRatio = 1;
-let syncInFlight = false, syncRetryTimer = null;
+let syncInFlight = false, syncRetryTimer = null, syncFailureStreak = 0;
 let entryDraftDirty = false, entryDraftTimer = null, suppressEntryDraft = false;
 let tagFolderCacheText = null, tagFolderCacheValue = null;
 let tagFolderOrderCacheText = null, tagFolderOrderCacheValue = null;
@@ -2044,7 +2044,7 @@ function reviewChecklistRowHTML(item) {
   item = item || {};
   return `<div class="review-checklist-row" data-checklist-row>
     <input type="checkbox" class="review-checklist-check"${item.done ? ' checked' : ''} onchange="queueEntryDraftSave()">
-    <input type="text" class="review-checklist-text" placeholder="見返す内容…" value="${esc(item.text || '')}" oninput="queueEntryDraftSave()">
+    <input type="text" class="review-checklist-text" placeholder="この章のポイント…" value="${esc(item.text || '')}" oninput="queueEntryDraftSave()">
     <input type="text" inputmode="numeric" class="review-checklist-page" placeholder="p." value="${esc(item.page || '')}" oninput="queueEntryDraftSave()">
     <button type="button" class="review-checklist-remove" onclick="removeReviewChecklistRow(this)" aria-label="この項目を削除">×</button>
   </div>`;
@@ -2098,9 +2098,47 @@ function reviewChecklistDisplayHTML(e) {
     </li>`;
   }).join('');
   return `<div class="section-block review-checklist-view-block">
-    <div class="section-label">📝 あとで見返すポイント</div>
+    <div class="section-label">📝 この章のポイント</div>
     <ul class="review-checklist-view-list">${rows}</ul>
   </div>`;
+}
+
+function normalizeChapterPointTitle(value) {
+  return String(value == null ? '' : value).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+}
+
+function chapterPointPageFromEntryPage(page) {
+  return String(page == null ? '' : page).replace(/^\s*pp?\.\s*/i, '').trim();
+}
+
+// 知識メモの保存時に、リンク先の章の「この章のポイント」へ反映する。
+// ・同じタイトルのポイントがあれば自動でチェックを付ける（ページが空なら補う）
+// ・なければ（新規作成時のみ）タイトル・ページ付き・チェック済みで立項する
+function syncChapterPointForKnowledgeMemo(memo, isNew, nowIso) {
+  if (!memo || !memo.chapterSummaryId) return false;
+  const types = entryStoredNoteTypes(memo);
+  if (!isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return false;
+  const title = String(memo.title || '').trim();
+  const titleKey = normalizeChapterPointTitle(title);
+  if (!titleKey) return false;
+  const chapter = entries.find(e => String(e.id) === String(memo.chapterSummaryId));
+  if (!chapter || !isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return false;
+  const items = parseReviewChecklist(chapter.reviewChecklist).map(item => ({ ...item }));
+  const memoPage = chapterPointPageFromEntryPage(memo.page);
+  const match = items.find(item => normalizeChapterPointTitle(item.text) === titleKey);
+  let changed = false;
+  if (match) {
+    if (!match.done) { match.done = true; changed = true; }
+    if (!match.page && memoPage) { match.page = memoPage; changed = true; }
+  } else if (isNew) {
+    items.push({ text: title, page: memoPage, done: true });
+    changed = true;
+  }
+  if (!changed) return false;
+  entries = entries.map(e => String(e.id) === String(chapter.id)
+    ? { ...e, reviewChecklist: JSON.stringify(items), updatedAt: nowIso || new Date().toISOString() }
+    : e);
+  return true;
 }
 
 function updateChapterLinkChoices() {
@@ -4402,6 +4440,7 @@ async function syncToCloud(options) {
     markSyncPending(false);
     markDeletedIdsSynced(deletedIds);
     recordSyncSuccess();
+    syncFailureStreak = 0;
     render();
     showSyncStatus('Saved to cloud');
     setTimeout(hideSyncStatus, 1800);
@@ -4412,7 +4451,11 @@ async function syncToCloud(options) {
     render();
     console.warn('Cloud sync failed:', e);
     showSyncStatus('Sync problem - will retry');
-    scheduleCloudSync(SYNC_RETRY_MS);
+    // 恒久的な失敗（デプロイURLが無効等）で15秒毎に延々叩き続けないよう、
+    // 失敗が続くほど間隔を伸ばす（最大5分）。成功したらリセットされる。
+    syncFailureStreak++;
+    const backoffMs = Math.min(SYNC_RETRY_MS * Math.pow(2, Math.min(syncFailureStreak, 4)), 300000);
+    scheduleCloudSync(backoffMs);
     return false;
   } finally {
     syncInFlight = false;
@@ -9148,8 +9191,9 @@ async function saveEntry() {
   updateLocalChapterLink(entryId, chapterSummaryId);
   if(isEditingEntry){ entries=entries.map(e=>String(e.id)===String(entryId)?{...e,...data}:e); }
   else { entries.unshift({...data,createdAt:new Date().toISOString().slice(0,10)}); }
+  const chapterPointChanged = syncChapterPointForKnowledgeMemo(data, !isEditingEntry, nowIso);
 
-  clearEntryDraft(); closeModal(true); showToast('保存しました');
+  clearEntryDraft(); closeModal(true); showToast(chapterPointChanged ? '保存しました（この章のポイントに反映）' : '保存しました');
   await new Promise(resolve => setTimeout(resolve, 0));
   persist(); render();
   if(shouldVerifyMedia) {

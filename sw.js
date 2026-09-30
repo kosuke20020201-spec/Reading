@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260914-lightweight-backup-v228';
+const CACHE_NAME = 'reading-note-pwa-20260930-chapter-points-v232';
 const APP_SHELL = [
   './',
   './index.html',
