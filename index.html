@@ -1997,6 +1997,7 @@ function autoAssignChapterLinks(source) {
     links[String(entry.id)] = next;
   });
   setLocalChapterLinksMap(links);
+  if (reconcileChapterPoints(list)) changed = true;
   return changed;
 }
 
@@ -2106,41 +2107,98 @@ function reviewChecklistDisplayHTML(e) {
 }
 
 function normalizeChapterPointTitle(value) {
-  return String(value == null ? '' : value).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+  return String(value == null ? '' : value).normalize('NFKC').replace(/[\s\p{P}\p{S}]+/gu, '').toLowerCase();
 }
 
 function chapterPointPageFromEntryPage(page) {
   return String(page == null ? '' : page).replace(/^\s*pp?\.\s*/i, '').trim();
 }
 
-// 知識メモの保存時に、リンク先の章の「この章のポイント」へ反映する。
-// ・同じタイトルのポイントがあれば自動でチェックを付ける（ページが空なら補う）
-// ・なければ（新規作成時のみ）タイトル・ページ付き・チェック済みで立項する
-function syncChapterPointForKnowledgeMemo(memo, isNew, nowIso) {
-  if (!memo || !memo.chapterSummaryId) return false;
-  const types = entryStoredNoteTypes(memo);
-  if (!isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return false;
-  const title = String(memo.title || '').trim();
-  const titleKey = normalizeChapterPointTitle(title);
-  if (!titleKey) return false;
-  const chapter = entries.find(e => String(e.id) === String(memo.chapterSummaryId));
-  if (!chapter || !isChapterSummaryTypes(entryStoredNoteTypes(chapter))) return false;
-  const items = parseReviewChecklist(chapter.reviewChecklist).map(item => ({ ...item }));
-  const memoPage = chapterPointPageFromEntryPage(memo.page);
-  const match = items.find(item => normalizeChapterPointTitle(item.text) === titleKey);
-  let changed = false;
-  if (match) {
-    if (!match.done) { match.done = true; changed = true; }
-    if (!match.page && memoPage) { match.page = memoPage; changed = true; }
-  } else if (isNew) {
-    items.push({ text: title, page: memoPage, done: true });
-    changed = true;
+const CHAPTER_POINT_SYNCED_KEY = 'reading_log_chapter_point_synced_v1';
+
+function getChapterPointSyncedMap() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CHAPTER_POINT_SYNCED_KEY) || '{}');
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  } catch (e) { return {}; }
+}
+
+function setChapterPointSyncedMap(map) {
+  try { localStorage.setItem(CHAPTER_POINT_SYNCED_KEY, JSON.stringify(map)); } catch (e) {}
+}
+
+// 知識メモの題名を、章まとめの「この章のポイント」へ反映する（保存時・読み込み時の両方で実行）。
+// ・同じ題名のポイントがあれば自動でチェックを付ける（ページが空なら補う）
+// ・なければ、メモが新しく章に紐づいたときだけ、題名・ページ付き・チェック済みで立項する
+// ・章に紐づいていない（ページが章の範囲外など）メモは、同じ本の章に同題のポイントがあればチェックだけ付ける
+// 反映済みのメモは記録しておき、ユーザーが手動で外したチェックや消したポイントは再度いじらない。
+function reconcileChapterPoints(list, nowIso) {
+  const source = Array.isArray(list) ? list : entries;
+  const synced = getChapterPointSyncedMap();
+  const stamp = nowIso || new Date().toISOString();
+  const touched = new Map();
+  let markerChanged = false;
+  const liveEntries = source.filter(e => e && e.id != null && !isSyncMetaEntry(e) && !isDeletedEntry(e));
+  const chapters = liveEntries.filter(e => isChapterSummaryTypes(entryStoredNoteTypes(e)));
+
+  function itemsOf(chapter) {
+    const key = String(chapter.id);
+    if (!touched.has(key)) touched.set(key, { chapter, items: parseReviewChecklist(chapter.reviewChecklist).map(item => ({ ...item })), changed: false });
+    return touched.get(key);
   }
-  if (!changed) return false;
-  entries = entries.map(e => String(e.id) === String(chapter.id)
-    ? { ...e, reviewChecklist: JSON.stringify(items), updatedAt: nowIso || new Date().toISOString() }
-    : e);
-  return true;
+
+  liveEntries.forEach(function(memo) {
+    const types = entryStoredNoteTypes(memo);
+    if (!isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return;
+    const titleKey = normalizeChapterPointTitle(memo.title);
+    if (!titleKey) return;
+    const chapterId = normalizeChapterSummaryId(memo.chapterSummaryId);
+    const marker = chapterId + '|' + titleKey;
+    const previous = synced[String(memo.id)];
+    if (previous === marker) return;
+    const previousChapterId = previous === undefined ? null : String(previous).split('|')[0];
+    const allowAdd = !!chapterId && (previous === undefined || previousChapterId !== chapterId);
+    const memoPage = chapterPointPageFromEntryPage(memo.page);
+
+    function markMatch(state) {
+      const match = state.items.find(item => normalizeChapterPointTitle(item.text) === titleKey);
+      if (!match) return false;
+      if (!match.done) { match.done = true; state.changed = true; }
+      if (!match.page && memoPage) { match.page = memoPage; state.changed = true; }
+      return true;
+    }
+
+    let handled = false;
+    const linked = chapterId ? chapters.find(c => String(c.id) === chapterId) : null;
+    if (linked) {
+      const state = itemsOf(linked);
+      handled = markMatch(state);
+      if (!handled && allowAdd) {
+        state.items.push({ text: String(memo.title || '').trim(), page: memoPage, done: true });
+        state.changed = true;
+        handled = true;
+      }
+    } else {
+      const key = bookKey(memo.book);
+      if (key) {
+        chapters.some(function(c) {
+          return bookKey(c.book) === key && markMatch(itemsOf(c));
+        });
+      }
+    }
+    synced[String(memo.id)] = marker;
+    markerChanged = true;
+  });
+
+  let changed = false;
+  touched.forEach(function(state) {
+    if (!state.changed) return;
+    state.chapter.reviewChecklist = JSON.stringify(state.items);
+    state.chapter.updatedAt = stamp;
+    changed = true;
+  });
+  if (markerChanged) setChapterPointSyncedMap(synced);
+  return changed;
 }
 
 function updateChapterLinkChoices() {
@@ -3701,7 +3759,8 @@ function load() {
   entries = entries.map(normalizeEntryForApp);
   rememberLastGoodEntries(entries);
   const mediaMigrated = migrateImagesIntoDrawings();
-  if (idRepair.changed || mediaMigrated) persist();
+  const chapterPointsBackfilled = autoAssignChapterLinks(entries);
+  if (idRepair.changed || mediaMigrated || chapterPointsBackfilled) persist();
 }
 
 function persist() {
@@ -9193,7 +9252,8 @@ async function saveEntry() {
   updateLocalChapterLink(entryId, chapterSummaryId);
   if(isEditingEntry){ entries=entries.map(e=>String(e.id)===String(entryId)?{...e,...data}:e); }
   else { entries.unshift({...data,createdAt:new Date().toISOString().slice(0,10)}); }
-  const chapterPointChanged = syncChapterPointForKnowledgeMemo(data, !isEditingEntry, nowIso);
+  autoAssignChapterLinks(entries);
+  const chapterPointChanged = reconcileChapterPoints(entries, nowIso);
 
   clearEntryDraft(); closeModal(true); showToast(chapterPointChanged ? '保存しました（この章のポイントに反映）' : '保存しました');
   await new Promise(resolve => setTimeout(resolve, 0));

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260930-wide-modal-italic-v233';
+const CACHE_NAME = 'reading-note-pwa-20260930-chapter-points-reconcile-v234';
 const APP_SHELL = [
   './',
   './index.html',
