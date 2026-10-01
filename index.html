@@ -316,6 +316,9 @@
   .review-checklist-view-item { display: flex; align-items: baseline; gap: 0.42rem; font-size: 0.86rem; line-height: 1.5; }
   .review-checklist-view-mark { flex-shrink: 0; }
   .review-checklist-view-text { flex: 1; min-width: 0; word-break: break-word; }
+  button.review-checklist-view-text { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 0.3rem; }
+  button.review-checklist-view-text:hover { color: #92400e; text-decoration: underline; text-underline-offset: 0.18em; }
+  button.review-checklist-view-text:focus-visible { outline: 2px solid var(--amber-border, #fcd34d); outline-offset: 2px; }
   .review-checklist-view-page { flex-shrink: 0; font-size: 0.72rem; font-weight: 800; color: var(--amber-600, #b45309); background: var(--amber-50, #fffbeb); border-radius: 0.4rem; padding: 0.08rem 0.4rem; }
   .page-mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 0.38rem; }
   .page-mode-btn { min-height: 1.82rem; border: 1px solid var(--stone-200); border-radius: 999px; background: white; color: var(--stone-500); font: inherit; font-size: 0.66rem; font-weight: 900; cursor: pointer; }
@@ -2092,11 +2095,13 @@ function setReviewChecklistInput(value) {
 function reviewChecklistDisplayHTML(e) {
   const items = parseReviewChecklist(e && e.reviewChecklist);
   if (!items.length) return '';
-  const rows = items.map(function(item) {
+  const rows = items.map(function(item, index) {
     const pageLabel = item.page ? `<span class="review-checklist-view-page">p.${esc(item.page)}</span>` : '';
     return `<li class="review-checklist-view-item${item.done ? ' done' : ''}">
       <span class="review-checklist-view-mark">${item.done ? '✅' : '⬜'}</span>
-      <span class="review-checklist-view-text">${esc(item.text)}</span>
+      ${item.text
+        ? `<button type="button" class="review-checklist-view-text" onclick="event.stopPropagation();openChapterPoint(${esc(JSON.stringify(e.id))}, ${index})" title="クリックで知識メモへ移動（まだなければ作成画面を開きます）">${esc(item.text)}</button>`
+        : `<span class="review-checklist-view-text"></span>`}
       ${pageLabel}
     </li>`;
   }).join('');
@@ -2104,6 +2109,40 @@ function reviewChecklistDisplayHTML(e) {
     <div class="section-label">📝 この章のポイント</div>
     <ul class="review-checklist-view-list">${rows}</ul>
   </div>`;
+}
+
+function findKnowledgeMemoForChapterPoint(chapter, item) {
+  const titleKey = normalizeChapterPointTitle(item && item.text);
+  if (!chapter || !titleKey) return null;
+  const key = bookKey(chapter.book);
+  if (!key) return null;
+  const matches = entries.filter(function(m) {
+    if (!m || m.id == null || isSyncMetaEntry(m) || isDeletedEntry(m)) return false;
+    const types = entryStoredNoteTypes(m);
+    return isKnowledgeMemoTypes(types) && !isChapterSummaryTypes(types)
+      && bookKey(m.book) === key
+      && normalizeChapterPointTitle(m.title) === titleKey;
+  });
+  if (!matches.length) return null;
+  const chapterId = String(chapter.id);
+  return matches.find(m => normalizeChapterSummaryId(m.chapterSummaryId) === chapterId) || matches[0];
+}
+
+// 「この章のポイント」をクリック：同題の知識メモがあればそこへ移動、なければ題名・ページ入りの作成画面を開く
+function openChapterPoint(chapterId, index) {
+  const chapter = entries.find(e => String(e.id) === String(chapterId));
+  if (!chapter) return;
+  const item = parseReviewChecklist(chapter.reviewChecklist)[index];
+  if (!item || !String(item.text || '').trim()) return;
+  const memo = findKnowledgeMemoForChapterPoint(chapter, item);
+  if (memo) { jumpToRecord(memo.id); return; }
+  openModal(null, chapter.book || '', chapter.author || '', false, {skipDraft:true});
+  setNoteTypeInputs(['knowledge_memo']);
+  const titleInput = document.getElementById('fTitle');
+  if (titleInput) titleInput.value = String(item.text).trim();
+  setPageFormValue(item.page || chapter.page || '');
+  updateNoteFieldProfile();
+  showToast('このポイントの知識メモを作成');
 }
 
 function normalizeChapterPointTitle(value) {
