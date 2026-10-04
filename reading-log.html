@@ -1154,8 +1154,12 @@ const NOTE_TYPES_LOCAL_KEY = 'reading_log_note_types_map_v1';
 const CHAPTER_LINKS_LOCAL_KEY = 'reading_log_chapter_links_map_v1';
 const CHAPTER_KNOWLEDGE_EXPANDED_KEY = 'reading_log_chapter_knowledge_expanded_v1';
 const API_KEY_KEY   = 'reading_log_gemini_api_key';
-const GEMINI_MODEL  = 'gemini-2.5-flash-lite';
-const GEMINI_SUMMARY_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const GEMINI_MODEL  = 'gemini-3.5-flash-lite';
+// 先頭が使えない（404・権限なし等）場合は順に次のモデルを試す。2.5系は新規利用が制限されているため最後の保険。
+const GEMINI_TEXT_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash-lite'];
+const GEMINI_SUMMARY_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+// Gemini 3系は思考トークンも maxOutputTokens に含まれるため、その分の余裕を足す
+const GEMINI_THINKING_HEADROOM = 1024;
 const GEMINI_TIMEOUT_MS = 35000;
 const GEMINI_SUMMARY_MAX_OUTPUT_TOKENS = 260;
 const RAKUTEN_APP_ID_KEY = 'reading_log_rakuten_application_id';
@@ -6908,7 +6912,7 @@ async function callGeminiForSummary(prompt, options) {
         contents: [{parts: [{text: prompt}]}],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: options.maxOutputTokens || GEMINI_SUMMARY_MAX_OUTPUT_TOKENS,
+          maxOutputTokens: (options.maxOutputTokens || GEMINI_SUMMARY_MAX_OUTPUT_TOKENS) + GEMINI_THINKING_HEADROOM,
           responseMimeType: 'application/json'
         }
       }),
@@ -6996,36 +7000,52 @@ async function generateBookSummary(book, options) {
   throw err;
 }
 
+function isGeminiModelUnavailable(status, message) {
+  const text = String(message || '').toLowerCase();
+  return status === 404 || status === 403
+    || /no longer available|is not found|not found for api|not supported for generatecontent|permission|only available to users/.test(text);
+}
+
 async function fetchGeminiText(prompt, apiKey, maxOutputTokens) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
-  let r;
-  let d = {};
-  try {
-    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
-      body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:maxOutputTokens || 300, temperature:0.2, topP:0.9}}),
-      signal: controller.signal
-    });
-    d = await r.json().catch(() => ({}));
-  } catch(e) {
-    if (e && e.name === 'AbortError') throw new Error('Gemini API timed out');
-    throw e;
-  } finally {
-    clearTimeout(timer);
+  let lastError = null;
+  for (let index = 0; index < GEMINI_TEXT_MODELS.length; index++) {
+    const model = GEMINI_TEXT_MODELS[index];
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+    let r;
+    let d = {};
+    try {
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','x-goog-api-key':apiKey},
+        body: JSON.stringify({contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:(maxOutputTokens || 300) + GEMINI_THINKING_HEADROOM, temperature:0.2, topP:0.9}}),
+        signal: controller.signal
+      });
+      d = await r.json().catch(() => ({}));
+    } catch(e) {
+      if (e && e.name === 'AbortError') throw new Error('Gemini API timed out');
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+    const finishReason = d.candidates?.[0]?.finishReason || 'UNKNOWN';
+    geminiLog('Gemini text response', {
+      status: r.status,
+      ok: r.ok,
+      model,
+      finishReason,
+      raw: compactGeminiResponse(d)
+    }, r.ok && finishReason === 'STOP' ? 'info' : 'warn');
+    if (!r.ok) {
+      const message = d.error?.message || 'Gemini API error';
+      lastError = new Error(message + ' (' + model + ', HTTP ' + r.status + ')');
+      if (isGeminiModelUnavailable(r.status, message) && index < GEMINI_TEXT_MODELS.length - 1) continue;
+      throw lastError;
+    }
+    if (finishReason !== 'STOP') throw new Error('Gemini finishReason: ' + finishReason);
+    return firstGeminiText(d);
   }
-  const finishReason = d.candidates?.[0]?.finishReason || 'UNKNOWN';
-  geminiLog('Gemini text response', {
-    status: r.status,
-    ok: r.ok,
-    model: GEMINI_MODEL,
-    finishReason,
-    raw: compactGeminiResponse(d)
-  }, r.ok && finishReason === 'STOP' ? 'info' : 'warn');
-  if (!r.ok) throw new Error(d.error?.message || 'Gemini API error');
-  if (finishReason !== 'STOP') throw new Error('Gemini finishReason: ' + finishReason);
-  return firstGeminiText(d);
+  throw lastError || new Error('Gemini API error');
 }
 
 async function ensureBookOverviewDescription(book, author, info, options) {

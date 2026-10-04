@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260930-chapter-point-links-v235';
+const CACHE_NAME = 'reading-note-pwa-20260930-gemini-model-update-v236';
 const APP_SHELL = [
   './',
   './index.html',
