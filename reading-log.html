@@ -9443,13 +9443,19 @@ function leadingIndentWidth(line) {
 function transformTextareaLines(text, rangeStart, rangeEnd, originalStart, indent) {
   const block = text.slice(rangeStart, rangeEnd);
   const lines = block.split('\n');
+  const context = text.slice(0, rangeStart).split('\n');
+  context.pop();
   let cursor = rangeStart;
   let deltaBeforeStart = 0;
   let totalDelta = 0;
   const nextLines = lines.map(function(line) {
     let delta = 0;
     let nextLine = line;
-    if (indent) {
+    const listLine = reindentListLine(context, line, !!indent);
+    if (listLine !== null) {
+      nextLine = listLine;
+      delta = nextLine.length - line.length;
+    } else if (indent) {
       nextLine = TEXTAREA_INDENT + line;
       delta = TEXTAREA_INDENT.length;
     } else {
@@ -9462,6 +9468,7 @@ function transformTextareaLines(text, rangeStart, rangeEnd, originalStart, inden
     if (cursor < originalStart) deltaBeforeStart += delta;
     totalDelta += delta;
     cursor += line.length + 1;
+    context.push(nextLine);
     return nextLine;
   });
   return {
@@ -9479,7 +9486,10 @@ function applyTextareaIndent(targetId, indent) {
   const end = el.selectionEnd;
   const scrollTop = el.scrollTop;
 
-  if (start === end && indent) {
+  const caretLineStart = value.lastIndexOf('\n', Math.max(0, start - 1)) + 1;
+  const caretLineEndIdx = value.indexOf('\n', start);
+  const caretLine = value.slice(caretLineStart, caretLineEndIdx === -1 ? value.length : caretLineEndIdx);
+  if (start === end && indent && !parseListLineForNesting(caretLine)) {
     el.value = value.slice(0, start) + TEXTAREA_INDENT + value.slice(end);
     const next = start + TEXTAREA_INDENT.length;
     el.setSelectionRange(next, next);
@@ -9500,21 +9510,127 @@ function applyTextareaIndent(targetId, indent) {
 }
 
 // 入力中の箇条書き：Enterで次の項目（番号は+1、記号は同じ記号）を自動入力し、空の項目でEnterすると箇条書きを終了する
-function parseListContinuation(lineBeforeCursor) {
-  const m = String(lineBeforeCursor).match(/^([ \t\u3000]*(?:> )?[ \t\u3000]*)(?:([0-9\uFF10-\uFF19]{1,3})(\.\s+|[\uFF0E)\uFF09]\s*)|([-\u30FB\u2022\u25CF\u25CB\u25AA]\s+|[\u30FB\u2022\u25CF\u25CB\u25AA]))([\s\S]*)$/);
-  if (!m) return null;
-  const prefix = m[1];
-  const body = m[5] || '';
-  let marker;
-  if (m[2] != null) {
-    const full = /[\uFF10-\uFF19]/.test(m[2]);
-    const half = m[2].replace(/[\uFF10-\uFF19]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
-    const next = String(parseInt(half, 10) + 1);
-    marker = (full ? next.replace(/[0-9]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0xFEE0)) : next) + m[3];
-  } else {
-    marker = m[4];
+function listRomanToInt(text) {
+  const map = { i: 1, v: 5, x: 10, l: 50, c: 100 };
+  let total = 0;
+  const chars = String(text).toLowerCase().split('');
+  chars.forEach(function(ch, idx) {
+    const value = map[ch] || 0;
+    const next = map[chars[idx + 1]] || 0;
+    total += value < next ? -value : value;
+  });
+  return total;
+}
+
+function listIntToRoman(n) {
+  const table = [[100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']];
+  let rest = Math.max(1, n);
+  let out = '';
+  table.forEach(function(pair) { while (rest >= pair[0]) { out += pair[1]; rest -= pair[0]; } });
+  return out;
+}
+
+function listIntToAlpha(n) {
+  let rest = Math.max(1, n);
+  let out = '';
+  while (rest > 0) { rest -= 1; out = String.fromCharCode(97 + (rest % 26)) + out; rest = Math.floor(rest / 26); }
+  return out;
+}
+
+function listAlphaToInt(text) {
+  return String(text).toLowerCase().split('').reduce((total, ch) => total * 26 + (ch.charCodeAt(0) - 96), 0);
+}
+
+// 入れ子の深さごとのラベル種類：0=1. 2. / 1=a. b. / 2=i. ii. / 3以降は繰り返し
+function listStyleForDepth(depth) {
+  const mod = ((depth % 3) + 3) % 3;
+  return mod === 0 ? 'num' : (mod === 1 ? 'alpha' : 'roman');
+}
+
+function listLabelToInt(style, label) {
+  if (style === 'num') return parseInt(String(label).replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)), 10) || 0;
+  if (style === 'roman') return listRomanToInt(label);
+  return listAlphaToInt(label);
+}
+
+function listIntToLabel(style, n, fullWidth) {
+  if (style === 'num') {
+    const text = String(Math.max(1, n));
+    return fullWidth ? text.replace(/[0-9]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0xFEE0)) : text;
   }
-  return { prefix, body, marker, markerLength: m[0].length - body.length };
+  return style === 'roman' ? listIntToRoman(n) : listIntToAlpha(n);
+}
+
+// 1行を「字下げ・引用・マーカー・本文」に分解する。箇条書きでなければ null
+function parseListLineForNesting(line) {
+  const ind = recordLineIndent(line);
+  const indentStr = line.slice(0, ind.chars);
+  let rest = line.slice(ind.chars);
+  let quote = '';
+  if (rest.startsWith(QUOTE_LINE_PREFIX)) { quote = QUOTE_LINE_PREFIX; rest = rest.slice(QUOTE_LINE_PREFIX.length); }
+  const depth = Math.round(ind.em);
+  let m = rest.match(/^([0-9０-９]{1,3})(\.\s+|[．)）]\s*)([\s\S]*)$/);
+  if (m) return { kind: 'num', indentStr, quote, depth, label: m[1], delim: m[2], text: m[3] };
+  if (depth >= 1) {
+    m = rest.match(new RegExp('^(' + LIST_ALPHA_MARKER_RE + ')(\\.\\s+|[)）]\\s*)([\\s\\S]*)$'));
+    if (m) return { kind: 'alpha', indentStr, quote, depth, label: m[1], delim: m[2], text: m[3] };
+  }
+  m = rest.match(/^(-\s+|[・•●○▪]\s*)([\s\S]*)$/);
+  if (m) return { kind: 'bullet', indentStr, quote, depth, marker: m[1], text: m[2] };
+  return null;
+}
+
+// 同じ深さの直前の項目を上へたどって、次のラベルを決める
+function nextSiblingLabel(contextLines, depth, style, fullWidth) {
+  for (let i = contextLines.length - 1; i >= 0; i--) {
+    const info = parseListLineForNesting(contextLines[i]);
+    if (!info) break;
+    if (info.depth > depth) continue;
+    if (info.depth < depth) break;
+    if (info.kind === 'bullet') break;
+    const n = listLabelToInt(style, info.label);
+    return listIntToLabel(style, n > 0 ? n + 1 : 1, fullWidth);
+  }
+  return listIntToLabel(style, 1, fullWidth);
+}
+
+// Tab / Shift+Tab で箇条書き行の深さを変え、深さに合ったマーカー（1. → a. → i.）へ付け替える。箇条書きでなければ null
+function reindentListLine(contextLines, line, indent) {
+  const info = parseListLineForNesting(line);
+  if (!info) return null;
+  let indentStr = info.indentStr;
+  if (indent) indentStr = TEXTAREA_INDENT + indentStr;
+  else {
+    const removeCount = leadingIndentWidth(line);
+    if (!removeCount) return line;
+    indentStr = indentStr.slice(removeCount);
+  }
+  if (info.kind === 'bullet') return indentStr + info.quote + info.marker + info.text;
+  const depth = Math.round(recordLineIndent(indentStr).em);
+  const style = listStyleForDepth(depth);
+  const fullWidth = info.kind === 'num' && /[０-９]/.test(info.label);
+  const label = nextSiblingLabel(contextLines, depth, style, fullWidth);
+  let delim = info.delim;
+  if (/^[．]/.test(delim)) delim = '.' + (delim.slice(1) || ' ');
+  if (/^[）]/.test(delim)) delim = ')' + delim.slice(1);
+  if (/^\.$/.test(delim)) delim = '. ';
+  return indentStr + info.quote + label + delim + info.text;
+}
+
+function parseListContinuation(lineBeforeCursor) {
+  const info = parseListLineForNesting(lineBeforeCursor);
+  if (!info) return null;
+  const prefix = info.indentStr + info.quote;
+  let marker;
+  if (info.kind === 'bullet') {
+    marker = info.marker;
+  } else {
+    let style = info.kind === 'num' ? 'num' : listStyleForDepth(info.depth);
+    if (info.kind === 'alpha' && style === 'num') style = 'alpha';
+    const fullWidth = info.kind === 'num' && /[０-９]/.test(info.label);
+    marker = listIntToLabel(style, listLabelToInt(style, info.label) + 1, fullWidth) + info.delim;
+  }
+  return { prefix, body: info.text, marker, markerLength: lineBeforeCursor.length - info.text.length };
 }
 
 function insertTextareaText(el, text) {
@@ -9613,9 +9729,15 @@ function handleTextareaTab(event) {
 }
 
 // 「1. XXX」「1) XXX」「１．XXX」「- XXX」「・XXX」の行を箇条書きとして判別する（保存データは変えず、表示時に変換）
-function parseRecordListLine(body) {
+const LIST_ALPHA_MARKER_RE = '(?:viii|vii|vi|iv|ix|xviii|xvii|xvi|xv|xiv|xiii|xii|xi|xix|xx|iii|ii|x|v|[a-z])';
+
+function parseRecordListLine(body, indentEm) {
   let m = String(body).match(/^(?:([0-9０-９]{1,3}\.)\s+|([0-9０-９]{1,3}[．)）])\s*)(\S[\s\S]*)$/);
   if (m) return { marker: m[1] || m[2], text: m[3], ordered: true };
+  if (indentEm >= 1) {
+    m = String(body).match(new RegExp('^(' + LIST_ALPHA_MARKER_RE + '\\.)\\s+(\\S[\\s\\S]*)$')) || String(body).match(new RegExp('^(' + LIST_ALPHA_MARKER_RE + '[)）])\\s*(\\S[\\s\\S]*)$'));
+    if (m) return { marker: m[1], text: m[2], ordered: true };
+  }
   m = String(body).match(/^(?:-\s+|[・•●○▪]\s*)(\S[\s\S]*)$/);
   if (m) return { marker: '•', text: m[1], ordered: false };
   return null;
@@ -9641,7 +9763,7 @@ function formatRecordText(text, entry) {
       body = body.slice(QUOTE_LINE_PREFIX.length);
     }
     const indentStyle = indent.em ? ` style="--indent:${indent.em}"` : '';
-    const listItem = parseRecordListLine(body);
+    const listItem = parseRecordListLine(body, indent.em);
     if (listItem) {
       return `<span class="record-line record-line-list${isQuote ? ' record-line-quote' : ''}"${indentStyle}><span class="record-list-marker">${esc(listItem.marker)}</span><span class="record-list-body">${formatRecordInlineText(listItem.text)}</span></span>`;
     }

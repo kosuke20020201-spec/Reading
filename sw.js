@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260930-sub-chapter-points-v242';
+const CACHE_NAME = 'reading-note-pwa-20260930-nested-list-tab-v243';
 const APP_SHELL = [
   './',
   './index.html',
