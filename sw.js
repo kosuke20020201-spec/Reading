@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reading-note-pwa-20260930-always-preview-v241';
+const CACHE_NAME = 'reading-note-pwa-20260930-sub-chapter-points-v242';
 const APP_SHELL = [
   './',
   './index.html',

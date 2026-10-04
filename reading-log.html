@@ -2145,6 +2145,18 @@ function findKnowledgeMemoForChapterPoint(chapter, item) {
   return matches.find(m => normalizeChapterSummaryId(m.chapterSummaryId) === chapterId) || matches[0];
 }
 
+function findSubChapterForChapterPoint(chapter, item) {
+  const titleKey = normalizeChapterPointTitle(item && item.text);
+  if (!chapter || !titleKey) return null;
+  const descendants = chapterSelfAndDescendantIds(chapter.id);
+  descendants.delete(String(chapter.id));
+  return entries.find(function(e) {
+    return e && e.id != null && descendants.has(String(e.id)) && !isDeletedEntry(e)
+      && isChapterSummaryTypes(entryStoredNoteTypes(e))
+      && normalizeChapterPointTitle(e.title) === titleKey;
+  }) || null;
+}
+
 // 「この章のポイント」をクリック：同題の知識メモがあればそこへ移動、なければ題名・ページ入りの作成画面を開く
 function openChapterPoint(chapterId, index) {
   const chapter = entries.find(e => String(e.id) === String(chapterId));
@@ -2153,6 +2165,8 @@ function openChapterPoint(chapterId, index) {
   if (!item || !String(item.text || '').trim()) return;
   const memo = findKnowledgeMemoForChapterPoint(chapter, item);
   if (memo) { jumpToRecord(memo.id); return; }
+  const subChapter = findSubChapterForChapterPoint(chapter, item);
+  if (subChapter) { jumpToRecord(subChapter.id); return; }
   openModal(null, chapter.book || '', chapter.author || '', false, {skipDraft:true});
   setNoteTypeInputs(['knowledge_memo']);
   const titleInput = document.getElementById('fTitle');
@@ -2203,9 +2217,45 @@ function reconcileChapterPoints(list, nowIso) {
     return touched.get(key);
   }
 
+  // 入れ子の小まとめ：祖先の章まとめ（直接の親〜一番上）の「この章のポイント」へ、題名・ページ付き・チェック済みで反映する
+  function reconcileSubChapter(sub) {
+    const titleKey = normalizeChapterPointTitle(sub.title);
+    if (!titleKey) return;
+    const ancestors = [];
+    const seen = new Set([String(sub.id)]);
+    let parentId = normalizeChapterSummaryId(sub.chapterSummaryId);
+    while (parentId && !seen.has(parentId)) {
+      seen.add(parentId);
+      const parent = chapters.find(c => String(c.id) === parentId);
+      if (!parent) break;
+      ancestors.push(parent);
+      parentId = normalizeChapterSummaryId(parent.chapterSummaryId);
+    }
+    const ancestorIds = ancestors.map(a => String(a.id));
+    const marker = 'sub:' + ancestorIds.join(',') + '|' + titleKey;
+    const previous = synced[String(sub.id)];
+    if (previous === marker) return;
+    const previousIds = previous === undefined ? [] : String(previous).split('|')[0].replace(/^sub:/, '').split(',').filter(Boolean);
+    const subPage = chapterPointPageFromEntryPage(sub.page);
+    ancestors.forEach(function(ancestor) {
+      const state = itemsOf(ancestor);
+      const match = state.items.find(item => normalizeChapterPointTitle(item.text) === titleKey);
+      if (match) {
+        if (!match.done) { match.done = true; state.changed = true; }
+        if (!match.page && subPage) { match.page = subPage; state.changed = true; }
+      } else if (!previousIds.includes(String(ancestor.id))) {
+        state.items.push({ text: String(sub.title || '').trim(), page: subPage, done: true });
+        state.changed = true;
+      }
+    });
+    synced[String(sub.id)] = marker;
+    markerChanged = true;
+  }
+
   liveEntries.forEach(function(memo) {
     const types = entryStoredNoteTypes(memo);
-    if (!isKnowledgeMemoTypes(types) || isChapterSummaryTypes(types)) return;
+    if (isChapterSummaryTypes(types)) { reconcileSubChapter(memo); return; }
+    if (!isKnowledgeMemoTypes(types)) return;
     const titleKey = normalizeChapterPointTitle(memo.title);
     if (!titleKey) return;
     const chapterId = normalizeChapterSummaryId(memo.chapterSummaryId);
