@@ -368,6 +368,7 @@
   .record-line-quote { border-left: 3px solid var(--amber, #d97706); padding-left: calc(0.65em + (var(--indent, 0) * 1em)); margin-left: 0.05em; color: var(--stone-500, #57534e); font-style: italic; }
   .live-preview { margin-top: 0.5rem; padding: 0.55rem 0.75rem; background: var(--amber-light, #fffbeb); border: 1px dashed #fcd34d; border-radius: 0.7rem; }
   .live-preview[hidden] { display: none; }
+  .live-preview-empty { color: var(--stone-400, #a8a29e); font-size: 0.8rem; }
   .live-preview-label { font-size: 0.68rem; font-weight: 700; color: #92400e; margin-bottom: 0.2rem; }
   .live-preview-body { font-size: 0.88rem; }
   .record-line-list { display: flex; align-items: baseline; gap: 0.35em; }
@@ -9518,26 +9519,20 @@ function handleTextareaListBeforeInput(event) {
   runTextareaListEnter(el, event);
 }
 
-// 入力中のプレビュー：箇条書き行を含むとき、保存後と同じ見た目を入力欄の下に表示する
-function textHasListLine(text) {
-  return String(text || '').split('\n').some(function(line) {
-    let body = line.replace(/^[ \t\u3000]+/, '');
-    if (body.startsWith(QUOTE_LINE_PREFIX)) body = body.slice(QUOTE_LINE_PREFIX.length).replace(/^[ \t\u3000]+/, '');
-    return !!parseRecordListLine(body);
-  });
-}
-
+// 入力中のプレビュー：入力欄の下に、保存後と同じ見た目（太字・箇条書き・引用など）を常に表示する
 function updateLiveTextPreview(el) {
   const box = el && el._livePreview;
   if (!box) return;
   const value = el.value || '';
   if (el._livePreviewValue === value) return;
   el._livePreviewValue = value;
-  if (!textHasListLine(value)) { box.hidden = true; return; }
+  const body = box.querySelector('.live-preview-body');
+  if (!value.trim()) { body.innerHTML = '<span class="live-preview-empty">入力すると、ここに保存後の見え方が表示されます</span>'; return; }
   try {
-    box.querySelector('.live-preview-body').innerHTML = formatRecordText(value, null);
-    box.hidden = false;
-  } catch (e) { box.hidden = true; }
+    body.innerHTML = formatRecordText(value, null);
+  } catch (e) {
+    body.textContent = value;
+  }
 }
 
 function initLiveTextPreviews() {
@@ -9546,11 +9541,11 @@ function initLiveTextPreviews() {
     if (!el || !el.parentElement || el._livePreview) return;
     const box = document.createElement('div');
     box.className = 'live-preview';
-    box.hidden = true;
     box.innerHTML = '<div class="live-preview-label">プレビュー（保存後の見え方）</div><div class="section-text live-preview-body"></div>';
     el.parentElement.appendChild(box);
     el._livePreview = box;
     el.addEventListener('input', function() { updateLiveTextPreview(el); });
+    updateLiveTextPreview(el);
   });
   // ボタン操作や下書き復元など、input イベントなしで値が変わる場合に備えて軽く監視する
   setInterval(function() {
