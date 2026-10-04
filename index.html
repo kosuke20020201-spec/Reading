@@ -366,6 +366,10 @@
   .section-text { font-size: 0.92rem; line-height: 1.75; white-space: normal; overflow-wrap: anywhere; }
   .record-line { display: block; min-height: 1.8em; padding-left: calc(var(--indent, 0) * 1em); white-space: pre-wrap; }
   .record-line-quote { border-left: 3px solid var(--amber, #d97706); padding-left: calc(0.65em + (var(--indent, 0) * 1em)); margin-left: 0.05em; color: var(--stone-500, #57534e); font-style: italic; }
+  .live-preview { margin-top: 0.5rem; padding: 0.55rem 0.75rem; background: var(--amber-light, #fffbeb); border: 1px dashed #fcd34d; border-radius: 0.7rem; }
+  .live-preview[hidden] { display: none; }
+  .live-preview-label { font-size: 0.68rem; font-weight: 700; color: #92400e; margin-bottom: 0.2rem; }
+  .live-preview-body { font-size: 0.88rem; }
   .record-line-list { display: flex; align-items: baseline; gap: 0.35em; }
   .record-list-marker { flex: 0 0 auto; min-width: 1.6em; text-align: right; font-weight: 700; color: var(--stone-500, #78716c); font-variant-numeric: tabular-nums; user-select: none; }
   .record-list-body { flex: 1 1 auto; min-width: 0; white-space: pre-wrap; }
@@ -9444,6 +9448,119 @@ function applyTextareaIndent(targetId, indent) {
   queueEntryDraftSave();
 }
 
+// 入力中の箇条書き：Enterで次の項目（番号は+1、記号は同じ記号）を自動入力し、空の項目でEnterすると箇条書きを終了する
+function parseListContinuation(lineBeforeCursor) {
+  const m = String(lineBeforeCursor).match(/^([ \t\u3000]*(?:> )?[ \t\u3000]*)(?:([0-9\uFF10-\uFF19]{1,3})(\.\s+|[\uFF0E)\uFF09]\s*)|([-\u30FB\u2022\u25CF\u25CB\u25AA]\s+|[\u30FB\u2022\u25CF\u25CB\u25AA]))([\s\S]*)$/);
+  if (!m) return null;
+  const prefix = m[1];
+  const body = m[5] || '';
+  let marker;
+  if (m[2] != null) {
+    const full = /[\uFF10-\uFF19]/.test(m[2]);
+    const half = m[2].replace(/[\uFF10-\uFF19]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
+    const next = String(parseInt(half, 10) + 1);
+    marker = (full ? next.replace(/[0-9]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0xFEE0)) : next) + m[3];
+  } else {
+    marker = m[4];
+  }
+  return { prefix, body, marker, markerLength: m[0].length - body.length };
+}
+
+function insertTextareaText(el, text) {
+  let ok = false;
+  try { ok = document.execCommand('insertText', false, text); } catch (e) { ok = false; }
+  if (!ok) {
+    el.setRangeText(text, el.selectionStart, el.selectionEnd, 'end');
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function runTextareaListEnter(el, event) {
+  if (!el || typeof el.selectionStart !== 'number' || el.selectionStart !== el.selectionEnd) return false;
+  const value = el.value || '';
+  const pos = el.selectionStart;
+  const lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+  const lineEndIdx = value.indexOf('\n', pos);
+  const lineEnd = lineEndIdx === -1 ? value.length : lineEndIdx;
+  const before = value.slice(lineStart, pos);
+  const after = value.slice(pos, lineEnd);
+  const info = parseListContinuation(before);
+  if (!info) return false;
+  event.preventDefault();
+  if (!info.body.trim() && !after.trim()) {
+    // 空の項目でEnter：マーカーを消して箇条書きを終える
+    el.setSelectionRange(lineStart, lineEnd);
+    insertTextareaText(el, '');
+  } else if (!info.body.trim()) {
+    // マーカー直後（本文なし）で後ろに文字がある場合は通常の改行
+    insertTextareaText(el, '\n');
+  } else {
+    insertTextareaText(el, '\n' + info.prefix + info.marker);
+  }
+  queueEntryDraftSave();
+  return true;
+}
+
+// PC：keydown。スマホのソフトキーボードは keydown が keyCode 229 になるため、下の beforeinput でも処理する
+function handleTextareaListEnter(event) {
+  if (event.key !== 'Enter') return;
+  const el = event.currentTarget;
+  el._listEnterModifier = !!(event.shiftKey || event.ctrlKey || event.metaKey || event.altKey);
+  if (el._listEnterModifier || event.isComposing || event.keyCode === 229) return;
+  runTextareaListEnter(el, event);
+}
+
+function handleTextareaListBeforeInput(event) {
+  if (event.inputType !== 'insertLineBreak' && event.inputType !== 'insertParagraph') return;
+  const el = event.currentTarget;
+  if (event.isComposing) return;
+  if (el._listEnterModifier) { el._listEnterModifier = false; return; }
+  runTextareaListEnter(el, event);
+}
+
+// 入力中のプレビュー：箇条書き行を含むとき、保存後と同じ見た目を入力欄の下に表示する
+function textHasListLine(text) {
+  return String(text || '').split('\n').some(function(line) {
+    let body = line.replace(/^[ \t\u3000]+/, '');
+    if (body.startsWith(QUOTE_LINE_PREFIX)) body = body.slice(QUOTE_LINE_PREFIX.length).replace(/^[ \t\u3000]+/, '');
+    return !!parseRecordListLine(body);
+  });
+}
+
+function updateLiveTextPreview(el) {
+  const box = el && el._livePreview;
+  if (!box) return;
+  const value = el.value || '';
+  if (el._livePreviewValue === value) return;
+  el._livePreviewValue = value;
+  if (!textHasListLine(value)) { box.hidden = true; return; }
+  try {
+    box.querySelector('.live-preview-body').innerHTML = formatRecordText(value, null);
+    box.hidden = false;
+  } catch (e) { box.hidden = true; }
+}
+
+function initLiveTextPreviews() {
+  INDENT_TEXTAREA_IDS.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el || !el.parentElement || el._livePreview) return;
+    const box = document.createElement('div');
+    box.className = 'live-preview';
+    box.hidden = true;
+    box.innerHTML = '<div class="live-preview-label">プレビュー（保存後の見え方）</div><div class="section-text live-preview-body"></div>';
+    el.parentElement.appendChild(box);
+    el._livePreview = box;
+    el.addEventListener('input', function() { updateLiveTextPreview(el); });
+  });
+  // ボタン操作や下書き復元など、input イベントなしで値が変わる場合に備えて軽く監視する
+  setInterval(function() {
+    INDENT_TEXTAREA_IDS.forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el && el.offsetParent !== null) updateLiveTextPreview(el);
+    });
+  }, 400);
+}
+
 function handleTextareaTab(event) {
   if (event.key !== 'Tab') return;
   event.preventDefault();
@@ -10997,6 +11114,8 @@ document.querySelectorAll('input[name="fNoteTypes"]').forEach(function(el) {
 });
 INDENT_TEXTAREA_IDS.forEach(function(id) {
   document.getElementById(id)?.addEventListener('keydown', handleTextareaTab);
+  document.getElementById(id)?.addEventListener('keydown', handleTextareaListEnter);
+  document.getElementById(id)?.addEventListener('beforeinput', handleTextareaListBeforeInput);
   document.getElementById(id)?.addEventListener('keydown', function(event) {
     // Alt+Shift+Q で引用のオン/オフを切り替える
     if (event.altKey && event.shiftKey && (event.key === 'Q' || event.key === 'q' || event.code === 'KeyQ')) {
@@ -11021,6 +11140,7 @@ document.querySelectorAll('.text-format-toolbar').forEach(function(toolbar) {
   });
 });
 document.getElementById('fAuthor')?.addEventListener('input', onAuthorInput);
+initLiveTextPreviews();
 initOrientationSupport();
 initHorizontalSwipeScroll();
 
