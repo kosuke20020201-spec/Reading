@@ -472,6 +472,11 @@
   .book-recommend-list { display: flex; flex-direction: column; gap: 0.7rem; }
   .book-recommend-card { border: 1px solid var(--stone-200); border-radius: 0.85rem; padding: 0.75rem 0.9rem; background: linear-gradient(160deg, #fffaf0, #ffffff 65%); }
   .book-recommend-card-title { font-weight: 700; font-size: 0.9rem; color: #292524; margin-bottom: 0.15rem; }
+  a.book-recommend-card-title { display: block; text-decoration: none; }
+  a.book-recommend-card-title:hover { color: #92400e; text-decoration: underline; text-underline-offset: 0.18em; }
+  .book-recommend-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+  .book-recommend-link { font-size: 0.7rem; font-weight: 600; color: var(--stone-600); background: #fff; border: 1px solid var(--stone-200); border-radius: 999px; padding: 0.18rem 0.65rem; text-decoration: none; }
+  .book-recommend-link:hover { background: var(--amber-light); border-color: #fcd34d; color: #92400e; }
   .book-recommend-card-author { font-size: 0.72rem; color: var(--stone-500); margin-bottom: 0.45rem; }
   .book-recommend-card-reason { font-size: 0.78rem; color: var(--stone-600); line-height: 1.65; }
   #drawingOverlay .modal-body { padding-top: 0; }
@@ -10554,10 +10559,18 @@ function bookRecommendResultsHTML(list) {
     return '<div class="book-recommend-error">おすすめを取得できませんでした。もう一度お試しください。</div>';
   }
   return '<div class="book-recommend-list">' + list.map(function(item) {
+    const q = encodeURIComponent((item.title + ' ' + (item.author || '')).trim());
+    const attrs = ' target="_blank" rel="noopener noreferrer"';
+    const googleUrl = 'https://www.google.com/search?q=' + encodeURIComponent((item.title + ' ' + (item.author || '') + ' 本').trim());
     return '<div class="book-recommend-card">' +
-      '<div class="book-recommend-card-title">' + esc(item.title) + '</div>' +
+      '<a class="book-recommend-card-title" href="' + esc(googleUrl) + '"' + attrs + ' title="Googleで検索">' + esc(item.title) + '</a>' +
       (item.author ? '<div class="book-recommend-card-author">' + esc(item.author) + '</div>' : '') +
       (item.reason ? '<div class="book-recommend-card-reason">' + esc(item.reason) + '</div>' : '') +
+      '<div class="book-recommend-links">' +
+        '<a class="book-recommend-link" href="' + esc(googleUrl) + '"' + attrs + '>Google検索</a>' +
+        '<a class="book-recommend-link" href="' + esc('https://www.amazon.co.jp/s?i=stripbooks&k=' + q) + '"' + attrs + '>Amazonで探す</a>' +
+        '<a class="book-recommend-link" href="' + esc('https://books.rakuten.co.jp/search?sitem=' + q) + '"' + attrs + '>楽天ブックスで探す</a>' +
+      '</div>' +
       '</div>';
   }).join('') + '</div>';
 }
